@@ -12,7 +12,13 @@ description = ""
 authors = [
     {name = "jrahn", email = "jrahn@example.com"},
 ]
-dependencies = []
+dependencies = [
+    "torch>=2.0",
+    "chess",
+    "tiktoken", 
+    "safetensors",
+    "numpy",
+]
 requires-python = ">=3.8"
 
 [project.optional-dependencies]

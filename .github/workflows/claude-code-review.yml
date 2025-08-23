@@ -36,20 +36,24 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          
+          # Allow all bots to trigger this workflow
+          allowed_bots: "*"
 
           # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4.1)
           # model: "claude-opus-4-1-20250805"
 
           # Direct prompt for automated review (no @claude mention needed)
           direct_prompt: |
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+            Please review this pull request for the RookWorld GRPO implementation and provide feedback on:
+            - GRPO algorithm implementation correctness
+            - RookWorld integration compatibility and prompt format adherence  
+            - Chess move validation logic and Stockfish integration
+            - Reward function accuracy and structured output verification
+            - Pure PyTorch implementation (no transformers dependency)
+            - Code quality, performance, and documentation
             
-            Be constructive and helpful in your feedback.
+            Focus on chess-specific logic and reinforcement learning correctness. Be constructive and helpful.
 
           # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
           # use_sticky_comment: true

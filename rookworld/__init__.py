@@ -1,1 +1,0 @@
-# RookWorld-RLVR: Pure PyTorch GRPO Implementation

@@ -175,58 +175,45 @@ class CausalLMPolicy:
     def __init__(self, cfg: GRPOConfig):
         self.cfg = cfg
         
-        # Load tokenizer
-        self.tok = AutoTokenizer.from_pretrained(cfg.model_name_or_path)
-        if self.tok.pad_token is None:
-            self.tok.pad_token = self.tok.eos_token
+        # Load tokenizer (pure PyTorch implementation)
+        self.tok = tiktoken.get_encoding("gpt2")  # GPT-2 BPE tokenizer
         
-        # Load models
-        self.model = AutoModelForCausalLM.from_pretrained(cfg.model_name_or_path)
-        self.model.to(cfg.device)
-        self.model.train()
+        # Load models (pure PyTorch implementation)
+        # TODO: Implement pure PyTorch GPT-2 architecture
+        # self.model = RookWorldGPT2.from_pretrained(cfg.model_name_or_path)
+        # self.model.to(cfg.device)
+        # self.model.train()
         
-        # Reference model (frozen)
-        self.ref_model = AutoModelForCausalLM.from_pretrained(cfg.model_name_or_path)
-        self.ref_model.to(cfg.device)
-        self.ref_model.eval()
-        for p in self.ref_model.parameters():
-            p.requires_grad_(False)
+        # Reference model (frozen, pure PyTorch implementation)
+        # TODO: Implement reference model for GRPO baseline
+        # self.ref_model = RookWorldGPT2.from_pretrained(cfg.model_name_or_path)
+        # self.ref_model.to(cfg.device)
+        # self.ref_model.eval()
+        # for p in self.ref_model.parameters():
+        #     p.requires_grad_(False)
     
     @torch.no_grad()
     def generate_batch(self, prompts: List[str], max_new_tokens: int) -> Dict[str, Any]:
-        """Batched generation with logprobs"""
-        enc = self.tok(prompts, return_tensors="pt", padding=True).to(self.cfg.device)
+        """Batched generation with logprobs (pure PyTorch implementation)"""
+        # TODO: Implement pure PyTorch tokenization and generation
+        # enc = self._encode_batch(prompts)  # Custom tokenization
+        # 
+        # out = self._generate_with_logprobs(
+        #     input_ids=enc["input_ids"],
+        #     attention_mask=enc["attention_mask"],
+        #     max_new_tokens=max_new_tokens,
+        #     do_sample=True,
+        #     temperature=self.cfg.temperature,
+        #     top_k=self.cfg.top_k if self.cfg.top_k > 0 else None,
+        #     top_p=self.cfg.top_p
+        # )
         
-        out = self.model.generate(
-            **enc,
-            do_sample=True,
-            temperature=self.cfg.temperature,
-            top_k=self.cfg.top_k if self.cfg.top_k > 0 else None,
-            top_p=self.cfg.top_p,
-            max_new_tokens=max_new_tokens,
-            pad_token_id=self.tok.pad_token_id,
-            eos_token_id=self.tok.eos_token_id,
-            return_dict_in_generate=True,
-            output_scores=True
-        )
-        
-        # Compute logprobs
-        logprobs = []
-        for step_scores in out.scores:
-            logprobs.append(step_scores.log_softmax(dim=-1))
-        
-        lp = torch.stack(logprobs, dim=0)  # (gen_len, batch, vocab)
-        gen_ids = out.sequences[:, enc["input_ids"].shape[1]:]
-        
-        # Gather logprobs for generated tokens
-        seq_logprobs = lp.gather(-1, gen_ids.transpose(0,1).unsqueeze(-1)).squeeze(-1)
-        seq_logprob = seq_logprobs.sum(dim=0)  # Sum over tokens
-        
+        # Placeholder return for pure PyTorch implementation
         return {
-            "sequences": out.sequences,
-            "generated_ids": gen_ids,
-            "seq_logprob": seq_logprob.detach(),
-            "texts": [self.tok.decode(ids, skip_special_tokens=True) for ids in gen_ids]
+            "sequences": torch.tensor([]),
+            "generated_ids": torch.tensor([]),
+            "seq_logprob": torch.tensor([]),
+            "texts": []
         }
     
     def compute_logprobs(self, input_ids: torch.Tensor, attn_mask: torch.Tensor, 
@@ -254,20 +241,22 @@ class CausalLMPolicy:
             return (token_logp.sum(dim=1) / n_tokens)
     
     def score_legal_moves(self, fen: str, legal_moves: List[str]) -> torch.Tensor:
-        """Score all legal moves efficiently"""
+        """Score all legal moves efficiently (pure PyTorch implementation)"""
         prompt = build_policy_prompt(fen)
         texts = [prompt + " " + move for move in legal_moves]
         
-        enc = self.tok(texts, return_tensors="pt", padding=True)
-        input_ids = enc["input_ids"].to(self.cfg.device)
-        attn_mask = enc["attention_mask"].to(self.cfg.device)
+        # TODO: Implement pure PyTorch tokenization
+        # enc = self._encode_batch(texts)
+        # input_ids = enc["input_ids"].to(self.cfg.device)
+        # attn_mask = enc["attention_mask"].to(self.cfg.device)
+        # 
+        # prompt_len = len(self._encode_text(prompt)["input_ids"])
+        # 
+        # with torch.no_grad():
+        #     logprobs = self.compute_logprobs(input_ids, attn_mask, prompt_len, use_ref=False)
         
-        prompt_len = len(self.tok(prompt)["input_ids"][0])
-        
-        with torch.no_grad():
-            logprobs = self.compute_logprobs(input_ids, attn_mask, prompt_len, use_ref=False)
-        
-        return logprobs
+        # Placeholder return for pure PyTorch implementation
+        return torch.zeros(len(legal_moves))
 
 # --------------------------
 # Stockfish Integration
@@ -554,13 +543,19 @@ def collect_policy_group(policy: CausalLMPolicy, board: chess.Board, engine: che
         r = compute_policy_reward(board, generated_text, stockfish_analysis, cfg)
         rewards.append(r)
     
-    # Build full sequences for gradient computation
+    # Build full sequences for gradient computation (pure PyTorch implementation)
     full_texts = [prompt + " " + text for text in out['texts']]
-    enc = policy.tok(full_texts, return_tensors="pt", padding=True)
-    input_ids = enc["input_ids"].to(cfg.device)
-    attn_mask = enc["attention_mask"].to(cfg.device)
+    # TODO: Implement pure PyTorch tokenization
+    # enc = policy._encode_batch(full_texts)
+    # input_ids = enc["input_ids"].to(cfg.device)
+    # attn_mask = enc["attention_mask"].to(cfg.device)
+    # 
+    # prompt_len = len(policy._encode_text(prompt)["input_ids"])
     
-    prompt_len = len(policy.tok(prompt)["input_ids"][0])
+    # Placeholder values for pure PyTorch implementation
+    input_ids = torch.tensor([])
+    attn_mask = torch.tensor([])
+    prompt_len = 0
     
     return {
         'input_ids': input_ids,
@@ -605,13 +600,19 @@ def collect_env_group(policy: CausalLMPolicy, board: chess.Board, cfg: GRPOConfi
         r = compute_env_reward(generated_text, expected_output, cfg)
         rewards.append(r)
     
-    # Build full sequences for gradient computation
+    # Build full sequences for gradient computation (pure PyTorch implementation)
     full_texts = [prompt + " " + text for text in out['texts']]
-    enc = policy.tok(full_texts, return_tensors="pt", padding=True)
-    input_ids = enc["input_ids"].to(cfg.device)
-    attn_mask = enc["attention_mask"].to(cfg.device)
+    # TODO: Implement pure PyTorch tokenization
+    # enc = policy._encode_batch(full_texts)
+    # input_ids = enc["input_ids"].to(cfg.device)
+    # attn_mask = enc["attention_mask"].to(cfg.device)
+    # 
+    # prompt_len = len(policy._encode_text(prompt)["input_ids"])
     
-    prompt_len = len(policy.tok(prompt)["input_ids"][0])
+    # Placeholder values for pure PyTorch implementation
+    input_ids = torch.tensor([])
+    attn_mask = torch.tensor([])
+    prompt_len = 0
     
     return {
         'input_ids': input_ids,
@@ -819,8 +820,9 @@ def train(cfg: GRPOConfig):
             checkpoint_dir = os.path.join(cfg.output_dir, f"checkpoint-{step+1}")
             os.makedirs(checkpoint_dir, exist_ok=True)
             
-            policy.model.save_pretrained(checkpoint_dir)
-            policy.tok.save_pretrained(checkpoint_dir)
+            # TODO: Implement pure PyTorch model saving
+            # policy.model.save(os.path.join(checkpoint_dir, "model.pt"))
+            # policy.save_tokenizer(checkpoint_dir)
             
             # Save config and metrics
             with open(os.path.join(checkpoint_dir, "config.json"), "w") as f:
@@ -834,8 +836,9 @@ def train(cfg: GRPOConfig):
     # Final save
     final_dir = os.path.join(cfg.output_dir, "final")
     os.makedirs(final_dir, exist_ok=True)
-    policy.model.save_pretrained(final_dir)
-    policy.tok.save_pretrained(final_dir)
+    # TODO: Implement pure PyTorch model saving
+    # policy.model.save(os.path.join(final_dir, "model.pt"))
+    # policy.save_tokenizer(final_dir)
     
     with open(os.path.join(final_dir, "training_log.json"), "w") as f:
         json.dump(log_data, f, indent=2)

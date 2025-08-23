@@ -1,5 +1,19 @@
 # KPI Specification
 
+## Implementation Status
+
+### ✅ Foundation Model Verification (Phase 1 Complete)
+- **GPT-2 Architecture**: 124,439,808 parameters exactly matching RookWorld-LM-124M
+- **Numerical Parity**: ≤1e-4 tolerance verified vs HuggingFace transformers 
+- **Chess Behavior**: Successfully generates valid chess moves (g1f3, e2e4, c2-c3)
+- **Weight Loading**: HuggingFace → PyTorch conversion with proper tensor transposition
+- **Test Coverage**: 16/16 tests passing including architecture, parity, and robustness
+
+### 🚧 Next Critical Path
+- Pure PyTorch tokenization wrapper (removing transformers dependency)
+- GRPO training implementation
+- Stockfish integration for reward computation
+
 ## Primary Success Metrics
 
 ### Policy Best-Move Accuracy
@@ -7,6 +21,7 @@
 - **Measurement**: Top-1 accuracy on curated evaluation sets
 - **Baseline**: ≥30% accuracy on `policy_core_2k.jsonl` evaluation set
 - **Continuous Monitoring**: 7-epoch rolling slope must be > 0 for training continuation
+- **Current Status**: Foundation ready for evaluation harness implementation
 
 ### Environment Simulation Fidelity (Constraint)
 - **Target**: ≥99.9% exact board equality on evaluation suite

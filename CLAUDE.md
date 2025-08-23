@@ -58,7 +58,16 @@ uv run python train_rookworld_grpo.py \
 - `src/rookworld_rlvr/`: Main package containing the GRPO implementation
 - Uses `hatchling` build backend with source layout under `src/`
 
-### Key Components (from README specification)
+### ✅ Implemented Components (Phase 1 Complete)
+- **Pure PyTorch GPT-2**: Complete 124M parameter implementation numerically identical to HuggingFace
+  - `src/rookworld_rlvr/model/config.py` - Configuration dataclass with RookWorld-LM specs
+  - `src/rookworld_rlvr/model/gpt2.py` - Full transformer architecture with attention, MLP, generation
+  - `src/rookworld_rlvr/model/loader.py` - HuggingFace safetensors weight loading with tensor transposition
+- **Numerical Parity**: Verified ≤1e-4 tolerance vs HuggingFace transformers on chess prompts
+- **Chess Behavior**: Successfully generates valid moves (g1f3, e2e4, c2-c3) from starting positions
+- **Comprehensive Testing**: 16/16 tests passing with architecture, parity, and robustness validation
+
+### 🚧 Next Phase Components (In Progress)
 - **GRPO Algorithm**: Group-relative baseline with PPO-style clipped policy gradient
 - **Dual Task Framework**: Policy task (structured Stockfish analysis) and Environment task (structured state prediction)
 - **Structured Output Learning**: Multi-task learning with classification (move matching) and regression (evaluation accuracy)

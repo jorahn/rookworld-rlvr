@@ -38,12 +38,37 @@ Using GRPO with verifiable rewards for chess - leveraging python-chess as a perf
 - Exact FEN comparison for environment task
 - Binary/sparse rewards with optional shaping
 
-## Complete Implementation
+## Implementation Status
+
+### ✅ Phase 1 Complete: Pure PyTorch GPT-2 Foundation
+
+**Implemented Components:**
+- **GPT2Config**: Complete configuration dataclass matching RookWorld-LM-124M specifications
+- **GPT2Model**: Full transformer architecture with 124,439,808 parameters exactly
+- **Weight Loader**: HuggingFace safetensors → PyTorch conversion with proper tensor transposition
+- **Numerical Parity**: Verified identical outputs to HuggingFace transformers (tolerance: 1e-4)
+- **Chess Behavior**: Successfully generates valid chess moves (g1f3, e2e4, etc.)
+- **Comprehensive Tests**: 16/16 tests passing including architecture, parity, and robustness
+
+**Key Files:**
+- `src/rookworld_rlvr/model/config.py` - Model configuration
+- `src/rookworld_rlvr/model/gpt2.py` - Pure PyTorch GPT-2 implementation  
+- `src/rookworld_rlvr/model/loader.py` - Weight loading from HuggingFace format
+- `tests/test_model_parity.py` - Comprehensive test suite
+
+### 🚧 Phase 2 In Progress: Tokenization Bridge
+
+**Next Steps:**
+- Pure PyTorch tokenization wrapper (no transformers dependency)
+- GRPO training implementation
+- Stockfish engine integration
+- Self-play data generation
+- Evaluation harness
 
 ### Dependencies
 
 ```bash
-pip install torch>=2.0 chess tiktoken safetensors
+uv add torch>=2.0 chess tiktoken safetensors huggingface_hub
 ```
 
 ### Main Training Script

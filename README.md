@@ -104,18 +104,21 @@ class GRPOConfig:
     position_buffer_size: int = 1000    # Store recent positions
     sample_opening_frac: float = 0.3    # Sample from openings
     
-    # Rewards (Policy)
-    r_illegal: float = -1.0
-    r_legal: float = 0.0
-    r_check: float = 0.1
-    r_capture: float = 0.05
-    r_mate: float = 1.0
-    r_stalemate: float = 0.0
-    r_draw: float = 0.0
+    # Rewards (Policy Task - Structured Output)
+    r_policy_structure: float = 0.2        # Correct format (P:, M:, E:, B: sections)
+    r_policy_parse: float = 0.1             # Parseable moves and evaluations
+    r_policy_move_match: float = 0.5        # Per move that matches Stockfish top-5
+    r_policy_eval_accuracy: float = 0.2     # Evaluation score accuracy (MSE-based)
+    r_policy_best_move: float = 1.0         # Best move matches Stockfish #1
+    r_policy_malformed: float = -1.0        # Malformed/unparseable output
     
-    # Rewards (Environment)
-    r_env_correct: float = 1.0
-    r_env_incorrect: float = 0.0
+    # Rewards (Environment Task - Structured Output)
+    r_env_structure: float = 0.1            # Correct A: format parsing
+    r_env_fen_exact: float = 1.0            # Exact FEN match bonus
+    r_env_fen_similarity: float = 0.5       # Levenshtein distance-based similarity
+    r_env_reward_accuracy: float = 0.3      # Reward field accuracy (MSE-based)
+    r_env_flags_accuracy: float = 0.1       # Terminated/truncated classification
+    r_env_malformed: float = -1.0           # Malformed/unparseable output
     
     # Evaluation
     eval_every: int = 50
@@ -277,61 +280,114 @@ def build_env_prompt(fen: str, uci: str) -> str:
 # --------------------------
 # Reward Functions
 # --------------------------
-def compute_policy_reward(board: chess.Board, move_str: str, cfg: GRPOConfig) -> Tuple[float, Optional[chess.Board], bool]:
-    """Compute reward for policy task"""
-    # Parse move
+def compute_policy_reward(board: chess.Board, generated_text: str, stockfish_analysis: Dict, cfg: GRPOConfig) -> float:
+    """Compute reward for policy task based on structured output quality"""
+    total_reward = 0.0
+    
+    # Structure verification: Check format parsing
     try:
-        # Handle UCI format
-        move_str = move_str.strip().split()[0]  # Take first token
-        move = chess.Move.from_uci(move_str)
-    except:
-        return cfg.r_illegal, None, True
+        parts = generated_text.strip().split()
+        p_idx = parts.index("P:")
+        m_idx = parts.index("M:")  
+        e_idx = parts.index("E:")
+        b_idx = parts.index("B:")
+        
+        # Extract sections
+        moves_section = parts[m_idx+1:e_idx]
+        evals_section = parts[e_idx+1:b_idx]  
+        best_move = parts[b_idx+1] if b_idx+1 < len(parts) else ""
+        
+        # Reward correct structure
+        total_reward += cfg.r_policy_structure
+        
+        # Parse verification: Check if content is parseable
+        if len(moves_section) == 5 and len(evals_section) == 5:
+            moves = [m.strip() for m in moves_section]
+            evals = [float(e.strip()) for e in evals_section]
+            total_reward += cfg.r_policy_parse
+            
+            # Content verification: Multi-label classification for moves
+            stockfish_top5 = stockfish_analysis.get('top5_moves', [])
+            move_matches = sum(1 for move in moves if move in stockfish_top5)
+            total_reward += (move_matches / 5.0) * cfg.r_policy_move_match
+            
+            # Content verification: Regression for evaluations
+            stockfish_evals = stockfish_analysis.get('top5_evals', [])
+            if len(stockfish_evals) == 5:
+                eval_mse = sum((pred - true)**2 for pred, true in zip(evals, stockfish_evals)) / 5.0
+                eval_similarity = max(0, 1.0 - eval_mse / 100.0)  # Normalize by centipawn scale
+                total_reward += eval_similarity * cfg.r_policy_eval_accuracy
+            
+            # Best move accuracy
+            stockfish_best = stockfish_analysis.get('best_move', '')
+            if best_move == stockfish_best:
+                total_reward += cfg.r_policy_best_move
+        
+    except (ValueError, IndexError):
+        # Malformed output
+        total_reward = cfg.r_policy_malformed
     
-    # Check legality
-    if move not in board.legal_moves:
-        return cfg.r_illegal, None, True
-    
-    # Apply move
-    new_board = board.copy()
-    is_capture = new_board.is_capture(move)
-    new_board.push(move)
-    
-    # Terminal states
-    if new_board.is_checkmate():
-        return cfg.r_mate, new_board, True
-    if new_board.is_stalemate():
-        return cfg.r_stalemate, new_board, True
-    if new_board.is_insufficient_material() or new_board.is_fifty_moves():
-        return cfg.r_draw, new_board, True
-    
-    # Shape reward
-    reward = cfg.r_legal
-    if new_board.is_check():
-        reward += cfg.r_check
-    if is_capture:
-        reward += cfg.r_capture
-    
-    return reward, new_board, False
+    return total_reward
 
-def compute_env_reward(fen: str, uci: str, predicted_fen: str, cfg: GRPOConfig) -> float:
-    """Compute reward for environment task"""
+def compute_env_reward(generated_text: str, expected_output: Dict, cfg: GRPOConfig) -> float:
+    """Compute reward for environment task based on structured output quality"""
+    import difflib
+    
+    total_reward = 0.0
+    
+    # Structure verification: Check A: format parsing
     try:
-        board = chess.Board(fen)
-        move = chess.Move.from_uci(uci.strip())
+        if not generated_text.strip().startswith('A: '):
+            return cfg.r_env_malformed
         
-        if move not in board.legal_moves:
-            return cfg.r_env_incorrect
+        # Parse A: format: prev_fen+uci+history+new_fen+reward+terminated+truncated
+        content = generated_text.strip()[3:]  # Remove 'A: ' prefix
+        parts = content.split('+')
         
-        board.push(move)
-        true_fen = board.fen()
+        if len(parts) >= 7:  # At least the required fields
+            pred_new_fen = parts[3].strip()
+            pred_reward = float(parts[4].strip()) 
+            pred_terminated = int(parts[5].strip())
+            pred_truncated = int(parts[6].strip())
+            
+            # Reward correct structure
+            total_reward += cfg.r_env_structure
+            
+            # Content verification: FEN accuracy using Levenshtein distance
+            true_fen = expected_output.get('new_fen', '')
+            if pred_new_fen == true_fen:
+                # Exact match bonus
+                total_reward += cfg.r_env_fen_exact
+            else:
+                # Similarity based on Levenshtein distance
+                max_len = max(len(pred_new_fen), len(true_fen))
+                if max_len > 0:
+                    similarity = 1.0 - (difflib.SequenceMatcher(None, pred_new_fen, true_fen).ratio())
+                    similarity = max(0, 1.0 - similarity)  # Convert distance to similarity
+                    total_reward += similarity * cfg.r_env_fen_similarity
+            
+            # Content verification: Reward field accuracy (regression)
+            true_reward = expected_output.get('reward', 0.0)
+            reward_error = abs(pred_reward - true_reward)
+            reward_similarity = max(0, 1.0 - reward_error)  # Simple error-based similarity
+            total_reward += reward_similarity * cfg.r_env_reward_accuracy
+            
+            # Content verification: Boolean flag accuracy (classification)
+            true_terminated = expected_output.get('terminated', False)
+            true_truncated = expected_output.get('truncated', False)
+            
+            flag_accuracy = 0.0
+            if pred_terminated == int(true_terminated):
+                flag_accuracy += 0.5
+            if pred_truncated == int(true_truncated):
+                flag_accuracy += 0.5
+            total_reward += flag_accuracy * cfg.r_env_flags_accuracy
         
-        # Compare position part only (ignore move counters)
-        true_pos = ' '.join(true_fen.split()[:4])
-        pred_pos = ' '.join(predicted_fen.strip().split()[:4])
-        
-        return cfg.r_env_correct if true_pos == pred_pos else cfg.r_env_incorrect
-    except:
-        return cfg.r_env_incorrect
+    except (ValueError, IndexError):
+        # Malformed output
+        total_reward = cfg.r_env_malformed
+    
+    return total_reward
 
 # --------------------------
 # GRPO Training

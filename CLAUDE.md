@@ -60,8 +60,9 @@ uv run python train_rookworld_grpo.py \
 
 ### Key Components (from README specification)
 - **GRPO Algorithm**: Group-relative baseline with PPO-style clipped policy gradient
-- **Dual Task Framework**: Policy task (FEN → UCI move) and Environment task (FEN + UCI → next FEN)  
-- **Verification System**: Uses python-chess for move legality and exact FEN comparison
+- **Dual Task Framework**: Policy task (structured Stockfish analysis) and Environment task (structured state prediction)
+- **Structured Output Learning**: Multi-task learning with classification (move matching) and regression (evaluation accuracy)
+- **Verification System**: Two-tier validation with structure parsing and content verification using Stockfish/python-chess
 - **Self-Play Management**: Parallel games with position buffer for diverse training data
 
 ### Configuration Management
@@ -69,7 +70,7 @@ The project uses a comprehensive `GRPOConfig` dataclass covering:
 - Model parameters (RookWorld-LM-124M by default)
 - GRPO hyperparameters (group_size=8, clip_range=0.2, kl_coef=0.02)
 - Training schedule and sampling parameters
-- Reward shaping for both policy and environment tasks
+- Structured reward system for output format validation and content accuracy
 - Self-play and evaluation settings
 
 ### Key Dependencies
@@ -86,10 +87,13 @@ The project uses a comprehensive `GRPOConfig` dataclass covering:
 - Tokenizer: Standard GPT-2 BPE
 
 ### Training Approach
-- Uses verifiable rewards via python-chess instead of learned value functions
-- Implements token-mean logprob aggregation for stability
-- Supports mixed training on policy and environment tasks
-- Includes curriculum learning through opening positions and self-play
+- **Structured Output Learning**: Trains model to generate well-formed Stockfish-quality analysis, not just play chess
+- **Two-tier Verification**: Structure validation (correct format parsing) + content verification (Stockfish/python-chess)
+- **Multi-task Learning**: Classification (move matching) and regression (evaluation accuracy) combined
+- **Verifiable Rewards**: Uses Stockfish analysis and python-chess validation for ground truth
+- **Token-mean Logprob**: Aggregation for training stability across variable-length outputs
+- **Mixed Training**: Policy task (analysis generation) and environment task (state prediction)
+- **Curriculum Learning**: Opening positions and self-play for diverse training scenarios
 
 ### Code Quality Standards
 - Black code formatting (line length 88)

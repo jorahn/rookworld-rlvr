@@ -43,7 +43,7 @@ Using GRPO with verifiable rewards for chess - leveraging python-chess as a perf
 ### Dependencies
 
 ```bash
-pip install torch>=2.0 transformers>=4.41 accelerate chess safetensors
+pip install torch>=2.0 chess tiktoken safetensors
 ```
 
 ### Main Training Script
@@ -62,9 +62,10 @@ import torch
 import torch.nn as nn
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from transformers import AutoTokenizer, AutoModelForCausalLM
+import tiktoken
 import chess
-import chess.pgn
+import chess.engine
+import difflib
 from datetime import datetime
 
 # --------------------------
@@ -269,13 +270,42 @@ class CausalLMPolicy:
         return logprobs
 
 # --------------------------
+# Stockfish Integration
+# --------------------------
+def get_stockfish_analysis(board: chess.Board, engine: chess.engine.SimpleEngine, time_limit: float = 0.1) -> Dict[str, Any]:
+    """Get Stockfish analysis matching RookWorld pre-training format"""
+    try:
+        # Get top 5 moves (multipv=5)
+        info = engine.analyse(board, chess.engine.Limit(time=time_limit), multipv=5)
+        
+        moves = [str(entry["pv"][0]) for entry in info if "pv" in entry]
+        evals = [entry["score"].relative.score(mate_score=100000) / 100 for entry in info if "score" in entry]
+        
+        # Best move selection: first for white, last for black (matches RookWorld)
+        is_black = board.turn == chess.BLACK
+        best_move = moves[-1] if is_black else moves[0]
+        
+        return {
+            "top5_moves": moves,
+            "top5_evals": evals,
+            "best_move": best_move
+        }
+    except Exception:
+        # Fallback for positions with no legal moves
+        return {
+            "top5_moves": [],
+            "top5_evals": [],
+            "best_move": ""
+        }
+
+# --------------------------
 # Prompts
 # --------------------------
 def build_policy_prompt(fen: str) -> str:
-    return f"FEN: {fen}\\nBest move:"
+    return f"P: {fen}    M:"
 
 def build_env_prompt(fen: str, uci: str) -> str:
-    return f"FEN: {fen}\\nMove: {uci}\\nNext FEN:"
+    return f"A: {fen}+{uci}+"
 
 # --------------------------
 # Reward Functions
@@ -506,36 +536,27 @@ class AdaptiveKLController:
 # --------------------------
 # Data Collection
 # --------------------------
-def collect_policy_group(policy: CausalLMPolicy, board: chess.Board, cfg: GRPOConfig) -> Dict[str, Any]:
+def collect_policy_group(policy: CausalLMPolicy, board: chess.Board, engine: chess.engine.SimpleEngine, cfg: GRPOConfig) -> Dict[str, Any]:
     """Collect GRPO group for policy task"""
     fen = board.fen()
     prompt = build_policy_prompt(fen)
     
-    # Get legal moves
-    legal_moves = [m.uci() for m in board.legal_moves]
-    if not legal_moves:
-        return None
+    # Get Stockfish analysis for this position
+    stockfish_analysis = get_stockfish_analysis(board, engine, 0.1)
     
-    # Score all legal moves
-    logprobs = policy.score_legal_moves(fen, legal_moves)
+    # Generate G structured outputs
+    prompts = [prompt] * cfg.group_size
+    out = policy.generate_batch(prompts, max_new_tokens=50)  # Enough for full structured output
     
-    # Sample G moves from distribution
-    probs = torch.softmax(logprobs / cfg.temperature, dim=0)
-    n_samples = min(cfg.group_size, len(legal_moves))
-    indices = torch.multinomial(probs, num_samples=n_samples, replacement=False)
-    
-    sampled_moves = [legal_moves[i] for i in indices]
-    sampled_logprobs = logprobs[indices]
-    
-    # Compute rewards
+    # Compute rewards based on structured output quality
     rewards = []
-    for move in sampled_moves:
-        r, _, _ = compute_policy_reward(board, move, cfg)
+    for generated_text in out['texts']:
+        r = compute_policy_reward(board, generated_text, stockfish_analysis, cfg)
         rewards.append(r)
     
-    # Build batch tensors
-    texts = [prompt + " " + move for move in sampled_moves]
-    enc = policy.tok(texts, return_tensors="pt", padding=True)
+    # Build full sequences for gradient computation
+    full_texts = [prompt + " " + text for text in out['texts']]
+    enc = policy.tok(full_texts, return_tensors="pt", padding=True)
     input_ids = enc["input_ids"].to(cfg.device)
     attn_mask = enc["attention_mask"].to(cfg.device)
     
@@ -545,9 +566,9 @@ def collect_policy_group(policy: CausalLMPolicy, board: chess.Board, cfg: GRPOCo
         'input_ids': input_ids,
         'attn_mask': attn_mask,
         'target_start': prompt_len,
-        'old_logprobs': sampled_logprobs.detach(),
+        'old_logprobs': out['seq_logprob'],
         'rewards': torch.tensor(rewards, device=cfg.device),
-        'meta': {'fen': fen, 'moves': sampled_moves}
+        'meta': {'fen': fen, 'stockfish_analysis': stockfish_analysis}
     }
 
 def collect_env_group(policy: CausalLMPolicy, board: chess.Board, cfg: GRPOConfig) -> Dict[str, Any]:
@@ -564,21 +585,29 @@ def collect_env_group(policy: CausalLMPolicy, board: chess.Board, cfg: GRPOConfi
     
     prompt = build_env_prompt(fen, uci)
     
-    # Generate G predictions
+    # Generate G predictions  
     prompts = [prompt] * cfg.group_size
-    out = policy.generate_batch(prompts, max_new_tokens=32)
+    out = policy.generate_batch(prompts, max_new_tokens=64)  # Enough for full A: format
     
-    # Compute rewards
+    # Create expected output by applying the move
+    new_board = board.copy()
+    new_board.push(move)
+    expected_output = {
+        'new_fen': new_board.fen(),
+        'reward': 0.001,  # Standard reward value from RookWorld
+        'terminated': new_board.is_game_over(),
+        'truncated': False
+    }
+    
+    # Compute rewards based on structured output quality
     rewards = []
-    for text in out['texts']:
-        # Extract predicted FEN (first line)
-        pred_fen = text.strip().split('\\n')[0]
-        r = compute_env_reward(fen, uci, pred_fen, cfg)
+    for generated_text in out['texts']:
+        r = compute_env_reward(generated_text, expected_output, cfg)
         rewards.append(r)
     
     # Build full sequences for gradient computation
-    texts = [prompt + " " + text for text in out['texts']]
-    enc = policy.tok(texts, return_tensors="pt", padding=True)
+    full_texts = [prompt + " " + text for text in out['texts']]
+    enc = policy.tok(full_texts, return_tensors="pt", padding=True)
     input_ids = enc["input_ids"].to(cfg.device)
     attn_mask = enc["attention_mask"].to(cfg.device)
     
@@ -590,7 +619,7 @@ def collect_env_group(policy: CausalLMPolicy, board: chess.Board, cfg: GRPOConfi
         'target_start': prompt_len,
         'old_logprobs': out['seq_logprob'],
         'rewards': torch.tensor(rewards, device=cfg.device),
-        'meta': {'fen': fen, 'move': uci, 'predictions': out['texts']}
+        'meta': {'fen': fen, 'move': uci, 'expected_output': expected_output}
     }
 
 # --------------------------

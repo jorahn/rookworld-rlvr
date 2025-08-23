@@ -136,11 +136,18 @@ def build_env_prompt(fen: str, uci: str) -> str:
 
 ## Recommendations for GRPO Implementation
 
-### 1. Model Loading
+### 1. Model Loading (Pure PyTorch)
 ```python
-model_name = "jrahn/RookWorld-LM-124M"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+# Load with pure PyTorch - no transformers dependency
+import torch
+import tiktoken
+
+# Load tokenizer
+tokenizer = tiktoken.get_encoding("gpt2")
+
+# Load model weights directly (implement GPT-2 in PyTorch)
+model = GPT2Model(config)  # Pure PyTorch implementation
+model.load_state_dict(torch.load("path/to/weights"))
 ```
 
 ### 2. Prompt Templates
@@ -148,10 +155,10 @@ Use exact formatting from RookWorld training data to ensure proper model behavio
 - **Policy**: Must include "P: " prefix and proper spacing
 - **Environment**: Must include "A: " prefix for unified model
 
-### 3. Reward Functions
+### 3. Reward Functions  
 - Leverage python-chess for perfect move validation
-- Consider Stockfish integration for move quality assessment
-- Use exact FEN comparison for environment task verification
+- Stockfish integration: time_limit=0.1, multipv=5, eval scaling /100
+- Use Levenshtein distance for environment FEN similarity scoring
 
 ### 4. Sampling Parameters
 Based on RookWorld evaluation configs:

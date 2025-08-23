@@ -34,7 +34,7 @@ uv run pytest -v          # Verbose test output
 Based on the README.md specifications:
 ```bash
 # Install training dependencies first
-uv add torch>=2.0 transformers>=4.41 accelerate chess safetensors
+uv add torch>=2.0 chess tiktoken safetensors
 
 # Basic GRPO training
 uv run python train_rookworld_grpo.py --steps 1000 --group-size 8
@@ -74,17 +74,18 @@ The project uses a comprehensive `GRPOConfig` dataclass covering:
 - Self-play and evaluation settings
 
 ### Key Dependencies
-- `torch>=2.0`: Deep learning framework
-- `transformers>=4.41`: HuggingFace models and tokenizers  
-- `chess`: Move validation and board representation
-- `accelerate`: Training optimization
+- `torch>=2.0`: Deep learning framework (pure PyTorch implementation)
+- `chess`: Move validation, board representation, and Stockfish integration
+- `tiktoken`: GPT-2 BPE tokenization
+- `safetensors`: Model weight loading (optional)
 
 ## Development Notes
 
 ### Model Details
 - Base model: `jrahn/RookWorld-LM-124M` (GPT-2 architecture trained on chess data)
-- Encoding: FEN notation for positions, UCI for moves
-- Tokenizer: Standard GPT-2 BPE
+- Implementation: Pure PyTorch (no transformers library dependency)
+- Encoding: FEN notation for positions, UCI for moves  
+- Tokenizer: tiktoken GPT-2 BPE
 
 ### Training Approach
 - **Structured Output Learning**: Trains model to generate well-formed Stockfish-quality analysis, not just play chess

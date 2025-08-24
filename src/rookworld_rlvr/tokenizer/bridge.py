@@ -166,6 +166,43 @@ class TokenizerBridge:
         """
         return len(self.encode(text))
     
+    def get_target_start_index(self, text: str, task_type: str) -> int:
+        """
+        Get target start index for given text and task type.
+        
+        FIXED VERSION: Handles multi-token 'M:' and '+' patterns correctly.
+        
+        Args:
+            text: Full text (prompt + generation)
+            task_type: Either "policy" or "environment"
+            
+        Returns:
+            Index where target tokens start
+        """
+        tokens = self.encode(text)
+        
+        if task_type == "policy":
+            # Policy task: Find target start after "M:" pattern
+            for j in range(len(tokens) - 1):
+                current_decoded = self.decode([tokens[j]]).strip()
+                next_decoded = self.decode([tokens[j + 1]]).strip()
+                if current_decoded == 'M' and next_decoded == ':':
+                    return j + 2  # Start after both 'M' and ':'
+                elif current_decoded.endswith('M') and next_decoded == ':':
+                    return j + 2
+                elif current_decoded == 'M:':
+                    return j + 1
+        
+        elif task_type == "environment":
+            # Environment task: Find target start after first "+"
+            for j in range(len(tokens)):
+                current_decoded = self.decode([tokens[j]]).strip()
+                if current_decoded == '+':
+                    return j + 1  # Start after first '+'
+        
+        # Fallback to prompt length if pattern not found
+        return len(tokens)
+    
     def create_chess_prompts(self, fens: List[str], task_type: str = "policy") -> List[str]:
         """
         Create RookWorld-style chess prompts

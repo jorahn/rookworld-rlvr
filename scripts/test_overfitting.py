@@ -12,7 +12,7 @@ import sys
 import os
 import logging
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -31,9 +31,10 @@ logging.basicConfig(
 )
 
 class OverfittingTester:
-    def __init__(self, device: str = "cuda", iterations: int = 50):
+    def __init__(self, device: str = "cuda", iterations: int = 50, use_mixed_tasks: bool = False):
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
         self.iterations = iterations
+        self.use_mixed_tasks = use_mixed_tasks
         self.logger = logging.getLogger(__name__)
         
         # Initialize components
@@ -49,9 +50,12 @@ class OverfittingTester:
         self.ref_model.eval()
         
         # GRPO config optimized for overfitting test
+        # Adjust group size based on whether we're using mixed tasks
+        group_size = 5 if use_mixed_tasks else 2
+        
         self.grpo_config = GRPOConfig(
-            lr=1e-4,  # Higher learning rate for faster overfitting
-            group_size=2,  # Minimum allowed for GRPO
+            lr=1e-6,  # Much lower learning rate to prevent instability
+            group_size=group_size,  # 5 for mixed (4 policy + 1 env), 2 for policy-only
             steps=iterations,
             batch_positions=1,
             use_mixed_precision=False,  # Keep disabled for now
@@ -64,29 +68,91 @@ class OverfittingTester:
         self.trainer = GRPOTrainer(self.model, self.ref_model, self.grpo_config)
         
     def create_single_batch(self) -> Dict[str, torch.Tensor]:
-        """Create a small training batch to overfit on (duplicated for group_size=2)"""
+        """Create a small training batch to overfit on"""
+        
+        if self.use_mixed_tasks:
+            return self._create_mixed_batch()
+        else:
+            return self._create_policy_only_batch()
+    
+    def _create_policy_only_batch(self) -> Dict[str, torch.Tensor]:
+        """Create policy-only batch (original implementation)"""
         
         # Single chess position with two different moves (same position, different rewards)
         texts = [
             "P: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1    M: e2e4",  # Good move
             "P: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1    M: a2a3"   # Suboptimal move
         ]
+        task_types = ["policy", "policy"]
         
-        # Encode both texts
+        return self._process_batch(texts, task_types)
+    
+    def _create_mixed_batch(self) -> Dict[str, torch.Tensor]:
+        """Create mixed policy + environment batch with realistic 80%/20% split"""
+        
+        # 4 policy tasks (80%) + 1 environment task (20%)
+        texts = [
+            "P: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1    M: e2e4",    # Policy
+            "P: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1    M: d2d4",    # Policy
+            "P: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1    M: g1f3",    # Policy
+            "P: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1    M: b1c3",    # Policy
+            "A: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1+e2e4+"          # Environment (20%)
+        ]
+        task_types = ["policy", "policy", "policy", "policy", "environment"]
+        
+        return self._process_batch(texts, task_types)
+    
+    def _find_target_start(self, tokens: List[int], task_type: str) -> int:
+        """Find target start index based on task type"""
+        
+        if task_type == "policy":
+            # Policy task: Find target start after "M:"
+            for j in range(len(tokens) - 1):
+                current_decoded = self.tokenizer.decode([tokens[j]]).strip()
+                next_decoded = self.tokenizer.decode([tokens[j + 1]]).strip()
+                if current_decoded == 'M' and next_decoded == ':':
+                    return j + 2  # Start after both 'M' and ':'
+                elif current_decoded.endswith('M') and next_decoded == ':':
+                    return j + 2
+                elif current_decoded == 'M:':
+                    return j + 1
+        
+        elif task_type == "environment":
+            # Environment task: Find target start after first "+"
+            for j in range(len(tokens)):
+                current_decoded = self.tokenizer.decode([tokens[j]]).strip()
+                if current_decoded == '+':
+                    return j + 1  # Start after first '+'
+        
+        # Default fallback
+        return len(tokens) - 1
+    
+    def _create_rewards(self, task_types: List[str]) -> torch.Tensor:
+        """Create rewards based on task types"""
+        rewards = []
+        for task_type in task_types:
+            if task_type == "policy":
+                # Policy tasks get varied rewards (simulate move quality differences)
+                reward = 1.0  # All positive for overfitting test
+            else:  # environment
+                # Environment tasks get consistent reward
+                reward = 0.8  # Slightly lower but still positive
+            rewards.append(reward)
+        
+        return torch.tensor(rewards, dtype=torch.float32, device=self.device)
+    
+    def _process_batch(self, texts: List[str], task_types: List[str]) -> Dict[str, torch.Tensor]:
+        
+        # Encode texts and find target start indices
         all_tokens = []
         target_start_indices = []
         
-        for text in texts:
+        for i, text in enumerate(texts):
             tokens = self.tokenizer.encode(text)
             all_tokens.append(tokens)
             
-            # Find target start (after "M:")
-            target_start_idx = 0
-            for i, token in enumerate(tokens):
-                decoded = self.tokenizer.decode([token])
-                if decoded.strip() == 'M:':
-                    target_start_idx = i + 1
-                    break
+            task_type = task_types[i]
+            target_start_idx = self._find_target_start(tokens, task_type)
             target_start_indices.append(target_start_idx)
         
         # Pad to same length
@@ -108,14 +174,15 @@ class OverfittingTester:
         attention_mask = torch.tensor(attention_mask, dtype=torch.long, device=self.device)
         target_start_indices = torch.tensor(target_start_indices, device=self.device)
         
-        # Get initial logprobs from reference model
+        # Get initial logprobs from reference model (this simulates data generation)
+        # In real training, old_logprobs would come from the policy that generated the data
         with torch.no_grad():
             old_logprobs = self.trainer.compute_logprobs(
                 input_ids, attention_mask, target_start_indices, use_ref_model=True
             )
         
-        # Different rewards: e2e4 is better than a2a3
-        rewards = torch.tensor([1.0, 0.3], dtype=torch.float32, device=self.device)
+        # Create rewards based on task types
+        rewards = self._create_rewards(task_types)
         
         return {
             'input_ids': input_ids,
@@ -123,7 +190,8 @@ class OverfittingTester:
             'target_start_indices': target_start_indices,
             'old_logprobs': old_logprobs,
             'rewards': rewards,
-            'texts': texts
+            'texts': texts,
+            'task_types': task_types
         }
     
     def run_overfitting_test(self):

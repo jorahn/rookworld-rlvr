@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Python project for training RookWorld-LM using Group Relative Policy Optimization (GRPO) on chess tasks. The project implements GRPO fine-tuning for RookWorld-LM (GPT-2 124M) to perform dual tasks:
-1. Playing legal chess moves as a policy agent
-2. Acting as an environment by predicting board states after moves
+This is a Python project for **post-training (fine-tuning) RookWorld-LM** using Group Relative Policy Optimization (GRPO) on chess tasks. The project implements GRPO fine-tuning to improve the pre-trained RookWorld-LM model (GPT-2 124M) on dual tasks:
+1. **Policy Task (P:)**: Generating structured chess analysis (moves, evaluations, best lines) 
+2. **Environment Task (A:)**: Predicting board states and game outcomes after moves
+
+**Key Point**: This is **fine-tuning/post-training** of the existing pre-trained `jrahn/RookWorld-LM-124M` model from HuggingFace, not training from scratch.
 
 ## Common Development Commands
 
@@ -35,30 +37,30 @@ uv run pytest tests/      # Run tests in tests directory
 uv run pytest -v          # Verbose test output
 ```
 
-### Training
+### Fine-tuning (Post-training)
 Based on the README.md specifications:
 ```bash
-# Install training dependencies first
+# Install fine-tuning dependencies first
 uv add torch>=2.0 chess tiktoken safetensors
 
-# Basic GRPO training
+# Basic GRPO fine-tuning of pre-trained RookWorld-LM
 uv run python train_rookworld_grpo.py --steps 1000 --group-size 8
 
-# Policy-only training
+# Policy-only fine-tuning (structured analysis generation)
 uv run python train_rookworld_grpo.py --mix-env-ratio 0.0 --steps 2000
 
-# High-performance settings (RTX 4090 optimized)
+# High-performance fine-tuning settings (RTX 4090 optimized)
 uv run python train_rookworld_grpo.py \
     --steps 5000 \
     --batch-positions 16 \
     --group-size 16 \
     --n-parallel-games 8 \
-    --lr 5e-6 \
-    --temperature 0.5 \
+    --lr 1e-5 \
+    --temperature 0.7 \
     --mixed-precision \
     --torch-compile
 
-# Resume training from checkpoint
+# Resume fine-tuning from checkpoint
 uv run python train_rookworld_grpo.py --resume-from-checkpoint path/to/checkpoint-1000
 
 # Auto-resume from latest checkpoint
@@ -147,12 +149,13 @@ The project uses a comprehensive `GRPOConfig` dataclass covering:
 ## Development Notes
 
 ### Model Details
-- Base model: `jrahn/RookWorld-LM-124M` (GPT-2 architecture trained on chess data)
-- Implementation: Pure PyTorch (no transformers library dependency)
-- Encoding: FEN notation for positions, UCI for moves  
-- Tokenizer: tiktoken GPT-2 BPE
+- **Base model**: `jrahn/RookWorld-LM-124M` (pre-trained GPT-2 124M specialized for chess)
+- **Implementation**: Pure PyTorch (no transformers library dependency)
+- **Encoding**: FEN notation for positions, UCI for moves  
+- **Tokenizer**: tiktoken GPT-2 BPE
+- **Task**: Post-training/fine-tuning to improve performance on structured chess analysis
 
-### Training Approach
+### Fine-tuning Approach
 - **Structured Output Learning**: Trains model to generate well-formed Stockfish-quality analysis, not just play chess
 - **Two-tier Verification**: Structure validation (correct format parsing) + content verification (Stockfish/python-chess)
 - **Multi-task Learning**: Classification (move matching) and regression (evaluation accuracy) combined

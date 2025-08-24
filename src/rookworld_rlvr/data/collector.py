@@ -190,15 +190,17 @@ class GRPODataCollector:
             device=self.config.device
         )
         
-        # Get prompt lengths for target start calculation
-        prompt_lengths = []
-        for prompt in prompts:
-            prompt_lengths.append(self.policy.tokenizer.get_prompt_length(prompt))
+        # Get target start indices using improved detection
+        target_start_indices = []
+        for i, (prompt, generated_text) in enumerate(zip(prompts, outputs["texts"])):
+            full_text = prompt + generated_text
+            target_start_idx = self.policy.tokenizer.get_target_start_index(full_text, "policy")
+            target_start_indices.append(target_start_idx)
         
         return {
             "input_ids": encoding["input_ids"],
             "attention_mask": encoding["attention_mask"],
-            "target_start": torch.tensor(prompt_lengths, device=self.config.device),
+            "target_start": torch.tensor(target_start_indices, device=self.config.device),
             "old_logprobs": outputs["seq_logprob"],
             "rewards": torch.tensor(rewards, device=self.config.device),
             "meta": {
@@ -271,15 +273,17 @@ class GRPODataCollector:
             device=self.config.device
         )
         
-        # Get prompt lengths for target start calculation
-        prompt_lengths = []
-        for prompt in prompts:
-            prompt_lengths.append(self.policy.tokenizer.get_prompt_length(prompt))
+        # Get target start indices using improved detection
+        target_start_indices = []
+        for i, (prompt, generated_text) in enumerate(zip(prompts, outputs["texts"])):
+            full_text = prompt + generated_text
+            target_start_idx = self.policy.tokenizer.get_target_start_index(full_text, "environment")
+            target_start_indices.append(target_start_idx)
         
         return {
             "input_ids": encoding["input_ids"],
             "attention_mask": encoding["attention_mask"],
-            "target_start": torch.tensor(prompt_lengths, device=self.config.device),
+            "target_start": torch.tensor(target_start_indices, device=self.config.device),
             "old_logprobs": outputs["seq_logprob"],
             "rewards": torch.tensor(rewards, device=self.config.device),
             "meta": {

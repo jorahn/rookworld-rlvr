@@ -435,6 +435,19 @@ class GRPOTrainer:
         mean_kl_div = np.mean(aggregated_metrics.get('kl_div', [0.0]))
         self.kl_controller.update(mean_kl_div)
         
+        # KL divergence monitoring and early stopping
+        if abs(mean_kl_div) > 5.0:
+            self.logger.error(f"Extreme KL divergence detected: {mean_kl_div:.3f}, indicating training instability")
+            if self.config.enable_recovery and self.last_stable_checkpoint:
+                self.logger.warning("Attempting recovery from extreme KL divergence...")
+                recovery_success = self._attempt_recovery()
+                if not recovery_success:
+                    raise RuntimeError(f"Training diverged: extreme KL divergence {mean_kl_div:.3f}")
+            else:
+                raise RuntimeError(f"Training diverged: extreme KL divergence {mean_kl_div:.3f}")
+        elif abs(mean_kl_div) > 2.0:
+            self.logger.warning(f"High KL divergence detected: {mean_kl_div:.3f}, monitoring for instability")
+        
         # Prepare final metrics
         final_metrics = {}
         for key, values in aggregated_metrics.items():

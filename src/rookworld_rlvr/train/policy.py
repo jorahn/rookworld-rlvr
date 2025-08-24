@@ -333,9 +333,30 @@ class CausalLMPolicy:
         attention_mask = encoded['attention_mask'].to(self.device)
         
         # Calculate where the move tokens start for each prompt
+        # Need to find target start index by searching for 'M:' pattern
         base_encoded = self.tokenizer.encode_batch([base_prompt])[0]
-        base_length = len(base_encoded['input_ids'])
-        target_start_indices = torch.full((len(legal_moves),), base_length, dtype=torch.long)
+        base_tokens = base_encoded['input_ids']
+        
+        # Find the actual target start position by looking for 'M:' pattern
+        target_start_idx = None
+        for j in range(len(base_tokens) - 1):
+            current_decoded = self.tokenizer.decode([base_tokens[j]]).strip()
+            next_decoded = self.tokenizer.decode([base_tokens[j + 1]]).strip()
+            if current_decoded == 'M' and next_decoded == ':':
+                target_start_idx = j + 2  # Start after both 'M' and ':'
+                break
+            elif current_decoded.endswith('M') and next_decoded == ':':
+                target_start_idx = j + 2
+                break
+            elif current_decoded == 'M:':
+                target_start_idx = j + 1
+                break
+        
+        # Fallback to base_length if no pattern found (shouldn't happen with our format)
+        if target_start_idx is None:
+            target_start_idx = len(base_tokens)
+            
+        target_start_indices = torch.full((len(legal_moves),), target_start_idx, dtype=torch.long)
         
         # Forward pass through model (batch all moves at once)
         with torch.cuda.amp.autocast(enabled=self.config.use_mixed_precision, dtype=torch.bfloat16):

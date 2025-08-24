@@ -1,0 +1,6202 @@
+[
+  {
+    "epoch": 0,
+    "timing": {
+      "total_time": 0.14529566500277724,
+      "forward_time": 0.011136739001813112,
+      "logprob_time": 0.0067749709996860474,
+      "loss_time": 0.03008744999897317,
+      "backward_time": 0.055444643003284,
+      "optim_time": 0.041850216999591794
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 6704286127909.11,
+      "mfu_percent": 4.06320371388431
+    },
+    "training_dynamics": {
+      "loss": 0.02481563575565815,
+      "current_logprobs": [
+        -10.603507995605469,
+        -10.39321231842041
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -0.13665390014648438,
+        -0.04189777374267578
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.025395140051841736,
+      "kl_loss": -0.0005795049364678562,
+      "kl_div": -0.057950496673583984,
+      "kl_coef": 0.01,
+      "total_loss": 0.02481563575565815,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 0.9458298683166504,
+      "fraction_clipped": 0.0
+    },
+    "gradients": {
+      "total_grad_norm": 14.590629990751063,
+      "clipped_grad_norm": 14.590629577636719,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.5452956557273865
+    },
+    "memory": {
+      "allocated_gb": 2.849186420440674,
+      "reserved_gb": 3.509765625,
+      "peak_gb": 3.3135056495666504
+    }
+  },
+  {
+    "epoch": 1,
+    "timing": {
+      "total_time": 0.043323337002220796,
+      "forward_time": 0.004981214002327761,
+      "logprob_time": 0.004974642000888707,
+      "loss_time": 0.010153675000765361,
+      "backward_time": 0.009183385001961142,
+      "optim_time": 0.014029376998223597
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 14989093976911.848,
+      "mfu_percent": 9.084299379946573
+    },
+    "training_dynamics": {
+      "loss": 0.11486713588237762,
+      "current_logprobs": [
+        -13.714999198913574,
+        -14.365278244018555
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -3.24814510345459,
+        -4.01396369934082
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.14560948312282562,
+      "kl_loss": -0.0307423435151577,
+      "kl_div": -3.0742344856262207,
+      "kl_coef": 0.01,
+      "total_loss": 0.11486713588237762,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 0.05082463100552559,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.5312143228888719,
+      "clipped_grad_norm": 0.5312143564224243,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.3875540792942047
+    },
+    "memory": {
+      "allocated_gb": 2.8932690620422363,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.359327793121338
+    }
+  },
+  {
+    "epoch": 2,
+    "timing": {
+      "total_time": 0.04352166599710472,
+      "forward_time": 0.004749641997477738,
+      "logprob_time": 0.004596396000124514,
+      "loss_time": 0.010097441001562402,
+      "backward_time": 0.010033010999904945,
+      "optim_time": 0.014044716001080815
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15719897381665.754,
+      "mfu_percent": 9.527210534342881
+    },
+    "training_dynamics": {
+      "loss": 0.23656447231769562,
+      "current_logprobs": [
+        -7.88078498840332,
+        -9.389192581176758
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        2.586069107055664,
+        0.9621219635009766
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.21780462563037872,
+      "kl_loss": 0.018759848549962044,
+      "kl_div": 1.8759849071502686,
+      "kl_coef": 0.01,
+      "total_loss": 0.23656447231769562,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 10.450867652893066,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 36.75670052173774,
+      "clipped_grad_norm": 36.7567024230957,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.300157368183136
+    },
+    "memory": {
+      "allocated_gb": 2.8948559761047363,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3598618507385254
+    }
+  },
+  {
+    "epoch": 3,
+    "timing": {
+      "total_time": 0.045784599002217874,
+      "forward_time": 0.00491712499933783,
+      "logprob_time": 0.004536053998890566,
+      "loss_time": 0.00988236000193865,
+      "backward_time": 0.012298106998059666,
+      "optim_time": 0.014150162998703308
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15184459376170.975,
+      "mfu_percent": 9.202702652224833
+    },
+    "training_dynamics": {
+      "loss": 0.10970087349414825,
+      "current_logprobs": [
+        -13.691137313842773,
+        -15.302234649658203
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -3.224283218383789,
+        -4.950920104980469
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1524112969636917,
+      "kl_loss": -0.04271042346954346,
+      "kl_div": -4.271042346954346,
+      "kl_coef": 0.01,
+      "total_loss": 0.10970087349414825,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 0.021542489528656006,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.1891868838767021,
+      "clipped_grad_norm": 0.18918688595294952,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.2678861618041992
+    },
+    "memory": {
+      "allocated_gb": 2.8952221870422363,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3600754737854004
+    }
+  },
+  {
+    "epoch": 4,
+    "timing": {
+      "total_time": 0.043438672000775114,
+      "forward_time": 0.004987345997506054,
+      "logprob_time": 0.004612846998497844,
+      "loss_time": 0.00995122799940873,
+      "backward_time": 0.009864516003290191,
+      "optim_time": 0.014022325001860736
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 14970664725755.146,
+      "mfu_percent": 9.0731301368213
+    },
+    "training_dynamics": {
+      "loss": 0.08378434926271439,
+      "current_logprobs": [
+        -17.267414093017578,
+        -18.767963409423828
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -6.800559997558594,
+        -8.416648864746094
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15980347990989685,
+      "kl_loss": -0.07601913064718246,
+      "kl_div": -7.6019134521484375,
+      "kl_coef": 0.01,
+      "total_loss": 0.08378434926271439,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 0.0006182844517752528,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.41084335215410817,
+      "clipped_grad_norm": 0.4108433425426483,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.295308381319046
+    },
+    "memory": {
+      "allocated_gb": 2.8961377143859863,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.360823154449463
+    }
+  },
+  {
+    "epoch": 5,
+    "timing": {
+      "total_time": 0.04224818000147934,
+      "forward_time": 0.00448869599858881,
+      "logprob_time": 0.004491681000217795,
+      "loss_time": 0.009777482999197673,
+      "backward_time": 0.009541652998450445,
+      "optim_time": 0.013948235999123426
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16633758406333.02,
+      "mfu_percent": 10.08106570080789
+    },
+    "training_dynamics": {
+      "loss": 0.05250684916973114,
+      "current_logprobs": [
+        -20.874523162841797,
+        -21.41672134399414
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -10.407669067382812,
+        -11.065406799316406
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599941849708557,
+      "kl_loss": -0.10748733580112457,
+      "kl_div": -10.748733520507812,
+      "kl_coef": 0.01,
+      "total_loss": 0.05250684916973114,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.2472817363450304e-05,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.33281926473124995,
+      "clipped_grad_norm": 0.33281925320625305,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.32101279497146606
+    },
+    "memory": {
+      "allocated_gb": 2.8944897651672363,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.358808994293213
+    }
+  },
+  {
+    "epoch": 6,
+    "timing": {
+      "total_time": 0.04272369800310116,
+      "forward_time": 0.004685042000346584,
+      "logprob_time": 0.004549468998447992,
+      "loss_time": 0.009677668000222184,
+      "backward_time": 0.00986005799859413,
+      "optim_time": 0.013951000997622032
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15936652178246.557,
+      "mfu_percent": 9.658577077725186
+    },
+    "training_dynamics": {
+      "loss": 0.03479200601577759,
+      "current_logprobs": [
+        -22.896028518676758,
+        -23.20077133178711
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -12.429174423217773,
+        -12.849456787109375
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15999923646450043,
+      "kl_loss": -0.12520723044872284,
+      "kl_div": -12.520723342895508,
+      "kl_coef": 0.01,
+      "total_loss": 0.03479200601577759,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.6549554351950064e-06,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.30170221589176266,
+      "clipped_grad_norm": 0.30170223116874695,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.33888953924179077
+    },
+    "memory": {
+      "allocated_gb": 2.8944897651672363,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.358808994293213
+    }
+  },
+  {
+    "epoch": 7,
+    "timing": {
+      "total_time": 0.0418752539990237,
+      "forward_time": 0.004576630002702586,
+      "logprob_time": 0.004584763999446295,
+      "loss_time": 0.009625400001823436,
+      "backward_time": 0.009127511002589017,
+      "optim_time": 0.013960478001536103
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16314162332526.24,
+      "mfu_percent": 9.887371110621963
+    },
+    "training_dynamics": {
+      "loss": 0.02397368848323822,
+      "current_logprobs": [
+        -24.133909225463867,
+        -24.140840530395508
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -13.667055130004883,
+        -13.789525985717773
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599997580051422,
+      "kl_loss": -0.136026069521904,
+      "kl_div": -13.602607727050781,
+      "kl_coef": 0.01,
+      "total_loss": 0.02397368848323822,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.2374221114441752e-06,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2950504707853366,
+      "clipped_grad_norm": 0.2950504720211029,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.3528221547603607
+    },
+    "memory": {
+      "allocated_gb": 2.8943066596984863,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.358625888824463
+    }
+  },
+  {
+    "epoch": 8,
+    "timing": {
+      "total_time": 0.04175956900144229,
+      "forward_time": 0.004563795999274589,
+      "logprob_time": 0.004500668001128361,
+      "loss_time": 0.009572120001394069,
+      "backward_time": 0.009173045997158624,
+      "optim_time": 0.013949478998256382
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16360039934271.328,
+      "mfu_percent": 9.9151757177402
+    },
+    "training_dynamics": {
+      "loss": 0.01657460629940033,
+      "current_logprobs": [
+        -24.665510177612305,
+        -24.775287628173828
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -14.19865608215332,
+        -14.423973083496094
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15999987721443176,
+      "kl_loss": -0.14342527091503143,
+      "kl_div": -14.342527389526367,
+      "kl_coef": 0.01,
+      "total_loss": 0.01657460629940033,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 5.926866606387193e-07,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.29418371879821864,
+      "clipped_grad_norm": 0.29418379068374634,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.3633301258087158
+    },
+    "memory": {
+      "allocated_gb": 2.8918347358703613,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3572983741760254
+    }
+  },
+  {
+    "epoch": 9,
+    "timing": {
+      "total_time": 0.041822175997367594,
+      "forward_time": 0.004643313997803489,
+      "logprob_time": 0.004491710998991039,
+      "loss_time": 0.009648152001318522,
+      "backward_time": 0.009083588996873004,
+      "optim_time": 0.013954979000118328
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16079869859182.389,
+      "mfu_percent": 9.745375672231752
+    },
+    "training_dynamics": {
+      "loss": 0.010853514075279236,
+      "current_logprobs": [
+        -25.377124786376953,
+        -25.302322387695312
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -14.910270690917969,
+        -14.951007843017578
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15999995172023773,
+      "kl_loss": -0.1491464376449585,
+      "kl_div": -14.914644241333008,
+      "kl_coef": 0.01,
+      "total_loss": 0.010853514075279236,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.3319844305879087e-07,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2872079755200394,
+      "clipped_grad_norm": 0.2872079908847809,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.37242698669433594
+    },
+    "memory": {
+      "allocated_gb": 2.8929333686828613,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.357252597808838
+    }
+  },
+  {
+    "epoch": 10,
+    "timing": {
+      "total_time": 0.04203248799967696,
+      "forward_time": 0.004580346998409368,
+      "logprob_time": 0.0044694089992844965,
+      "loss_time": 0.009704738000436919,
+      "backward_time": 0.009326102001068648,
+      "optim_time": 0.013951452001492726
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16300923232656.559,
+      "mfu_percent": 9.879347413731248
+    },
+    "training_dynamics": {
+      "loss": 0.006740108132362366,
+      "current_logprobs": [
+        -25.799076080322266,
+        -25.778369903564453
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -15.332221984863281,
+        -15.427055358886719
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15999996662139893,
+      "kl_loss": -0.15325985848903656,
+      "kl_div": -15.3259859085083,
+      "kl_coef": 0.01,
+      "total_loss": 0.006740108132362366,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.218904455730808e-07,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2829120195823644,
+      "clipped_grad_norm": 0.282912015914917,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.38051941990852356
+    },
+    "memory": {
+      "allocated_gb": 2.892826557159424,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.358839511871338
+    }
+  },
+  {
+    "epoch": 11,
+    "timing": {
+      "total_time": 0.04188432099908823,
+      "forward_time": 0.004633184998965589,
+      "logprob_time": 0.004532005998044042,
+      "loss_time": 0.00974912099991343,
+      "backward_time": 0.009016653999424307,
+      "optim_time": 0.013952854002127424
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16115023427009.617,
+      "mfu_percent": 9.766680864854314
+    },
+    "training_dynamics": {
+      "loss": 0.003378346562385559,
+      "current_logprobs": [
+        -26.01258087158203,
+        -26.03228759765625
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -15.545726776123047,
+        -15.680973052978516
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15999998152256012,
+      "kl_loss": -0.15662163496017456,
+      "kl_div": -15.662163734436035,
+      "kl_coef": 0.01,
+      "total_loss": 0.003378346562385559,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.5833109046070604e-07,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27964922190251734,
+      "clipped_grad_norm": 0.27964919805526733,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.3885934054851532
+    },
+    "memory": {
+      "allocated_gb": 2.8915600776672363,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3566880226135254
+    }
+  },
+  {
+    "epoch": 12,
+    "timing": {
+      "total_time": 0.042004434999398654,
+      "forward_time": 0.004579424999974435,
+      "logprob_time": 0.004461885000637267,
+      "loss_time": 0.00961928899778286,
+      "backward_time": 0.00939049099906697,
+      "optim_time": 0.01395288499770686
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16304205178688.768,
+      "mfu_percent": 9.881336471932586
+    },
+    "training_dynamics": {
+      "loss": 0.0016589164733886719,
+      "current_logprobs": [
+        -26.242525100708008,
+        -26.210922241210938
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -15.775671005249023,
+        -15.859607696533203
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15999998152256012,
+      "kl_loss": -0.15834106504917145,
+      "kl_div": -15.8341064453125,
+      "kl_coef": 0.01,
+      "total_loss": 0.0016589164733886719,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.3313157865013636e-07,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27870584905502555,
+      "clipped_grad_norm": 0.2787058353424072,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.3959643542766571
+    },
+    "memory": {
+      "allocated_gb": 2.895176410675049,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.360212802886963
+    }
+  },
+  {
+    "epoch": 13,
+    "timing": {
+      "total_time": 0.04214102100013406,
+      "forward_time": 0.0046409900023718365,
+      "logprob_time": 0.004483486001845449,
+      "loss_time": 0.009819953000260284,
+      "backward_time": 0.00924739499896532,
+      "optim_time": 0.013948746000096435
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16087921922228.248,
+      "mfu_percent": 9.750255710441362
+    },
+    "training_dynamics": {
+      "loss": 0.00036419928073883057,
+      "current_logprobs": [
+        -26.3653621673584,
+        -26.380943298339844
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -15.898508071899414,
+        -16.02962875366211
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15999998152256012,
+      "kl_loss": -0.1596357822418213,
+      "kl_div": -15.963579177856445,
+      "kl_coef": 0.01,
+      "total_loss": 0.00036419928073883057,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.1689356682609287e-07,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27837516787527306,
+      "clipped_grad_norm": 0.27837517857551575,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4034261405467987
+    },
+    "memory": {
+      "allocated_gb": 2.8940320014953613,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3589463233947754
+    }
+  },
+  {
+    "epoch": 14,
+    "timing": {
+      "total_time": 0.041854326002066955,
+      "forward_time": 0.004596947001118679,
+      "logprob_time": 0.004445444999873871,
+      "loss_time": 0.00963275399772101,
+      "backward_time": 0.009221555999829434,
+      "optim_time": 0.013957012997707352
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16242059084394.568,
+      "mfu_percent": 9.843672172360344
+    },
+    "training_dynamics": {
+      "loss": -0.0002964287996292114,
+      "current_logprobs": [
+        -26.477062225341797,
+        -26.51645278930664
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -16.010208129882812,
+        -16.165138244628906
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.15999998152256012,
+      "kl_loss": -0.16029641032218933,
+      "kl_div": -16.02964210510254,
+      "kl_coef": 0.01,
+      "total_loss": -0.0002964287996292114,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.0968913954911841e-07,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27835039440691645,
+      "clipped_grad_norm": 0.2783504128456116,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.41042032837867737
+    },
+    "memory": {
+      "allocated_gb": 2.8970227241516113,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3621201515197754
+    }
+  },
+  {
+    "epoch": 15,
+    "timing": {
+      "total_time": 0.04165008400013903,
+      "forward_time": 0.00454906800223398,
+      "logprob_time": 0.0044469880012911744,
+      "loss_time": 0.009862050999799976,
+      "backward_time": 0.00884008399953018,
+      "optim_time": 0.013951272001577308
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16413006963917.371,
+      "mfu_percent": 9.947276947828708
+    },
+    "training_dynamics": {
+      "loss": -0.002208232879638672,
+      "current_logprobs": [
+        -26.60491371154785,
+        -26.6143856048584
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -16.138059616088867,
+        -16.263071060180664
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599999964237213,
+      "kl_loss": -0.16220822930335999,
+      "kl_div": -16.220823287963867,
+      "kl_coef": 0.01,
+      "total_loss": -0.002208232879638672,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 9.042301485351345e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27786628081828985,
+      "clipped_grad_norm": 0.27786627411842346,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4169962704181671
+    },
+    "memory": {
+      "allocated_gb": 2.8971753120422363,
+      "reserved_gb": 3.453125,
+      "peak_gb": 3.361494541168213
+    }
+  },
+  {
+    "epoch": 16,
+    "timing": {
+      "total_time": 0.04165240900329081,
+      "forward_time": 0.004610883002897026,
+      "logprob_time": 0.004493534001085209,
+      "loss_time": 0.009414054999069776,
+      "backward_time": 0.009183805999782635,
+      "optim_time": 0.01394967899977928
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16192968841995.893,
+      "mfu_percent": 9.813920510300541
+    },
+    "training_dynamics": {
+      "loss": -0.0032186508178710938,
+      "current_logprobs": [
+        -26.69744300842285,
+        -26.76995086669922
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -16.230588912963867,
+        -16.418636322021484
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599999964237213,
+      "kl_loss": -0.1632186472415924,
+      "kl_div": -16.32186508178711,
+      "kl_coef": 0.01,
+      "total_loss": -0.0032186508178710938,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 8.17958749621539e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2778481496975112,
+      "clipped_grad_norm": 0.27784812450408936,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.42302364110946655
+    },
+    "memory": {
+      "allocated_gb": 2.8965649604797363,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.360884189605713
+    }
+  },
+  {
+    "epoch": 17,
+    "timing": {
+      "total_time": 0.04246816100203432,
+      "forward_time": 0.004495016997680068,
+      "logprob_time": 0.004452959001355339,
+      "loss_time": 0.009743790000356967,
+      "backward_time": 0.00982725600260892,
+      "optim_time": 0.013948697000159882
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16610367622310.422,
+      "mfu_percent": 10.066889468066922
+    },
+    "training_dynamics": {
+      "loss": -0.004630908370018005,
+      "current_logprobs": [
+        -26.878379821777344,
+        -26.857322692871094
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -16.41152572631836,
+        -16.50600814819336
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599999964237213,
+      "kl_loss": -0.16463090479373932,
+      "kl_div": -16.463090896606445,
+      "kl_coef": 0.01,
+      "total_loss": -0.004630908370018005,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 7.098966392504735e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2777120619003849,
+      "clipped_grad_norm": 0.27771204710006714,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.42870357632637024
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 18,
+    "timing": {
+      "total_time": 0.04190918799940846,
+      "forward_time": 0.004586046998156235,
+      "logprob_time": 0.004496469999139663,
+      "loss_time": 0.009667819998867344,
+      "backward_time": 0.009217628998158034,
+      "optim_time": 0.013940791999630164
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16280662808300.422,
+      "mfu_percent": 9.867068368666922
+    },
+    "training_dynamics": {
+      "loss": -0.005894377827644348,
+      "current_logprobs": [
+        -26.998863220214844,
+        -26.971982955932617
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -16.53200912475586,
+        -16.620668411254883
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599999964237213,
+      "kl_loss": -0.16589437425136566,
+      "kl_div": -16.58943748474121,
+      "kl_coef": 0.01,
+      "total_loss": -0.005894377827644348,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 6.268235352990814e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.277597213798401,
+      "clipped_grad_norm": 0.27759718894958496,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.43372049927711487
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 19,
+    "timing": {
+      "total_time": 0.04246349199820543,
+      "forward_time": 0.004558225002256222,
+      "logprob_time": 0.004471003001526697,
+      "loss_time": 0.00959923100162996,
+      "backward_time": 0.009872601000097347,
+      "optim_time": 0.013961971002572682
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16380034939706.355,
+      "mfu_percent": 9.927293902852337
+    },
+    "training_dynamics": {
+      "loss": -0.0074069201946258545,
+      "current_logprobs": [
+        -27.140487670898438,
+        -27.141674041748047
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -16.673633575439453,
+        -16.790359497070312
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599999964237213,
+      "kl_loss": -0.16740691661834717,
+      "kl_div": -16.740692138671875,
+      "kl_coef": 0.01,
+      "total_loss": -0.0074069201946258545,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 5.371183675606517e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2774704444487309,
+      "clipped_grad_norm": 0.2774704098701477,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4383881390094757
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 20,
+    "timing": {
+      "total_time": 0.04277059400192229,
+      "forward_time": 0.004661758001020644,
+      "logprob_time": 0.0045734640007140115,
+      "loss_time": 0.00987733999863849,
+      "backward_time": 0.009653402001276845,
+      "optim_time": 0.01400408999688807
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16016250689901.344,
+      "mfu_percent": 9.70681859994021
+    },
+    "training_dynamics": {
+      "loss": -0.008725523948669434,
+      "current_logprobs": [
+        -27.28689956665039,
+        -27.275405883789062
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -16.820045471191406,
+        -16.924091339111328
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599999964237213,
+      "kl_loss": -0.16872552037239075,
+      "kl_div": -16.8725528717041,
+      "kl_coef": 0.01,
+      "total_loss": -0.008725523948669434,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.7078202669581515e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2774766157783391,
+      "clipped_grad_norm": 0.27747660875320435,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.44278693199157715
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 21,
+    "timing": {
+      "total_time": 0.04234271599852946,
+      "forward_time": 0.004859626998950262,
+      "logprob_time": 0.004542534999927739,
+      "loss_time": 0.009903517999191536,
+      "backward_time": 0.009062701003131224,
+      "optim_time": 0.013973843000712804
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15364118442861.623,
+      "mfu_percent": 9.31158693506765
+    },
+    "training_dynamics": {
+      "loss": -0.009908825159072876,
+      "current_logprobs": [
+        -27.4014835357666,
+        -27.42424964904785
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -16.934629440307617,
+        -17.072935104370117
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599999964237213,
+      "kl_loss": -0.1699088215827942,
+      "kl_div": -16.990882873535156,
+      "kl_coef": 0.01,
+      "total_loss": -0.009908825159072876,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.186225766034113e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2773873627733684,
+      "clipped_grad_norm": 0.277387410402298,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4466579258441925
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 22,
+    "timing": {
+      "total_time": 0.04189628300082404,
+      "forward_time": 0.004575978000502801,
+      "logprob_time": 0.004477324000617955,
+      "loss_time": 0.00967513300201972,
+      "backward_time": 0.009211688000505092,
+      "optim_time": 0.013955649999843445
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16316486834463.814,
+      "mfu_percent": 9.88877989967504
+    },
+    "training_dynamics": {
+      "loss": -0.011453479528427124,
+      "current_logprobs": [
+        -27.540376663208008,
+        -27.554824829101562
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -17.073522567749023,
+        -17.203510284423828
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1599999964237213,
+      "kl_loss": -0.17145347595214844,
+      "kl_div": -17.145347595214844,
+      "kl_coef": 0.01,
+      "total_loss": -0.011453479528427124,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.585793706406548e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27743336024674303,
+      "clipped_grad_norm": 0.2774333953857422,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.450310617685318
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 23,
+    "timing": {
+      "total_time": 0.042444597002031514,
+      "forward_time": 0.004608519000612432,
+      "logprob_time": 0.004501099003391573,
+      "loss_time": 0.009723241997562582,
+      "backward_time": 0.009650045998569112,
+      "optim_time": 0.01396111999929417
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16201275244840.656,
+      "mfu_percent": 9.818954693842823
+    },
+    "training_dynamics": {
+      "loss": -0.012877538800239563,
+      "current_logprobs": [
+        -27.695425033569336,
+        -27.706806182861328
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -17.22857093811035,
+        -17.355491638183594
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.17287755012512207,
+      "kl_div": -17.287755966186523,
+      "kl_coef": 0.01,
+      "total_loss": -0.012877538800239563,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.110734780875646e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27758269473897296,
+      "clipped_grad_norm": 0.27758270502090454,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.45349788665771484
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 24,
+    "timing": {
+      "total_time": 0.042048298000736395,
+      "forward_time": 0.004583382000419078,
+      "logprob_time": 0.00482295899928431,
+      "loss_time": 0.009566750002704794,
+      "backward_time": 0.009127681998506887,
+      "optim_time": 0.013947102997917682
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16290129165139.008,
+      "mfu_percent": 9.872805554629702
+    },
+    "training_dynamics": {
+      "loss": -0.014108791947364807,
+      "current_logprobs": [
+        -27.80718421936035,
+        -27.815231323242188
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -17.340330123901367,
+        -17.463916778564453
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.17410880327224731,
+      "kl_div": -17.41088104248047,
+      "kl_coef": 0.01,
+      "total_loss": -0.014108791947364807,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.7510916211781478e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27770230940368096,
+      "clipped_grad_norm": 0.27770233154296875,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4562705457210541
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 25,
+    "timing": {
+      "total_time": 0.041791879000811605,
+      "forward_time": 0.004582420999213355,
+      "logprob_time": 0.004466032998607261,
+      "loss_time": 0.009733571998367552,
+      "backward_time": 0.009050517001014668,
+      "optim_time": 0.013958895000541816
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16293545445260.756,
+      "mfu_percent": 9.87487602743076
+    },
+    "training_dynamics": {
+      "loss": -0.015450507402420044,
+      "current_logprobs": [
+        -27.96122932434082,
+        -27.961103439331055
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -17.494375228881836,
+        -17.60978889465332
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.17545051872730255,
+      "kl_div": -17.54505157470703,
+      "kl_coef": 0.01,
+      "total_loss": -0.015450507402420044,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.4054710223708753e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.277655134873672,
+      "clipped_grad_norm": 0.27765515446662903,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.45890697836875916
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.453125,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 26,
+    "timing": {
+      "total_time": 0.041582458001357736,
+      "forward_time": 0.004599222000251757,
+      "logprob_time": 0.004509324000537163,
+      "loss_time": 0.009723192000819836,
+      "backward_time": 0.008785083002294414,
+      "optim_time": 0.013965206999273505
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16234024971160.986,
+      "mfu_percent": 9.83880301282484
+    },
+    "training_dynamics": {
+      "loss": -0.016788333654403687,
+      "current_logprobs": [
+        -28.079858779907227,
+        -28.081199645996094
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -17.613004684448242,
+        -17.72988510131836
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1767883449792862,
+      "kl_div": -17.678834915161133,
+      "kl_coef": 0.01,
+      "total_loss": -0.016788333654403687,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.1039618047780095e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27758719777298035,
+      "clipped_grad_norm": 0.2775872051715851,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.461566686630249
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 27,
+    "timing": {
+      "total_time": 0.04219022200049949,
+      "forward_time": 0.00460106500031543,
+      "logprob_time": 0.004512971001531696,
+      "loss_time": 0.009772223998879781,
+      "backward_time": 0.009362810000311583,
+      "optim_time": 0.013940592001745244
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16227522279055.254,
+      "mfu_percent": 9.834861987306216
+    },
+    "training_dynamics": {
+      "loss": -0.018174201250076294,
+      "current_logprobs": [
+        -28.200225830078125,
+        -28.216861724853516
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -17.73337173461914,
+        -17.86554718017578
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1781742125749588,
+      "kl_div": -17.817420959472656,
+      "kl_coef": 0.01,
+      "total_loss": -0.018174201250076294,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.830636442434752e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27774258823221304,
+      "clipped_grad_norm": 0.27774253487586975,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.46399128437042236
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 28,
+    "timing": {
+      "total_time": 0.04196054299973184,
+      "forward_time": 0.004640789000404766,
+      "logprob_time": 0.004463257999304915,
+      "loss_time": 0.009606834999431157,
+      "backward_time": 0.009297778997279238,
+      "optim_time": 0.013951430999441072
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16088618722697.342,
+      "mfu_percent": 9.750678013755964
+    },
+    "training_dynamics": {
+      "loss": -0.019337043166160583,
+      "current_logprobs": [
+        -28.347412109375,
+        -28.33934783935547
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -17.880558013916016,
+        -17.988033294677734
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1793370544910431,
+      "kl_div": -17.933706283569336,
+      "kl_coef": 0.01,
+      "total_loss": -0.019337043166160583,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.6301191507750445e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2778407336882875,
+      "clipped_grad_norm": 0.277840793132782,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.466178834438324
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 29,
+    "timing": {
+      "total_time": 0.04206704299940611,
+      "forward_time": 0.0045324769998842385,
+      "logprob_time": 0.004462044998945203,
+      "loss_time": 0.00975176500287489,
+      "backward_time": 0.009367639002448414,
+      "optim_time": 0.013952664001408266
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16473086306208.934,
+      "mfu_percent": 9.983688670429656
+    },
+    "training_dynamics": {
+      "loss": -0.02065970003604889,
+      "current_logprobs": [
+        -28.467239379882812,
+        -28.489185333251953
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -18.000385284423828,
+        -18.13787078857422
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1806597113609314,
+      "kl_div": -18.06597137451172,
+      "kl_coef": 0.01,
+      "total_loss": -0.02065970003604889,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.4283659588443243e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2778453523254459,
+      "clipped_grad_norm": 0.2778453826904297,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4682959318161011
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 30,
+    "timing": {
+      "total_time": 0.042110473001230275,
+      "forward_time": 0.004528309000306763,
+      "logprob_time": 0.004483196000364842,
+      "loss_time": 0.009726297997985967,
+      "backward_time": 0.009410619000846054,
+      "optim_time": 0.013961600998300128
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16488248658592.428,
+      "mfu_percent": 9.992877974904502
+    },
+    "training_dynamics": {
+      "loss": -0.021878018975257874,
+      "current_logprobs": [
+        -28.583520889282227,
+        -28.60940170288086
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -18.116666793823242,
+        -18.258087158203125
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.18187803030014038,
+      "kl_div": -18.187803268432617,
+      "kl_coef": 0.01,
+      "total_loss": -0.021878018975257874,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.2647266345311436e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27797630412453556,
+      "clipped_grad_norm": 0.27797630429267883,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4702492654323578
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 31,
+    "timing": {
+      "total_time": 0.041806827000982594,
+      "forward_time": 0.0045794850011589006,
+      "logprob_time": 0.00448919699920225,
+      "loss_time": 0.009708254001452588,
+      "backward_time": 0.009084321001864737,
+      "optim_time": 0.013945049999165349
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16303991558244.059,
+      "mfu_percent": 9.8812070049964
+    },
+    "training_dynamics": {
+      "loss": -0.023148059844970703,
+      "current_logprobs": [
+        -28.719751358032227,
+        -28.740371704101562
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -18.252897262573242,
+        -18.389057159423828
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1831480711698532,
+      "kl_div": -18.314807891845703,
+      "kl_coef": 0.01,
+      "total_loss": -0.023148059844970703,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.1132675226122046e-08,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2778769649495565,
+      "clipped_grad_norm": 0.27787697315216064,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4721603989601135
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 32,
+    "timing": {
+      "total_time": 0.04198711299977731,
+      "forward_time": 0.004643383999791695,
+      "logprob_time": 0.0045384990007732995,
+      "loss_time": 0.009653772998717614,
+      "backward_time": 0.009200357002555393,
+      "optim_time": 0.013950569998996798
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16079627444843.99,
+      "mfu_percent": 9.745228754450903
+    },
+    "training_dynamics": {
+      "loss": -0.024343818426132202,
+      "current_logprobs": [
+        -28.85413360595703,
+        -28.846561431884766
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -18.387279510498047,
+        -18.49524688720703
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1843438297510147,
+      "kl_div": -18.434383392333984,
+      "kl_coef": 0.01,
+      "total_loss": -0.024343818426132202,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 9.873315498509783e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2779881232669509,
+      "clipped_grad_norm": 0.27798810601234436,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4737805426120758
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 33,
+    "timing": {
+      "total_time": 0.04164214900083607,
+      "forward_time": 0.004521976999967592,
+      "logprob_time": 0.0044702509985654615,
+      "loss_time": 0.009766221999598201,
+      "backward_time": 0.008927106002374785,
+      "optim_time": 0.013956099999631988
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16511336700857.855,
+      "mfu_percent": 10.00687072779264
+    },
+    "training_dynamics": {
+      "loss": -0.025760173797607422,
+      "current_logprobs": [
+        -28.974712371826172,
+        -28.972820281982422
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -18.507858276367188,
+        -18.621505737304688
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.18576018512248993,
+      "kl_div": -18.576019287109375,
+      "kl_coef": 0.01,
+      "total_loss": -0.025760173797607422,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 8.57038262580545e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27802226296386096,
+      "clipped_grad_norm": 0.27802225947380066,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4756397306919098
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 34,
+    "timing": {
+      "total_time": 0.04154346500217798,
+      "forward_time": 0.004586037000990473,
+      "logprob_time": 0.0045060480006213766,
+      "loss_time": 0.009756715000548866,
+      "backward_time": 0.008747641997615574,
+      "optim_time": 0.013946571998530999
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16280698298743.428,
+      "mfu_percent": 9.86708987802632
+    },
+    "training_dynamics": {
+      "loss": -0.027008935809135437,
+      "current_logprobs": [
+        -29.113555908203125,
+        -29.10393524169922
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -18.64670181274414,
+        -18.752620697021484
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.18700894713401794,
+      "kl_div": -18.700895309448242,
+      "kl_coef": 0.01,
+      "total_loss": -0.027008935809135437,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 7.569600946055743e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27819420516197213,
+      "clipped_grad_norm": 0.2781941592693329,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.47720393538475037
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 35,
+    "timing": {
+      "total_time": 0.041331619999255054,
+      "forward_time": 0.004563544996926794,
+      "logprob_time": 0.00450397399981739,
+      "loss_time": 0.009553576001053443,
+      "backward_time": 0.00875222100148676,
+      "optim_time": 0.013957873998151626
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16360939762899.355,
+      "mfu_percent": 9.915721068423853
+    },
+    "training_dynamics": {
+      "loss": -0.028178587555885315,
+      "current_logprobs": [
+        -29.223403930664062,
+        -29.228477478027344
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -18.756549835205078,
+        -18.87716293334961
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.18817859888076782,
+      "kl_div": -18.817859649658203,
+      "kl_coef": 0.01,
+      "total_loss": -0.028178587555885315,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 6.734590662915707e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27815328855969307,
+      "clipped_grad_norm": 0.27815330028533936,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.47872909903526306
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 36,
+    "timing": {
+      "total_time": 0.04144506200100295,
+      "forward_time": 0.004577030998916598,
+      "logprob_time": 0.004472895998333115,
+      "loss_time": 0.00966310000148951,
+      "backward_time": 0.008773339999606833,
+      "optim_time": 0.013958244999230374
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16312733039752.898,
+      "mfu_percent": 9.886504872577515
+    },
+    "training_dynamics": {
+      "loss": -0.0293438583612442,
+      "current_logprobs": [
+        -29.343318939208984,
+        -29.344173431396484
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -18.87646484375,
+        -18.99285888671875
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1893438696861267,
+      "kl_div": -18.93438720703125,
+      "kl_coef": 0.01,
+      "total_loss": -0.0293438583612442,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 5.989951645801739e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.278184519209409,
+      "clipped_grad_norm": 0.2781845033168793,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4800255000591278
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 37,
+    "timing": {
+      "total_time": 0.04173969099792885,
+      "forward_time": 0.00461994999932358,
+      "logprob_time": 0.0045638960000360385,
+      "loss_time": 0.009882359998300672,
+      "backward_time": 0.008719830002519302,
+      "optim_time": 0.0139530950000335
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16161188932982.336,
+      "mfu_percent": 9.794659959383234
+    },
+    "training_dynamics": {
+      "loss": -0.030822545289993286,
+      "current_logprobs": [
+        -29.48539924621582,
+        -29.470399856567383
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -19.018545150756836,
+        -19.11908531188965
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1908225566148758,
+      "kl_div": -19.082256317138672,
+      "kl_coef": 0.01,
+      "total_loss": -0.030822545289993286,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 5.168388383935962e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27838588771824363,
+      "clipped_grad_norm": 0.2783859074115753,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4811348617076874
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 38,
+    "timing": {
+      "total_time": 0.041622182998253265,
+      "forward_time": 0.004596525999659207,
+      "logprob_time": 0.004462185999727808,
+      "loss_time": 0.009801168002013583,
+      "backward_time": 0.008765485003095819,
+      "optim_time": 0.013995594999869354
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16243546714526.512,
+      "mfu_percent": 9.844573766379703
+    },
+    "training_dynamics": {
+      "loss": -0.0320652574300766,
+      "current_logprobs": [
+        -29.608890533447266,
+        -29.618087768554688
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -19.14203643798828,
+        -19.266773223876953
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1920652687549591,
+      "kl_div": -19.206527709960938,
+      "kl_coef": 0.01,
+      "total_loss": -0.0320652574300766,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.568080580469314e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27839948651183866,
+      "clipped_grad_norm": 0.2783994674682617,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4824047386646271
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 39,
+    "timing": {
+      "total_time": 0.04353934000027948,
+      "forward_time": 0.005426204999821493,
+      "logprob_time": 0.004660236001654994,
+      "loss_time": 0.01003286999912234,
+      "backward_time": 0.009343533998617204,
+      "optim_time": 0.014075582999794278
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 13759871734012.303,
+      "mfu_percent": 8.339316202431698
+    },
+    "training_dynamics": {
+      "loss": -0.03328487277030945,
+      "current_logprobs": [
+        -29.737258911132812,
+        -29.756752014160156
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -19.270404815673828,
+        -19.405437469482422
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.19328488409519196,
+      "kl_div": -19.328489303588867,
+      "kl_coef": 0.01,
+      "total_loss": -0.03328487277030945,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.043119616881086e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2784339810953224,
+      "clipped_grad_norm": 0.27843400835990906,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.48376837372779846
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 40,
+    "timing": {
+      "total_time": 0.042148534001171356,
+      "forward_time": 0.004629457998817088,
+      "logprob_time": 0.004480971001612488,
+      "loss_time": 0.009720657999423565,
+      "backward_time": 0.009365003999846522,
+      "optim_time": 0.013951742999779526
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16127997018026.3,
+      "mfu_percent": 9.774543647288667
+    },
+    "training_dynamics": {
+      "loss": -0.034579306840896606,
+      "current_logprobs": [
+        -29.886898040771484,
+        -29.876407623291016
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -19.4200439453125,
+        -19.52509307861328
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.1945793181657791,
+      "kl_div": -19.457931518554688,
+      "kl_coef": 0.01,
+      "total_loss": -0.034579306840896606,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.550062688262301e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2784687324738842,
+      "clipped_grad_norm": 0.2784687280654907,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4849148690700531
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 41,
+    "timing": {
+      "total_time": 0.042111365000891965,
+      "forward_time": 0.004621443000360159,
+      "logprob_time": 0.004478607002965873,
+      "loss_time": 0.009850298996752826,
+      "backward_time": 0.00920877200042014,
+      "optim_time": 0.01395159199819318
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16155967907465.543,
+      "mfu_percent": 9.791495701494268
+    },
+    "training_dynamics": {
+      "loss": -0.03600451350212097,
+      "current_logprobs": [
+        -30.001670837402344,
+        -29.98298454284668
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -19.53481674194336,
+        -19.631669998168945
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.19600452482700348,
+      "kl_div": -19.600452423095703,
+      "kl_coef": 0.01,
+      "total_loss": -0.03600451350212097,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.0788687155336447e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27865041187826256,
+      "clipped_grad_norm": 0.2786504030227661,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4859379529953003
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 42,
+    "timing": {
+      "total_time": 0.04261201900226297,
+      "forward_time": 0.0045718610017502215,
+      "logprob_time": 0.004484367000259226,
+      "loss_time": 0.009716219999972964,
+      "backward_time": 0.009879924997221678,
+      "optim_time": 0.013959195999632357
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16331179966192.502,
+      "mfu_percent": 9.897684827995455
+    },
+    "training_dynamics": {
+      "loss": -0.03719493746757507,
+      "current_logprobs": [
+        -30.153331756591797,
+        -30.139328002929688
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -19.686477661132812,
+        -19.788013458251953
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.19719494879245758,
+      "kl_div": -19.71949577331543,
+      "kl_coef": 0.01,
+      "total_loss": -0.03719493746757507,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.7343995956385925e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27858216149734266,
+      "clipped_grad_norm": 0.2785821557044983,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.48693710565567017
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 43,
+    "timing": {
+      "total_time": 0.043852244001755025,
+      "forward_time": 0.004616674999851966,
+      "logprob_time": 0.0061415589989337604,
+      "loss_time": 0.009786730999621795,
+      "backward_time": 0.009338525000202935,
+      "optim_time": 0.013968313000077615
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16172653436162.193,
+      "mfu_percent": 9.801608143128602
+    },
+    "training_dynamics": {
+      "loss": -0.03859667479991913,
+      "current_logprobs": [
+        -30.28182601928711,
+        -30.258716583251953
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -19.814971923828125,
+        -19.90740203857422
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.19859668612480164,
+      "kl_div": -19.859668731689453,
+      "kl_coef": 0.01,
+      "total_loss": -0.03859667479991913,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.3762514178571337e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27868899556425686,
+      "clipped_grad_norm": 0.27868902683258057,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.48800328373908997
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 44,
+    "timing": {
+      "total_time": 0.04179114700309583,
+      "forward_time": 0.004535783002211247,
+      "logprob_time": 0.004502501000388293,
+      "loss_time": 0.00970002900066902,
+      "backward_time": 0.009091013002034742,
+      "optim_time": 0.013961310000013327
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16461079545384.004,
+      "mfu_percent": 9.976411845687275
+    },
+    "training_dynamics": {
+      "loss": -0.03985567390918732,
+      "current_logprobs": [
+        -30.391727447509766,
+        -30.406784057617188
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -19.92487335205078,
+        -20.055469512939453
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.19985568523406982,
+      "kl_div": -19.98556900024414,
+      "kl_coef": 0.01,
+      "total_loss": -0.03985567390918732,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.0948460743852593e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27874815390813357,
+      "clipped_grad_norm": 0.27874812483787537,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4889349639415741
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 45,
+    "timing": {
+      "total_time": 0.0420798859995557,
+      "forward_time": 0.004590525000821799,
+      "logprob_time": 0.00447515100313467,
+      "loss_time": 0.009854156996880192,
+      "backward_time": 0.00919782200071495,
+      "optim_time": 0.013961710999865318
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16264781214922.828,
+      "mfu_percent": 9.85744316055929
+    },
+    "training_dynamics": {
+      "loss": -0.04134838283061981,
+      "current_logprobs": [
+        -30.53168296813965,
+        -30.523086547851562
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -20.064828872680664,
+        -20.171772003173828
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.20134839415550232,
+      "kl_div": -20.13484001159668,
+      "kl_coef": 0.01,
+      "total_loss": -0.04134838283061981,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.8052351835606828e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2789555178147744,
+      "clipped_grad_norm": 0.27895551919937134,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4895889461040497
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 46,
+    "timing": {
+      "total_time": 0.04189655399750336,
+      "forward_time": 0.004565819999697851,
+      "logprob_time": 0.004491380001127254,
+      "loss_time": 0.00974913100071717,
+      "backward_time": 0.009143410999968182,
+      "optim_time": 0.013946292001492111
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16352787627401.207,
+      "mfu_percent": 9.910780380243157
+    },
+    "training_dynamics": {
+      "loss": -0.042529717087745667,
+      "current_logprobs": [
+        -30.651477813720703,
+        -30.668102264404297
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -20.18462371826172,
+        -20.316787719726562
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.20252972841262817,
+      "kl_div": -20.252973556518555,
+      "kl_coef": 0.01,
+      "total_loss": -0.042529717087745667,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.6027310589805666e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2788488232519168,
+      "clipped_grad_norm": 0.2788488268852234,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.49032601714134216
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 47,
+    "timing": {
+      "total_time": 0.04142689800210064,
+      "forward_time": 0.004532137001660885,
+      "logprob_time": 0.00444755799981067,
+      "loss_time": 0.009719165002024965,
+      "backward_time": 0.008775925001828,
+      "optim_time": 0.013951592001831159
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16474322107349.809,
+      "mfu_percent": 9.984437640818065
+    },
+    "training_dynamics": {
+      "loss": -0.043864905834198,
+      "current_logprobs": [
+        -30.79766845703125,
+        -30.78305435180664
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -20.330814361572266,
+        -20.431739807128906
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2038649171590805,
+      "kl_div": -20.386491775512695,
+      "kl_coef": 0.01,
+      "total_loss": -0.043864905834198,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.4038405993233027e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2790142769734307,
+      "clipped_grad_norm": 0.2790142893791199,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4908733367919922
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 48,
+    "timing": {
+      "total_time": 0.04177237199837691,
+      "forward_time": 0.004604681998898741,
+      "logprob_time": 0.0044586589974642266,
+      "loss_time": 0.009472164001635974,
+      "backward_time": 0.009286548000090988,
+      "optim_time": 0.013949758998933248
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16214775486745.158,
+      "mfu_percent": 9.827136658633428
+    },
+    "training_dynamics": {
+      "loss": -0.04531484842300415,
+      "current_logprobs": [
+        -30.941600799560547,
+        -30.93718910217285
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -20.474746704101562,
+        -20.585874557495117
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.20531485974788666,
+      "kl_div": -20.53148651123047,
+      "kl_coef": 0.01,
+      "total_loss": -0.04531484842300415,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.2144378835898806e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2790417542898519,
+      "clipped_grad_norm": 0.27904173731803894,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4914427697658539
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 49,
+    "timing": {
+      "total_time": 0.04200200099876383,
+      "forward_time": 0.004558004999125842,
+      "logprob_time": 0.004499045000557089,
+      "loss_time": 0.00984631199753494,
+      "backward_time": 0.009143201001279522,
+      "optim_time": 0.013955008002085378
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16380825561691.887,
+      "mfu_percent": 9.927773067692053
+    },
+    "training_dynamics": {
+      "loss": -0.0466465950012207,
+      "current_logprobs": [
+        -31.070480346679688,
+        -31.060705184936523
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -20.603626251220703,
+        -20.70939064025879
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2066466063261032,
+      "kl_div": -20.664661407470703,
+      "kl_coef": 0.01,
+      "total_loss": -0.0466465950012207,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.0622810409088856e-09,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27913665216189665,
+      "clipped_grad_norm": 0.27913662791252136,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4919359087944031
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 50,
+    "timing": {
+      "total_time": 0.041876025999954436,
+      "forward_time": 0.004541403999610338,
+      "logprob_time": 0.004468197003006935,
+      "loss_time": 0.009858776000328362,
+      "backward_time": 0.009058322000782937,
+      "optim_time": 0.013948816998890834
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16440705298715.18,
+      "mfu_percent": 9.964063817403138
+    },
+    "training_dynamics": {
+      "loss": -0.04796735942363739,
+      "current_logprobs": [
+        -31.20003890991211,
+        -31.18929672241211
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -20.733184814453125,
+        -20.837982177734375
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2079673707485199,
+      "kl_div": -20.796737670898438,
+      "kl_coef": 0.01,
+      "total_loss": -0.04796735942363739,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 9.302971726299347e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2791800801764811,
+      "clipped_grad_norm": 0.2791800796985626,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.49228405952453613
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 51,
+    "timing": {
+      "total_time": 0.04194961399844033,
+      "forward_time": 0.004612756998540135,
+      "logprob_time": 0.0045174189981480595,
+      "loss_time": 0.0096469199997955,
+      "backward_time": 0.009222779000992887,
+      "optim_time": 0.013949326999863843
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16186390226849.137,
+      "mfu_percent": 9.809933470817658
+    },
+    "training_dynamics": {
+      "loss": -0.04924829304218292,
+      "current_logprobs": [
+        -31.346376419067383,
+        -31.35335350036621
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -20.8795223236084,
+        -21.002038955688477
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.20924830436706543,
+      "kl_div": -20.92483139038086,
+      "kl_coef": 0.01,
+      "total_loss": -0.04924829304218292,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 8.190415012876429e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2791669742011829,
+      "clipped_grad_norm": 0.27916696667671204,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4924317002296448
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 52,
+    "timing": {
+      "total_time": 0.04134416299712029,
+      "forward_time": 0.004574474998662481,
+      "logprob_time": 0.004456806000234792,
+      "loss_time": 0.00960165500146104,
+      "backward_time": 0.008762399997067405,
+      "optim_time": 0.0139483860002656
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16321847823374.438,
+      "mfu_percent": 9.892028983863295
+    },
+    "training_dynamics": {
+      "loss": -0.05053350329399109,
+      "current_logprobs": [
+        -31.474838256835938,
+        -31.47256088256836
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -21.007984161376953,
+        -21.121246337890625
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2105335146188736,
+      "kl_div": -21.05335235595703,
+      "kl_coef": 0.01,
+      "total_loss": -0.05053350329399109,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 7.205953611588711e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27922192304485755,
+      "clipped_grad_norm": 0.27922192215919495,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4927971661090851
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 53,
+    "timing": {
+      "total_time": 0.04206505800175364,
+      "forward_time": 0.004665615000703838,
+      "logprob_time": 0.004488645998208085,
+      "loss_time": 0.009822568001254695,
+      "backward_time": 0.009136758002568968,
+      "optim_time": 0.013951031000033254
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16003010275973.58,
+      "mfu_percent": 9.698794106650654
+    },
+    "training_dynamics": {
+      "loss": -0.05190138518810272,
+      "current_logprobs": [
+        -31.60360336303711,
+        -31.60631561279297
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -21.136749267578125,
+        -21.255001068115234
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.21190139651298523,
+      "kl_div": -21.190139770507812,
+      "kl_coef": 0.01,
+      "total_loss": -0.05190138518810272,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 6.278426112338309e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2793415846370281,
+      "clipped_grad_norm": 0.27934157848358154,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.49328118562698364
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 54,
+    "timing": {
+      "total_time": 0.041888749998179264,
+      "forward_time": 0.004548577002424281,
+      "logprob_time": 0.0044599520006158855,
+      "loss_time": 0.009751064000738552,
+      "backward_time": 0.009169559998554178,
+      "optim_time": 0.013959076000901405
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16414778679179.436,
+      "mfu_percent": 9.948350714654202
+    },
+    "training_dynamics": {
+      "loss": -0.05338038504123688,
+      "current_logprobs": [
+        -31.727676391601562,
+        -31.748188018798828
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -21.260822296142578,
+        -21.396873474121094
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.21338039636611938,
+      "kl_div": -21.33803939819336,
+      "kl_coef": 0.01,
+      "total_loss": -0.05338038504123688,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 5.418845372417991e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.279431911824782,
+      "clipped_grad_norm": 0.27943190932273865,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4934644401073456
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 55,
+    "timing": {
+      "total_time": 0.0420462830006727,
+      "forward_time": 0.004568815002130577,
+      "logprob_time": 0.00447878700288129,
+      "loss_time": 0.00972884300063015,
+      "backward_time": 0.009326000999863027,
+      "optim_time": 0.013943297002697363
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16342067858992.312,
+      "mfu_percent": 9.904283550904431
+    },
+    "training_dynamics": {
+      "loss": -0.05466829240322113,
+      "current_logprobs": [
+        -31.895614624023438,
+        -31.87478256225586
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -21.428760528564453,
+        -21.523468017578125
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.21466830372810364,
+      "kl_div": -21.46683120727539,
+      "kl_coef": 0.01,
+      "total_loss": -0.05466829240322113,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.761779859308035e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27948338014245255,
+      "clipped_grad_norm": 0.2794834077358246,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.49357855319976807
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 56,
+    "timing": {
+      "total_time": 0.041826713997579645,
+      "forward_time": 0.004621824002242647,
+      "logprob_time": 0.004485139001189964,
+      "loss_time": 0.009844268999586347,
+      "backward_time": 0.008882232999894768,
+      "optim_time": 0.013992599000630435
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16154636083886.113,
+      "mfu_percent": 9.790688535688554
+    },
+    "training_dynamics": {
+      "loss": -0.056126534938812256,
+      "current_logprobs": [
+        -32.00764465332031,
+        -32.024147033691406
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -21.540790557861328,
+        -21.672832489013672
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.21612654626369476,
+      "kl_div": -21.612655639648438,
+      "kl_coef": 0.01,
+      "total_loss": -0.056126534938812256,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.113834828345375e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27953248061810043,
+      "clipped_grad_norm": 0.27953246235847473,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4935297667980194
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 57,
+    "timing": {
+      "total_time": 0.04288079100297182,
+      "forward_time": 0.005036257000028854,
+      "logprob_time": 0.004585064998536836,
+      "loss_time": 0.010017240998422494,
+      "backward_time": 0.009255720000510337,
+      "optim_time": 0.013985966001200723
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 14825272975460.193,
+      "mfu_percent": 8.98501392452133
+    },
+    "training_dynamics": {
+      "loss": -0.05745558440685272,
+      "current_logprobs": [
+        -32.157920837402344,
+        -32.161399841308594
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -21.69106674194336,
+        -21.81008529663086
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.21745559573173523,
+      "kl_div": -21.745559692382812,
+      "kl_coef": 0.01,
+      "total_loss": -0.05745558440685272,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.601862141877632e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27965674817236125,
+      "clipped_grad_norm": 0.2796567678451538,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.49370962381362915
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 58,
+    "timing": {
+      "total_time": 0.042153132999374066,
+      "forward_time": 0.004628356000466738,
+      "logprob_time": 0.0045663700002478436,
+      "loss_time": 0.009888821001368342,
+      "backward_time": 0.009104988999752095,
+      "optim_time": 0.013964065001346171
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16131837048072.936,
+      "mfu_percent": 9.776870938226022
+    },
+    "training_dynamics": {
+      "loss": -0.05883604288101196,
+      "current_logprobs": [
+        -32.282386779785156,
+        -32.299835205078125
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -21.815532684326172,
+        -21.94852066040039
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.21883605420589447,
+      "kl_div": -21.88360595703125,
+      "kl_coef": 0.01,
+      "total_loss": -0.05883604288101196,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.1393321275885455e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2795954962885876,
+      "clipped_grad_norm": 0.2795955240726471,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.49375641345977783
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 59,
+    "timing": {
+      "total_time": 0.04205878699940513,
+      "forward_time": 0.004623878001439152,
+      "logprob_time": 0.004476952999539208,
+      "loss_time": 0.009852303999650758,
+      "backward_time": 0.009150374000455486,
+      "optim_time": 0.013954718000604771
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16147459940932.988,
+      "mfu_percent": 9.786339358141205
+    },
+    "training_dynamics": {
+      "loss": -0.060274675488471985,
+      "current_logprobs": [
+        -32.4344367980957,
+        -32.43696975708008
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -21.96758270263672,
+        -22.085655212402344
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2202746868133545,
+      "kl_div": -22.027469635009766,
+      "kl_coef": 0.01,
+      "total_loss": -0.060274675488471985,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.716615821185542e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27974335972823733,
+      "clipped_grad_norm": 0.27974340319633484,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4936237633228302
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 60,
+    "timing": {
+      "total_time": 0.042752331002702704,
+      "forward_time": 0.004548818000330357,
+      "logprob_time": 0.00447716399867204,
+      "loss_time": 0.009767564999492606,
+      "backward_time": 0.010002883998822654,
+      "optim_time": 0.013955458998680115
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16413909018689.592,
+      "mfu_percent": 9.947823647690662
+    },
+    "training_dynamics": {
+      "loss": -0.06161513924598694,
+      "current_logprobs": [
+        -32.57717514038086,
+        -32.59548568725586
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -22.110321044921875,
+        -22.244171142578125
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.22161515057086945,
+      "kl_div": -22.161516189575195,
+      "kl_coef": 0.01,
+      "total_loss": -0.06161513924598694,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.3760110545723023e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27977321325368837,
+      "clipped_grad_norm": 0.2797732651233673,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4934660494327545
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 61,
+    "timing": {
+      "total_time": 0.04208009700232651,
+      "forward_time": 0.004489155999181094,
+      "logprob_time": 0.004447007999260677,
+      "loss_time": 0.009660486000939272,
+      "backward_time": 0.009542724998027552,
+      "optim_time": 0.01394023099783226
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16632053957051.191,
+      "mfu_percent": 10.080032701243146
+    },
+    "training_dynamics": {
+      "loss": -0.06311839818954468,
+      "current_logprobs": [
+        -32.71452713012695,
+        -32.72547912597656
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -22.24767303466797,
+        -22.374164581298828
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.22311840951442719,
+      "kl_div": -22.31184196472168,
+      "kl_coef": 0.01,
+      "total_loss": -0.06311839818954468,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.0468142458707206e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2798635671802198,
+      "clipped_grad_norm": 0.279863566160202,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.493466317653656
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 62,
+    "timing": {
+      "total_time": 0.04256787700069253,
+      "forward_time": 0.0044957589998375624,
+      "logprob_time": 0.004826846001378726,
+      "loss_time": 0.009769068001332926,
+      "backward_time": 0.00951790000181063,
+      "optim_time": 0.013957864000985865
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16607626165614.684,
+      "mfu_percent": 10.065227979160413
+    },
+    "training_dynamics": {
+      "loss": -0.06445647776126862,
+      "current_logprobs": [
+        -32.85374450683594,
+        -32.858680725097656
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -22.386890411376953,
+        -22.507366180419922
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.22445648908615112,
+      "kl_div": -22.445650100708008,
+      "kl_coef": 0.01,
+      "total_loss": -0.06445647776126862,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.78966452768492e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27996581035578627,
+      "clipped_grad_norm": 0.2799658179283142,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.493351012468338
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 63,
+    "timing": {
+      "total_time": 0.04188789799809456,
+      "forward_time": 0.004526766999333631,
+      "logprob_time": 0.004507830999500584,
+      "loss_time": 0.009733281000080751,
+      "backward_time": 0.00916147400130285,
+      "optim_time": 0.013958014002128039
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16493865226770.23,
+      "mfu_percent": 9.996281955618322
+    },
+    "training_dynamics": {
+      "loss": -0.06589280068874359,
+      "current_logprobs": [
+        -33.002220153808594,
+        -33.00406265258789
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -22.53536605834961,
+        -22.652748107910156
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2258928120136261,
+      "kl_div": -22.58928108215332,
+      "kl_coef": 0.01,
+      "total_loss": -0.06589280068874359,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.5494948379934925e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.27999837574750963,
+      "clipped_grad_norm": 0.27999839186668396,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4928876757621765
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 64,
+    "timing": {
+      "total_time": 0.04181283800062374,
+      "forward_time": 0.004577300998789724,
+      "logprob_time": 0.004468677998374915,
+      "loss_time": 0.009712723000120604,
+      "backward_time": 0.009094539000216173,
+      "optim_time": 0.013959136998892063
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16311770805490.342,
+      "mfu_percent": 9.885921700297178
+    },
+    "training_dynamics": {
+      "loss": -0.06744320690631866,
+      "current_logprobs": [
+        -33.139305114746094,
+        -33.13893127441406
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -22.67245101928711,
+        -22.787616729736328
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.22744321823120117,
+      "kl_div": -22.744321823120117,
+      "kl_coef": 0.01,
+      "total_loss": -0.06744320690631866,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.3280157529216297e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28013316349338724,
+      "clipped_grad_norm": 0.2801331877708435,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.49252739548683167
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 65,
+    "timing": {
+      "total_time": 0.04214967699954286,
+      "forward_time": 0.004542996997770388,
+      "logprob_time": 0.004473157001484651,
+      "loss_time": 0.009848876998148626,
+      "backward_time": 0.00932903699867893,
+      "optim_time": 0.013955069000076037
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16434940378926.852,
+      "mfu_percent": 9.960569926622334
+    },
+    "training_dynamics": {
+      "loss": -0.06878097355365753,
+      "current_logprobs": [
+        -33.269248962402344,
+        -33.292274475097656
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -22.80239486694336,
+        -22.940959930419922
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.22878098487854004,
+      "kl_div": -22.87809944152832,
+      "kl_coef": 0.01,
+      "total_loss": -0.06878097355365753,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.1607356742437958e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2801881835238975,
+      "clipped_grad_norm": 0.2801882028579712,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4920591115951538
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 66,
+    "timing": {
+      "total_time": 0.04196494200004963,
+      "forward_time": 0.004629357001249446,
+      "logprob_time": 0.004479457998968428,
+      "loss_time": 0.009814782999455929,
+      "backward_time": 0.009085141999094049,
+      "optim_time": 0.013955760001408635
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16128348878656.043,
+      "mfu_percent": 9.774756896155177
+    },
+    "training_dynamics": {
+      "loss": -0.07001037895679474,
+      "current_logprobs": [
+        -33.42904281616211,
+        -33.43376922607422
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -22.962188720703125,
+        -23.082454681396484
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.23001039028167725,
+      "kl_div": -23.001039505004883,
+      "kl_coef": 0.01,
+      "total_loss": -0.07001037895679474,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.0266940075887021e-10,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28007118654375507,
+      "clipped_grad_norm": 0.2800711691379547,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.49153438210487366
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 67,
+    "timing": {
+      "total_time": 0.04216122800062294,
+      "forward_time": 0.004576830000587506,
+      "logprob_time": 0.0044625459995586425,
+      "loss_time": 0.009746915999130579,
+      "backward_time": 0.009419015001185471,
+      "optim_time": 0.013955480000731768
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16313449437802.092,
+      "mfu_percent": 9.88693905321339
+    },
+    "training_dynamics": {
+      "loss": -0.07176044583320618,
+      "current_logprobs": [
+        -33.60203552246094,
+        -33.56414794921875
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -23.135181427001953,
+        -23.212833404541016
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.23176045715808868,
+      "kl_div": -23.17604637145996,
+      "kl_coef": 0.01,
+      "total_loss": -0.07176044583320618,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 8.633483511433226e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2803082559385971,
+      "clipped_grad_norm": 0.2803083062171936,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4913880228996277
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 68,
+    "timing": {
+      "total_time": 0.04185631899963482,
+      "forward_time": 0.004527197997958865,
+      "logprob_time": 0.004469249000976561,
+      "loss_time": 0.009709295998618472,
+      "backward_time": 0.009193903999403119,
+      "optim_time": 0.013956161001260625
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16492294976641.844,
+      "mfu_percent": 9.995330288873845
+    },
+    "training_dynamics": {
+      "loss": -0.07317093014717102,
+      "current_logprobs": [
+        -33.73893356323242,
+        -33.7146110534668
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -23.272079467773438,
+        -23.363296508789062
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.23317094147205353,
+      "kl_div": -23.317094802856445,
+      "kl_coef": 0.01,
+      "total_loss": -0.07317093014717102,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 7.486973541137587e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2803780409005343,
+      "clipped_grad_norm": 0.2803780436515808,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4910741150379181
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 69,
+    "timing": {
+      "total_time": 0.042036566002934705,
+      "forward_time": 0.004570126999169588,
+      "logprob_time": 0.004478615999687463,
+      "loss_time": 0.00969469899791875,
+      "backward_time": 0.009335017999546835,
+      "optim_time": 0.013957583996671019
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16337376360343.324,
+      "mfu_percent": 9.901440218389894
+    },
+    "training_dynamics": {
+      "loss": -0.07460649311542511,
+      "current_logprobs": [
+        -33.88172149658203,
+        -33.86415100097656
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -23.414867401123047,
+        -23.512836456298828
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.23460650444030762,
+      "kl_div": -23.460651397705078,
+      "kl_coef": 0.01,
+      "total_loss": -0.07460649311542511,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 6.47987566382291e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28048554351336147,
+      "clipped_grad_norm": 0.2804855406284332,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.490374892950058
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 70,
+    "timing": {
+      "total_time": 0.04174899799909326,
+      "forward_time": 0.004556031002721284,
+      "logprob_time": 0.004476512000110233,
+      "loss_time": 0.009695480002847034,
+      "backward_time": 0.009074742996745044,
+      "optim_time": 0.013945820999651914
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16387922899427.992,
+      "mfu_percent": 9.932074484501815
+    },
+    "training_dynamics": {
+      "loss": -0.07622765004634857,
+      "current_logprobs": [
+        -34.01831817626953,
+        -34.00223159790039
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -23.551464080810547,
+        -23.650917053222656
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.23622766137123108,
+      "kl_div": -23.622766494750977,
+      "kl_coef": 0.01,
+      "total_loss": -0.07622765004634857,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 5.517570428326124e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28059849644109,
+      "clipped_grad_norm": 0.2805984616279602,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4896222949028015
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 71,
+    "timing": {
+      "total_time": 0.04182480000235955,
+      "forward_time": 0.004573442998662358,
+      "logprob_time": 0.004499204998865025,
+      "loss_time": 0.00960755699998117,
+      "backward_time": 0.00918304500009981,
+      "optim_time": 0.01396103899969603
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16325530857570.043,
+      "mfu_percent": 9.894261125800027
+    },
+    "training_dynamics": {
+      "loss": -0.07765278220176697,
+      "current_logprobs": [
+        -34.174861907958984,
+        -34.174156188964844
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -23.7080078125,
+        -23.82284164428711
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.23765279352664948,
+      "kl_div": -23.76527976989746,
+      "kl_coef": 0.01,
+      "total_loss": -0.07765278220176697,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.783058671353757e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28068352756726617,
+      "clipped_grad_norm": 0.2806835472583771,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.48869213461875916
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 72,
+    "timing": {
+      "total_time": 0.04157152799962205,
+      "forward_time": 0.0046145300002535805,
+      "logprob_time": 0.00446481099788798,
+      "loss_time": 0.009737398999277502,
+      "backward_time": 0.008800750998489093,
+      "optim_time": 0.013953615001810249
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16180171067453.678,
+      "mfu_percent": 9.80616428330526
+    },
+    "training_dynamics": {
+      "loss": -0.07912993431091309,
+      "current_logprobs": [
+        -34.31992721557617,
+        -34.32547378540039
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -23.853073120117188,
+        -23.974159240722656
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2391299456357956,
+      "kl_div": -23.912994384765625,
+      "kl_coef": 0.01,
+      "total_loss": -0.07912993431091309,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.125062097459775e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2806516626648579,
+      "clipped_grad_norm": 0.28065168857574463,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.48780131340026855
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 73,
+    "timing": {
+      "total_time": 0.042038579002110055,
+      "forward_time": 0.0046712260009371676,
+      "logprob_time": 0.004469470000913134,
+      "loss_time": 0.009845640997809824,
+      "backward_time": 0.009097325000766432,
+      "optim_time": 0.01395442700231797
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15983787721900.1,
+      "mfu_percent": 9.687144073878848
+    },
+    "training_dynamics": {
+      "loss": -0.08059126138687134,
+      "current_logprobs": [
+        -34.42739486694336,
+        -34.46194839477539
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -23.960540771484375,
+        -24.110633850097656
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.24059127271175385,
+      "kl_div": -24.059127807617188,
+      "kl_coef": 0.01,
+      "total_loss": -0.08059126138687134,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.56507184884336e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28076792811096557,
+      "clipped_grad_norm": 0.28076794743537903,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.48682454228401184
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 74,
+    "timing": {
+      "total_time": 0.041442677000304684,
+      "forward_time": 0.0045691560007981025,
+      "logprob_time": 0.004468237002583919,
+      "loss_time": 0.009701392002170905,
+      "backward_time": 0.008720811998500722,
+      "optim_time": 0.013982439999381313
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16340848241329.105,
+      "mfu_percent": 9.903544388684306
+    },
+    "training_dynamics": {
+      "loss": -0.08212512731552124,
+      "current_logprobs": [
+        -34.61484146118164,
+        -34.63056182861328
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -24.147987365722656,
+        -24.279247283935547
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.24212513864040375,
+      "kl_div": -24.212514877319336,
+      "kl_coef": 0.01,
+      "total_loss": -0.08212512731552124,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.0586505550544985e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28090336127942594,
+      "clipped_grad_norm": 0.2809033989906311,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4860175848007202
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 75,
+    "timing": {
+      "total_time": 0.04273680199912633,
+      "forward_time": 0.0052688809992105234,
+      "logprob_time": 0.004628364997188328,
+      "loss_time": 0.009943963999830885,
+      "backward_time": 0.008919071999116568,
+      "optim_time": 0.013975958001537947
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 14170729005112.748,
+      "mfu_percent": 8.588320609159242
+    },
+    "training_dynamics": {
+      "loss": -0.08360663056373596,
+      "current_logprobs": [
+        -34.773048400878906,
+        -34.76113510131836
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -24.306194305419922,
+        -24.409820556640625
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.24360664188861847,
+      "kl_div": -24.36066436767578,
+      "kl_coef": 0.01,
+      "total_loss": -0.08360663056373596,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.635630949598955e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2808996518347732,
+      "clipped_grad_norm": 0.28089964389801025,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.48494553565979004
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 76,
+    "timing": {
+      "total_time": 0.04632885400133091,
+      "forward_time": 0.004565328999888152,
+      "logprob_time": 0.004481732001295313,
+      "loss_time": 0.011594284002057975,
+      "backward_time": 0.011657642000500346,
+      "optim_time": 0.014028855999640655
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16354546364967.174,
+      "mfu_percent": 9.911846281798287
+    },
+    "training_dynamics": {
+      "loss": -0.08506888151168823,
+      "current_logprobs": [
+        -34.91960525512695,
+        -34.916996002197266
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -24.45275115966797,
+        -24.56568145751953
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.24506889283657074,
+      "kl_div": -24.50688934326172,
+      "kl_coef": 0.01,
+      "total_loss": -0.08506888151168823,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.2758978729386925e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2809274595017947,
+      "clipped_grad_norm": 0.280927449464798,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.48402148485183716
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 77,
+    "timing": {
+      "total_time": 0.041949231999751646,
+      "forward_time": 0.004877862000284949,
+      "logprob_time": 0.004536152999207843,
+      "loss_time": 0.009836963999987347,
+      "backward_time": 0.008746389001316857,
+      "optim_time": 0.013951332002761774
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15306682475977.871,
+      "mfu_percent": 9.276777258168407
+    },
+    "training_dynamics": {
+      "loss": -0.08658604323863983,
+      "current_logprobs": [
+        -35.080299377441406,
+        -35.067970275878906
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -24.613445281982422,
+        -24.716655731201172
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.24658605456352234,
+      "kl_div": -24.658605575561523,
+      "kl_coef": 0.01,
+      "total_loss": -0.08658604323863983,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.9595224748369944e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28095039921575354,
+      "clipped_grad_norm": 0.2809504270553589,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4830121099948883
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 78,
+    "timing": {
+      "total_time": 0.04153303500061156,
+      "forward_time": 0.004563825001241639,
+      "logprob_time": 0.0044895169994561,
+      "loss_time": 0.0098409830025048,
+      "backward_time": 0.008690074002515757,
+      "optim_time": 0.013948094998340821
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16359935970307.113,
+      "mfu_percent": 9.915112709277038
+    },
+    "training_dynamics": {
+      "loss": -0.08821794390678406,
+      "current_logprobs": [
+        -35.22173309326172,
+        -35.22277069091797
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -24.754878997802734,
+        -24.871456146240234
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.24821795523166656,
+      "kl_div": -24.821796417236328,
+      "kl_coef": 0.01,
+      "total_loss": -0.08821794390678406,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.663312196309441e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28112100208395596,
+      "clipped_grad_norm": 0.28112098574638367,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4818481504917145
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 79,
+    "timing": {
+      "total_time": 0.04171102800319204,
+      "forward_time": 0.004749101997731486,
+      "logprob_time": 0.00448581000091508,
+      "loss_time": 0.009743689999595517,
+      "backward_time": 0.008777066999755334,
+      "optim_time": 0.01395491800212767
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15721684822870.693,
+      "mfu_percent": 9.528293832042845
+    },
+    "training_dynamics": {
+      "loss": -0.08974045515060425,
+      "current_logprobs": [
+        -35.389739990234375,
+        -35.3760986328125
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -24.92288589477539,
+        -25.024784088134766
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.24974046647548676,
+      "kl_div": -24.97404670715332,
+      "kl_coef": 0.01,
+      "total_loss": -0.08974045515060425,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.4288601551948332e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28109069631440403,
+      "clipped_grad_norm": 0.2810906767845154,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4805428683757782
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 80,
+    "timing": {
+      "total_time": 0.041270095000072615,
+      "forward_time": 0.004542755999864312,
+      "logprob_time": 0.004484327000682242,
+      "loss_time": 0.009597857999324333,
+      "backward_time": 0.00868417300080182,
+      "optim_time": 0.013960529002361
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16435812269518.799,
+      "mfu_percent": 9.961098345162908
+    },
+    "training_dynamics": {
+      "loss": -0.0912819355726242,
+      "current_logprobs": [
+        -35.55315017700195,
+        -35.5417366027832
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -25.08629608154297,
+        -25.19042205810547
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2512819468975067,
+      "kl_div": -25.12819480895996,
+      "kl_coef": 0.01,
+      "total_loss": -0.0912819355726242,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.2239818533710256e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28125697701702485,
+      "clipped_grad_norm": 0.2812570035457611,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4792661666870117
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 81,
+    "timing": {
+      "total_time": 0.041984457999205915,
+      "forward_time": 0.004573082998831524,
+      "logprob_time": 0.004970875001163222,
+      "loss_time": 0.009745905001182109,
+      "backward_time": 0.008738735003134934,
+      "optim_time": 0.013955039001302794
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16326816027410.283,
+      "mfu_percent": 9.895040016612294
+    },
+    "training_dynamics": {
+      "loss": -0.09296946227550507,
+      "current_logprobs": [
+        -35.69167709350586,
+        -35.70281982421875
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -25.224822998046875,
+        -25.351505279541016
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2529694736003876,
+      "kl_div": -25.296947479248047,
+      "kl_coef": 0.01,
+      "total_loss": -0.09296946227550507,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.0337860775755381e-11,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2813856470362644,
+      "clipped_grad_norm": 0.2813856899738312,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.47788017988204956
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 82,
+    "timing": {
+      "total_time": 0.041405447002034634,
+      "forward_time": 0.004604650999681326,
+      "logprob_time": 0.004492992997256806,
+      "loss_time": 0.009656658003223129,
+      "backward_time": 0.008698039000591962,
+      "optim_time": 0.013952653996966546
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16214884647102.955,
+      "mfu_percent": 9.827202816426034
+    },
+    "training_dynamics": {
+      "loss": -0.09451763331890106,
+      "current_logprobs": [
+        -35.8640251159668,
+        -35.86280059814453
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -25.397171020507812,
+        -25.511486053466797
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.25451764464378357,
+      "kl_div": -25.451765060424805,
+      "kl_coef": 0.01,
+      "total_loss": -0.09451763331890106,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 8.856422539782471e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28141656546475996,
+      "clipped_grad_norm": 0.28141653537750244,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4763386845588684
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 83,
+    "timing": {
+      "total_time": 0.04164816999764298,
+      "forward_time": 0.004553175996989012,
+      "logprob_time": 0.004509734000748722,
+      "loss_time": 0.009902065998176113,
+      "backward_time": 0.008734838000236778,
+      "optim_time": 0.013947924999229144
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16398198718734.963,
+      "mfu_percent": 9.938302253778765
+    },
+    "training_dynamics": {
+      "loss": -0.09617222845554352,
+      "current_logprobs": [
+        -35.99563980102539,
+        -36.00825500488281
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -25.528785705566406,
+        -25.656940460205078
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.256172239780426,
+      "kl_div": -25.617223739624023,
+      "kl_coef": 0.01,
+      "total_loss": -0.09617222845554352,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 7.502816944116031e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2814807295121759,
+      "clipped_grad_norm": 0.2814807891845703,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.47478440403938293
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 84,
+    "timing": {
+      "total_time": 0.04160729400246055,
+      "forward_time": 0.004625790999853052,
+      "logprob_time": 0.004497081001318293,
+      "loss_time": 0.009816827001486672,
+      "backward_time": 0.008712686998478603,
+      "optim_time": 0.01395431700075278
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16140782149987.29,
+      "mfu_percent": 9.782292212113507
+    },
+    "training_dynamics": {
+      "loss": -0.09779597818851471,
+      "current_logprobs": [
+        -36.19830322265625,
+        -36.17910385131836
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -25.731449127197266,
+        -25.827789306640625
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2577959895133972,
+      "kl_div": -25.779600143432617,
+      "kl_coef": 0.01,
+      "total_loss": -0.09779597818851471,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 6.380782187342948e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28155793635230586,
+      "clipped_grad_norm": 0.28155794739723206,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.473013699054718
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 85,
+    "timing": {
+      "total_time": 0.04137184499995783,
+      "forward_time": 0.004537156000878895,
+      "logprob_time": 0.004463238001335412,
+      "loss_time": 0.009611322999262484,
+      "backward_time": 0.008809818998997798,
+      "optim_time": 0.013949879001302179
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16456098222220.445,
+      "mfu_percent": 9.973392861951785
+    },
+    "training_dynamics": {
+      "loss": -0.09936286509037018,
+      "current_logprobs": [
+        -36.35014343261719,
+        -36.343170166015625
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -25.883289337158203,
+        -25.99185562133789
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2593628764152527,
+      "kl_div": -25.93628692626953,
+      "kl_coef": 0.01,
+      "total_loss": -0.09936286509037018,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 5.453651419351502e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28163730825607536,
+      "clipped_grad_norm": 0.2816373109817505,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.47116103768348694
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 86,
+    "timing": {
+      "total_time": 0.041567078998923535,
+      "forward_time": 0.004670624999562278,
+      "logprob_time": 0.004539008998108329,
+      "loss_time": 0.009732380000059493,
+      "backward_time": 0.00867333300266182,
+      "optim_time": 0.01395131100071012
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15985844465568.816,
+      "mfu_percent": 9.688390585193222
+    },
+    "training_dynamics": {
+      "loss": -0.10103245079517365,
+      "current_logprobs": [
+        -36.506195068359375,
+        -36.52055740356445
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -26.03934097290039,
+        -26.16924285888672
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.26103246212005615,
+      "kl_div": -26.103246688842773,
+      "kl_coef": 0.01,
+      "total_loss": -0.10103245079517365,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.61667423040657e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.281751150280876,
+      "clipped_grad_norm": 0.28175118565559387,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.469234824180603
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 87,
+    "timing": {
+      "total_time": 0.04140369500237284,
+      "forward_time": 0.0045402910000120755,
+      "logprob_time": 0.00444532499750494,
+      "loss_time": 0.009745784002006985,
+      "backward_time": 0.008712255999853369,
+      "optim_time": 0.013959586998680606
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16444735546642.588,
+      "mfu_percent": 9.966506391904598
+    },
+    "training_dynamics": {
+      "loss": -0.10269229114055634,
+      "current_logprobs": [
+        -36.666725158691406,
+        -36.662017822265625
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -26.199871063232422,
+        -26.31070327758789
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.26269230246543884,
+      "kl_div": -26.269229888916016,
+      "kl_coef": 0.01,
+      "total_loss": -0.10269229114055634,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.908741386116077e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28179349184292374,
+      "clipped_grad_norm": 0.281793475151062,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4671516418457031
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 88,
+    "timing": {
+      "total_time": 0.04171191999921575,
+      "forward_time": 0.004605141999491025,
+      "logprob_time": 0.004481862997636199,
+      "loss_time": 0.009861811002338072,
+      "backward_time": 0.008799238999927184,
+      "optim_time": 0.013963092998892535
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16213155817616.938,
+      "mfu_percent": 9.826155040979963
+    },
+    "training_dynamics": {
+      "loss": -0.10420073568820953,
+      "current_logprobs": [
+        -36.84217834472656,
+        -36.831947326660156
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -26.375324249267578,
+        -26.480632781982422
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.26420074701309204,
+      "kl_div": -26.420074462890625,
+      "kl_coef": 0.01,
+      "total_loss": -0.10420073568820953,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 3.3635570457352104e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2818450863665121,
+      "clipped_grad_norm": 0.2818450629711151,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.46509313583374023
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 89,
+    "timing": {
+      "total_time": 0.04132980600115843,
+      "forward_time": 0.004591265998897143,
+      "logprob_time": 0.004473075998248532,
+      "loss_time": 0.009662559001299087,
+      "backward_time": 0.008644098998047411,
+      "optim_time": 0.013958354000351392
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16262156193506.287,
+      "mfu_percent": 9.855852238488659
+    },
+    "training_dynamics": {
+      "loss": -0.1059628278017044,
+      "current_logprobs": [
+        -37.02723693847656,
+        -36.99189376831055
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -26.560382843017578,
+        -26.640579223632812
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2659628391265869,
+      "kl_div": -26.596284866333008,
+      "kl_coef": 0.01,
+      "total_loss": -0.1059628278017044,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.8190696305108176e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28193168978680816,
+      "clipped_grad_norm": 0.28193169832229614,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.462869256734848
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 90,
+    "timing": {
+      "total_time": 0.04140860400002566,
+      "forward_time": 0.0045678329988732,
+      "logprob_time": 0.004481582000153139,
+      "loss_time": 0.009730886999022914,
+      "backward_time": 0.008670939001603983,
+      "optim_time": 0.013956752001831774
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16345581114374.846,
+      "mfu_percent": 9.906412796590816
+    },
+    "training_dynamics": {
+      "loss": -0.10772742331027985,
+      "current_logprobs": [
+        -37.16120529174805,
+        -37.1657829284668
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -26.694351196289062,
+        -26.814468383789062
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.26772743463516235,
+      "kl_div": -26.772743225097656,
+      "kl_coef": 0.01,
+      "total_loss": -0.10772742331027985,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.3621805466528256e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2820940554760101,
+      "clipped_grad_norm": 0.2820940315723419,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4605620801448822
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 91,
+    "timing": {
+      "total_time": 0.04151479199936148,
+      "forward_time": 0.004593460998876253,
+      "logprob_time": 0.004481580999708967,
+      "loss_time": 0.009820843999477802,
+      "backward_time": 0.00866818400027114,
+      "optim_time": 0.013950299999123672
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16254385270336.64,
+      "mfu_percent": 9.851142588082812
+    },
+    "training_dynamics": {
+      "loss": -0.1092219203710556,
+      "current_logprobs": [
+        -37.3386344909668,
+        -37.365318298339844
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -26.871780395507812,
+        -27.01400375366211
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2692219316959381,
+      "kl_div": -26.92219352722168,
+      "kl_coef": 0.01,
+      "total_loss": -0.1092219203710556,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 2.037540492230705e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2820065271054992,
+      "clipped_grad_norm": 0.28200653195381165,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4582297205924988
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 92,
+    "timing": {
+      "total_time": 0.04154090099837049,
+      "forward_time": 0.0046129270012897905,
+      "logprob_time": 0.0044766920000256505,
+      "loss_time": 0.009732209000503644,
+      "backward_time": 0.00873835499805864,
+      "optim_time": 0.013980165000248235
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16185793700859.285,
+      "mfu_percent": 9.809571939914719
+    },
+    "training_dynamics": {
+      "loss": -0.11095152795314789,
+      "current_logprobs": [
+        -37.512847900390625,
+        -37.496124267578125
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -27.04599380493164,
+        -27.14480972290039
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2709515392780304,
+      "kl_div": -27.095155715942383,
+      "kl_coef": 0.01,
+      "total_loss": -0.11095152795314789,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.712802534352409e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2822322745424277,
+      "clipped_grad_norm": 0.28223228454589844,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.45557835698127747
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 93,
+    "timing": {
+      "total_time": 0.04322718699768302,
+      "forward_time": 0.005579471002420178,
+      "logprob_time": 0.004709417000412941,
+      "loss_time": 0.010042147001513513,
+      "backward_time": 0.008919423002225813,
+      "optim_time": 0.01397601700227824
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 13381893152166.834,
+      "mfu_percent": 8.110238274040507
+    },
+    "training_dynamics": {
+      "loss": -0.1128271073102951,
+      "current_logprobs": [
+        -37.69198989868164,
+        -37.684322357177734
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -27.225135803222656,
+        -27.3330078125
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2728271186351776,
+      "kl_div": -27.282712936401367,
+      "kl_coef": 0.01,
+      "total_loss": -0.1128271073102951,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.4204108809284799e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2822581519613302,
+      "clipped_grad_norm": 0.28225815296173096,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4527253806591034
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 94,
+    "timing": {
+      "total_time": 0.04184118000193848,
+      "forward_time": 0.004705740000645164,
+      "logprob_time": 0.004523489998973673,
+      "loss_time": 0.009862962997431168,
+      "backward_time": 0.008779652001976501,
+      "optim_time": 0.013968904000648763
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 15866555481128.041,
+      "mfu_percent": 9.616094230986691
+    },
+    "training_dynamics": {
+      "loss": -0.11460591852664948,
+      "current_logprobs": [
+        -37.836334228515625,
+        -37.86379623413086
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -27.36948013305664,
+        -27.512481689453125
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.274605929851532,
+      "kl_div": -27.46059226989746,
+      "kl_coef": 0.01,
+      "total_loss": -0.11460591852664948,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.1873611902718517e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2824170051886087,
+      "clipped_grad_norm": 0.282416969537735,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.44999781250953674
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 95,
+    "timing": {
+      "total_time": 0.04156633800084819,
+      "forward_time": 0.0046072869990894105,
+      "logprob_time": 0.004480219999095425,
+      "loss_time": 0.009788613999262452,
+      "backward_time": 0.008720511999854352,
+      "optim_time": 0.013969294999697013
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16205607511482.713,
+      "mfu_percent": 9.821580309989523
+    },
+    "training_dynamics": {
+      "loss": -0.11622051894664764,
+      "current_logprobs": [
+        -38.04515075683594,
+        -38.032901763916016
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -27.578296661376953,
+        -27.68158721923828
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.27622053027153015,
+      "kl_div": -27.622055053710938,
+      "kl_coef": 0.01,
+      "total_loss": -0.11622051894664764,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 1.0101601629827761e-12,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28240690751312747,
+      "clipped_grad_norm": 0.28240689635276794,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4470585882663727
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 96,
+    "timing": {
+      "total_time": 0.04138030100148171,
+      "forward_time": 0.004570569002680713,
+      "logprob_time": 0.004459710999071831,
+      "loss_time": 0.009741887002746807,
+      "backward_time": 0.008649930001411121,
+      "optim_time": 0.01395770399903995
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16335796430643.19,
+      "mfu_percent": 9.900482685238297
+    },
+    "training_dynamics": {
+      "loss": -0.1179714947938919,
+      "current_logprobs": [
+        -38.2181282043457,
+        -38.22453308105469
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -27.75127410888672,
+        -27.873218536376953
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2779715061187744,
+      "kl_div": -27.797151565551758,
+      "kl_coef": 0.01,
+      "total_loss": -0.1179714947938919,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 8.478104286321897e-13,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28254522622964967,
+      "clipped_grad_norm": 0.2825452387332916,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4440137445926666
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 97,
+    "timing": {
+      "total_time": 0.041251931001170306,
+      "forward_time": 0.004456935999769485,
+      "logprob_time": 0.004431718996784184,
+      "loss_time": 0.009683098000095924,
+      "backward_time": 0.00872943799913628,
+      "optim_time": 0.013950299999123672
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16752290094329.75,
+      "mfu_percent": 10.152903087472575
+    },
+    "training_dynamics": {
+      "loss": -0.11979548633098602,
+      "current_logprobs": [
+        -38.40800476074219,
+        -38.39643478393555
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -27.941150665283203,
+        -28.045120239257812
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.27979549765586853,
+      "kl_div": -27.979551315307617,
+      "kl_coef": 0.01,
+      "total_loss": -0.11979548633098602,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 7.066341327181813e-13,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.28260084439226196,
+      "clipped_grad_norm": 0.2826008200645447,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4410247206687927
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 98,
+    "timing": {
+      "total_time": 0.04134965400226065,
+      "forward_time": 0.00455126199813094,
+      "logprob_time": 0.004502461000811309,
+      "loss_time": 0.009637081999244401,
+      "backward_time": 0.008705512998858467,
+      "optim_time": 0.013952463999885367
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16405094857352.117,
+      "mfu_percent": 9.942481731728556
+    },
+    "training_dynamics": {
+      "loss": -0.12149481475353241,
+      "current_logprobs": [
+        -38.57202911376953,
+        -38.57654571533203
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -28.105175018310547,
+        -28.225231170654297
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.2814948260784149,
+      "kl_div": -28.14948272705078,
+      "kl_coef": 0.01,
+      "total_loss": -0.12149481475353241,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 5.960245318126223e-13,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2826931875091952,
+      "clipped_grad_norm": 0.28269320726394653,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.4378661811351776
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  },
+  {
+    "epoch": 99,
+    "timing": {
+      "total_time": 0.04156424399843672,
+      "forward_time": 0.004594452999299392,
+      "logprob_time": 0.004463338002096862,
+      "loss_time": 0.009787892002350418,
+      "backward_time": 0.008762158999161329,
+      "optim_time": 0.013955840000562603
+    },
+    "model_analysis": {
+      "batch_size": 2,
+      "seq_len": 50,
+      "tokens_processed": 100,
+      "model_params": 124439808,
+      "forward_flops": 74663884800,
+      "flops_per_sec": 16250875743289.896,
+      "mfu_percent": 9.849015601993877
+    },
+    "training_dynamics": {
+      "loss": -0.12354309856891632,
+      "current_logprobs": [
+        -38.76805877685547,
+        -38.75212478637695
+      ],
+      "old_logprobs": [
+        -10.466854095458984,
+        -10.351314544677734
+      ],
+      "logprob_diff": [
+        -28.301204681396484,
+        -28.40081024169922
+      ],
+      "rewards": [
+        1.0,
+        0.20000000298023224
+      ],
+      "policy_loss": 0.1600000113248825,
+      "kl_loss": -0.28354310989379883,
+      "kl_div": -28.354312896728516,
+      "kl_coef": 0.01,
+      "total_loss": -0.12354309856891632,
+      "baseline": 0.6000000238418579,
+      "mean_reward": 0.6000000238418579,
+      "std_reward": 0.5656854510307312,
+      "mean_advantage": -2.9802322387695312e-08,
+      "mean_logprob_ratio": 4.859901543696754e-13,
+      "fraction_clipped": 1.0
+    },
+    "gradients": {
+      "total_grad_norm": 0.2827947372434694,
+      "clipped_grad_norm": 0.282794713973999,
+      "param_count": 148,
+      "params_with_grad": 148,
+      "param_change": 0.43464040756225586
+    },
+    "memory": {
+      "allocated_gb": 2.895939350128174,
+      "reserved_gb": 3.451171875,
+      "peak_gb": 3.3602585792541504
+    }
+  }
+]

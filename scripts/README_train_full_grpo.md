@@ -41,18 +41,18 @@ The script automatically determines the optimal batch size by:
 ### Basic Training
 ```bash
 # Test the pipeline (recommended first)
-python scripts/test_full_grpo.py
+uv run python scripts/test_full_grpo.py
 
 # Run full training with defaults
-python scripts/train_full_grpo.py
+uv run python scripts/train_full_grpo.py
 
 # Custom training
-python scripts/train_full_grpo.py --steps 500 --max-positions 128
+uv run python scripts/train_full_grpo.py --steps 500 --max-positions 128
 ```
 
 ### Advanced Options
 ```bash
-python scripts/train_full_grpo.py \
+uv run python scripts/train_full_grpo.py \
   --steps 1000 \
   --max-positions 256 \
   --output-dir "outputs/my_training" \
@@ -164,7 +164,7 @@ Where:
 ### Slow Performance  
 ```bash
 # Disable optimizations for debugging:
-python scripts/train_full_grpo.py --steps 50
+uv run python scripts/train_full_grpo.py --steps 50
 # Then edit script to set:
 # use_torch_compile=False
 # use_mixed_precision=False
@@ -173,7 +173,7 @@ python scripts/train_full_grpo.py --steps 50
 ### Model Loading Issues
 ```bash
 # Test model loading separately:
-python -c "
+uv run python -c "
 from src.rookworld_rlvr.model.loader import load_pretrained_model
 model = load_pretrained_model('jrahn/RookWorld-LM-124M')
 print('Model loaded successfully')

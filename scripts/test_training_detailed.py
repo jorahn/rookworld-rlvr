@@ -14,7 +14,7 @@ sample to enable detailed inspection of:
 - Gradient flows and training dynamics
 
 Usage:
-    python test_training_detailed.py [--device cuda|cpu] [--mixed-precision]
+    uv run python test_training_detailed.py [--device cuda|cpu] [--mixed-precision]
 """
 
 import argparse
@@ -130,22 +130,21 @@ class DetailedTrainingTester:
         self.logger.info(f"   Max positions: {model_config.n_positions}")
         self.logger.info("")
         
-        # 3. Initialize model (using random weights for testing)
-        self.logger.info("3. Initializing GPT-2 model with random weights...")
+        # 3. Initialize model (loading HuggingFace pretrained weights)
+        self.logger.info("3. Loading GPT-2 model with HuggingFace pretrained weights...")
+        self.logger.info("   Model: jrahn/RookWorld-LM-124M")
         start_time = time.time()
-        self.model = GPT2Model(model_config).to(self.device)
+        self.model = load_pretrained_model("jrahn/RookWorld-LM-124M", device=self.device)
         self.model.train()
         load_time = time.time() - start_time
         actual_params = sum(p.numel() for p in self.model.parameters())
-        self.logger.info(f"   Model initialized in {load_time:.3f}s")
+        self.logger.info(f"   Model loaded in {load_time:.3f}s")
         self.logger.info(f"   Actual parameters: {actual_params:,}")
         
-        # Create reference model (copy of main model)
+        # Create reference model (frozen copy for GRPO)
         self.logger.info("4. Creating reference model...")
         start_time = time.time()
-        self.ref_model = GPT2Model(model_config).to(self.device)
-        # Copy weights from main model to reference model
-        self.ref_model.load_state_dict(self.model.state_dict())
+        self.ref_model = load_pretrained_model("jrahn/RookWorld-LM-124M", device=self.device)
         self.ref_model.eval()
         for param in self.ref_model.parameters():
             param.requires_grad_(False)

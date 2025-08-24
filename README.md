@@ -983,19 +983,19 @@ if __name__ == "__main__":
 ### Basic Training
 
 ```bash
-python train_rookworld_grpo.py --steps 1000 --group-size 8
+uv run python train_rookworld_grpo.py --steps 1000 --group-size 8
 ```
 
 ### Policy-Only Training
 
 ```bash
-python train_rookworld_grpo.py --mix-env-ratio 0.0 --steps 2000
+uv run python train_rookworld_grpo.py --mix-env-ratio 0.0 --steps 2000
 ```
 
 ### High-Performance Settings
 
 ```bash
-python train_rookworld_grpo.py \\
+uv run python train_rookworld_grpo.py \\
     --steps 5000 \\
     --batch-positions 16 \\
     --group-size 16 \\
@@ -1007,7 +1007,7 @@ python train_rookworld_grpo.py \\
 ### Experimental Dense Rewards
 
 ```bash
-python train_rookworld_grpo.py \\
+uv run python train_rookworld_grpo.py \\
     --steps 2000 \\
     --group-size 4 \\
     --kl-coef 0.05 \\

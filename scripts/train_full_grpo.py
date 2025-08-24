@@ -10,8 +10,8 @@ This script uses the main TrainingOrchestrator from train_rookworld_grpo.py with
 - Automatic batch size optimization based on GPU memory profiling
 
 Usage:
-    python scripts/train_full_grpo.py
-    python scripts/train_full_grpo.py --steps 500 --max-positions 128
+    uv run python scripts/train_full_grpo.py
+    uv run python scripts/train_full_grpo.py --steps 500 --max-positions 128
 """
 
 import argparse

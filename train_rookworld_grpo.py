@@ -13,9 +13,9 @@ This script orchestrates:
 - Comprehensive evaluation and monitoring
 
 Usage:
-    python train_rookworld_grpo.py --steps 1000 --group-size 8
-    python train_rookworld_grpo.py --mix-env-ratio 0.0 --steps 2000  # Policy only
-    python train_rookworld_grpo.py --steps 5000 --batch-positions 16 --lr 5e-6  # High perf
+    uv run python train_rookworld_grpo.py --steps 1000 --group-size 8
+    uv run python train_rookworld_grpo.py --mix-env-ratio 0.0 --steps 2000  # Policy only
+    uv run python train_rookworld_grpo.py --steps 5000 --batch-positions 16 --lr 5e-6  # High perf
 """
 
 import argparse
@@ -61,6 +61,7 @@ class TrainingOrchestrator:
             config: Complete GRPO training configuration
         """
         self.config = config
+        self.run_id = None  # Initialize run_id before setup_logging
         self.setup_logging()
         self.setup_reproducibility()
         
@@ -120,6 +121,9 @@ class TrainingOrchestrator:
                 logging.StreamHandler(sys.stdout)
             ]
         )
+        
+        # Create the logger instance
+        self.logger = logging.getLogger(__name__)
         
         # Add resume marker to logs
         if is_resume:
@@ -231,8 +235,8 @@ class TrainingOrchestrator:
         # GRPO trainer
         self.trainer = GRPOTrainer(self.model, self.ref_model, self.config)
         
-        # Data collector for GRPO batches
-        self.data_collector = GRPODataCollector(self.config, self.policy, self.stockfish)
+        # Data collector for GRPO batches  
+        self.data_collector = GRPODataCollector(self.policy)
         
         # Self-play manager
         self.self_play = SelfPlayManager(self.config, self.policy)

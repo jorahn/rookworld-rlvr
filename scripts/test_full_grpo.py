@@ -5,7 +5,7 @@ Test Script for Full GRPO Training Pipeline
 This script validates the train_full_grpo.py implementation with a minimal test run.
 
 Usage:
-    python scripts/test_full_grpo.py
+    uv run python scripts/test_full_grpo.py
 """
 
 import sys
@@ -99,7 +99,7 @@ def test_training_pipeline():
         
         print("\n=== TEST COMPLETED SUCCESSFULLY ===")
         print("\nTo run full training:")
-        print("python scripts/train_full_grpo.py --steps 100")
+        print("uv run python scripts/train_full_grpo.py --steps 100")
         
         return True
         

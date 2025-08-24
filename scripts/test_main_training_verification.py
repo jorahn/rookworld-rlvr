@@ -22,6 +22,7 @@ from rookworld_rlvr.train.grpo_trainer import GRPOTrainer, GRPOTrainingStep, GRP
 from rookworld_rlvr.train.policy import CausalLMPolicy, GenerationConfig
 from rookworld_rlvr.model.gpt2 import GPT2Model
 from rookworld_rlvr.model.config import GPT2Config
+from rookworld_rlvr.model.loader import load_pretrained_model
 from rookworld_rlvr.tokenizer.bridge import TokenizerBridge
 
 
@@ -79,19 +80,15 @@ class MainTrainingVerifier:
         """Initialize all main training components"""
         print("\n📦 Initializing main training components...")
         
-        # Initialize models (simplified for testing)
-        model_config = GPT2Config()
-        self.model = GPT2Model(model_config)
-        self.model = self.model.to(self.grpo_config.device)
+        # Load HuggingFace pretrained models
+        print("   📝 Loading HuggingFace pretrained weights: jrahn/RookWorld-LM-124M")
+        self.model = load_pretrained_model("jrahn/RookWorld-LM-124M", device=self.grpo_config.device)
         self.model.train()
         
-        # Note: Using randomly initialized weights for verification test
-        print("   📝 Using randomly initialized model for verification (not pre-trained weights)")
+        print(f"   📊 Model parameters: {sum(p.numel() for p in self.model.parameters()):,}")
         
         # Create reference model (frozen copy)
-        self.ref_model = GPT2Model(model_config)
-        self.ref_model.load_state_dict(self.model.state_dict())
-        self.ref_model = self.ref_model.to(self.grpo_config.device)
+        self.ref_model = load_pretrained_model("jrahn/RookWorld-LM-124M", device=self.grpo_config.device)
         self.ref_model.eval()
         
         # Freeze reference model

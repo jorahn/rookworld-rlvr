@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from rookworld_rlvr.model.config import ROOKWORLD_CONFIG, GPT2Config
 from rookworld_rlvr.model.gpt2 import GPT2Model
+from rookworld_rlvr.model.loader import load_pretrained_model
 from rookworld_rlvr.tokenizer.bridge import TokenizerBridge
 from rookworld_rlvr.train.config import GRPOConfig
 from rookworld_rlvr.train.grpo_trainer import GRPOTrainer, GRPOBatch
@@ -62,10 +63,10 @@ class DeepAnalysisTester:
         self.tokenizer = TokenizerBridge()
         self.model_config = ROOKWORLD_CONFIG
         
-        # Create models (ensure single GPU)
-        self.model = GPT2Model(self.model_config).to(self.device)
-        self.ref_model = GPT2Model(self.model_config).to(self.device)
-        self.ref_model.load_state_dict(self.model.state_dict())
+        # Load pretrained models (HuggingFace weights)
+        print("Loading HuggingFace pretrained weights: jrahn/RookWorld-LM-124M")
+        self.model = load_pretrained_model("jrahn/RookWorld-LM-124M", device=self.device)
+        self.ref_model = load_pretrained_model("jrahn/RookWorld-LM-124M", device=self.device)
         self.ref_model.eval()
         
         # Verify models are on correct device and not using DataParallel

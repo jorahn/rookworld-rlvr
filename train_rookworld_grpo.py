@@ -644,6 +644,7 @@ def create_config_from_args(args) -> GRPOConfig:
         kl_estimator=args.kl_estimator,
         clip_range=args.clip_range,
         temperature=args.temperature,
+        max_new_tokens_env=args.max_new_tokens_env,
         
         # New improved parameters
         kl_divergence_threshold=args.kl_divergence_threshold,
@@ -727,6 +728,8 @@ def main():
     
     parser.add_argument("--temperature", type=float, default=0.7,
                        help="Sampling temperature")
+    parser.add_argument("--max-new-tokens-env", type=int, default=80,
+                       help="Maximum tokens to generate for environment (A:) tasks")
     
     # Task configuration
     parser.add_argument("--mix-env-ratio", type=float, default=0.2,

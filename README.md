@@ -31,7 +31,7 @@ Work-in-progress implementation of Group Relative Policy Optimization (GRPO) for
 
 2. **Mixed Task Framework** (Critical for Stability)
    - **Policy Tasks (80%)**: `P: <FEN>    M: <analysis>` → Structured Stockfish-quality analysis
-   - **Environment Tasks (20%)**: `A: <FEN>+<move>+` → State transition prediction
+   - **Environment Tasks (20%)**: `A: <FEN>+<move>+` → `<history>+<new_FEN>+<reward>+<terminated>+<truncated>`
    - **Insight**: Mixed training prevents catastrophic model divergence (46% stability improvement)
 
 3. **Dataset Integration**
@@ -153,9 +153,9 @@ Target: M: e8g8 b8d7 a7a5 f5d3 f6e4    E: 0.29 0.29 0.28 0.34 0.34    B: f5d3
 #### Environment Tasks (A:) - 20% of training
 ```
 Prompt: A: r3k2r/1P6/1q1p2PB/8/pPP5/5N1P/1P1QBK2/R5R1 b kq - 0 28+a8a6+
-Target: result_analysis
+Target: +r6r/1P6/1q1p2PB/8/pPP5/5N1P/1P1QBK2/R5R1 w - - 1 29+0.001+0+0
 ```
-**Goal**: Maintain chess state prediction accuracy
+**Goal**: Predict chess state transitions (board position, reward, game status)
 
 ## Training Recommendations
 
@@ -297,6 +297,28 @@ uv run python train_rookworld_grpo.py --recovery-mode
 2. **Hyperparameter Tuning**: Further optimize stable configurations (25-50% → 75%+ target)
 3. **Evaluation Suite**: Comprehensive benchmarking against baseline models
 4. **Advanced Optimizations**: Flash Attention and vLLM integration for 2-5x speedup
+
+## Current Limitations & Known Issues
+
+### 🚨 Environment Task Evaluation (Critical Issue)
+- **Status**: Environment tasks show 0% success rate during training evaluation
+- **Root Cause**: Model generates incorrect move sequences in environment task responses
+- **Technical Details**: 
+  - Pre-trained RookWorld-LM model generates correct environment format in standalone tests
+  - During training evaluation, model produces wrong moves (e.g., generates "e2e4" when prompted with "g1h3")
+  - Pipeline fixes applied: EOS token handling, attention masks, token limits (64→80)
+- **Impact**: Environment task training data may be learning from incorrect labels
+- **Workaround**: Use policy-only training (`--mix-env-ratio 0.0`) until resolved
+- **Issue**: [#10](https://github.com/jorahn/rookworld-rlvr/issues/10) - Detailed technical investigation needed
+
+### ⚠️ Training Stability 
+- **Status**: Improved but not fully stable for production use
+- **Challenges**: 
+  - KL divergence can spike unexpectedly (>20) causing training instability
+  - High gradient clipping rates (100%) indicate optimization difficulties
+  - Recovery system helps but doesn't prevent underlying instability
+- **Progress**: Mixed task training prevents 46% of divergence cases
+- **Recommendations**: Monitor KL divergence closely, use conservative learning rates (1e-6)
 
 ### 🚀 Future Research Directions
 1. **Curriculum Learning**: Progressive difficulty using dataset structure

@@ -291,7 +291,7 @@ class ChessEvaluator:
                 try:
                     # Generate environment task output
                     prompt = f"A: {fen}+{uci}+"
-                    generated_text = policy.generate(prompt, max_new_tokens=32)
+                    generated_text = policy.generate(prompt, max_new_tokens=self.config.max_new_tokens_env)
                     
                     generation_time = time.time() - start_time
                     results['generation_times'].append(generation_time)

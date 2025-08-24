@@ -1,1 +1,0 @@
-# Training module for RookWorld GRPO implementation

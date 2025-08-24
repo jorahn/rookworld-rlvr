@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import random
 import chess
 import torch
+import logging
 
 from ..train.policy import CausalLMPolicy, GenerationConfig
 from ..train.grpo_trainer import GRPOBatch
@@ -34,7 +35,7 @@ class GRPOCollectionConfig:
     
     # Generation settings
     max_new_tokens_policy: int = 50  # Enough for full P: structured output
-    max_new_tokens_env: int = 64     # Enough for full A: structured output
+    max_new_tokens_env: int = 80     # Enough for full A: structured output (56-69 tokens needed)
     temperature: float = 0.7         # Sampling temperature
     top_k: Optional[int] = None      # Top-k filtering
     top_p: Optional[float] = 0.95    # Nucleus sampling
@@ -123,6 +124,7 @@ class GRPODataCollector:
         self.policy_reward_computer = PolicyRewardComputer()
         self.env_reward_computer = EnvRewardComputer()
         self.position_buffer = PositionBuffer()
+        self.logger = logging.getLogger(__name__)
     
     def collect_policy_group(self, board: chess.Board) -> Dict[str, Any]:
         """
@@ -161,7 +163,8 @@ class GRPODataCollector:
             temperature=self.config.temperature,
             top_k=self.config.top_k,
             top_p=self.config.top_p,
-            do_sample=True
+            do_sample=True,
+            pad_token_id=self.policy.tokenizer.eos_token_id
         )
         
         outputs = self.policy.generate_batch(prompts, generation_config)
@@ -240,7 +243,8 @@ class GRPODataCollector:
             temperature=self.config.temperature,
             top_k=self.config.top_k,
             top_p=self.config.top_p,
-            do_sample=True
+            do_sample=True,
+            pad_token_id=self.policy.tokenizer.eos_token_id
         )
         
         outputs = self.policy.generate_batch(prompts, generation_config)
@@ -248,13 +252,44 @@ class GRPODataCollector:
         # Compute rewards for each generated output
         rewards = []
         reward_breakdowns = []
+        parse_failures = 0
+        truncated_count = 0
         
-        for generated_text in outputs["texts"]:
+        for i, generated_text in enumerate(outputs["texts"]):
+            # Check for truncation (hit max_new_tokens without EOS)
+            generated_tokens = self.policy.tokenizer.encode(generated_text)
+            max_tokens_hit = len(generated_tokens) >= self.config.max_new_tokens_env
+            ends_with_eos = generated_tokens and generated_tokens[-1] == self.policy.tokenizer.eos_token_id
+            
+            is_truncated = max_tokens_hit and not ends_with_eos
+            if is_truncated:
+                truncated_count += 1
+                if truncated_count <= 2:  # Limit logging spam
+                    self.logger.warning(f"Environment generation truncated (no EOS): '{generated_text}' (tokens: {len(generated_tokens)})")
+            
+            # Try parsing to detect issues
+            full_text = prompts[i] + generated_text
+            parsed = self.chess_env.parse_prediction(full_text)
+            
+            if parsed is None:
+                parse_failures += 1
+                # Log failed parsing for debugging
+                if parse_failures <= 2:  # Limit logging spam
+                    self.logger.debug(f"Environment parsing failed: '{full_text}' (tokens: {len(generated_tokens)})")
+            
             reward, breakdown = self.env_reward_computer.compute_reward(
                 generated_text, expected_response
             )
             rewards.append(reward)
             reward_breakdowns.append(breakdown)
+        
+        # Log statistics
+        total_samples = len(outputs["texts"])
+        success_rate = (total_samples - parse_failures) / total_samples * 100
+        truncation_rate = truncated_count / total_samples * 100
+        
+        if parse_failures > 0 or truncated_count > 0:
+            self.logger.info(f"Environment task stats: {success_rate:.1f}% parsed successfully, {truncation_rate:.1f}% truncated without EOS ({parse_failures} parse fails, {truncated_count} truncated)")
         
         # Prepare sequences for training
         full_texts = []

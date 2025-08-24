@@ -59,7 +59,7 @@ class GRPOConfig:
     kl_target: Optional[float] = None
     """Target KL divergence for adaptive KL control. If None, uses fixed kl_coef."""
     
-    kl_estimator: str = "kl3"
+    kl_estimator: str = "kl1"
     """KL estimator type: 'kl1' (simple diff), 'kl2' (exp-based), 'kl3' (quadratic)"""
     
     # New: Warmup and adaptive KL control
@@ -69,7 +69,7 @@ class GRPOConfig:
     kl_warmup_factor: float = 0.0
     """KL coefficient multiplier during warmup. 0.0 = no KL penalty during warmup."""
     
-    kl_divergence_threshold: float = 5.0
+    kl_divergence_threshold: float = 50.0
     """KL divergence threshold for early stopping. Set higher for more tolerance."""
     
     reward_warmup_steps: int = 100
@@ -88,7 +88,13 @@ class GRPOConfig:
     """Nucleus (top-p) sampling threshold."""
     
     max_new_tokens: int = 64
-    """Maximum tokens to generate for both P: and A: tasks."""
+    """Maximum tokens to generate for policy (P:) tasks."""
+    
+    max_new_tokens_env: int = 80
+    """Maximum tokens to generate for environment (A:) tasks. Needs 56-69 tokens for completion."""
+    
+    max_positions: int = 512
+    """Maximum sequence length for model input (needed for tokenization)."""
     
     # =============================================================================
     # Training Schedule

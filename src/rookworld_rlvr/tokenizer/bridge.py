@@ -194,11 +194,15 @@ class TokenizerBridge:
                     return j + 1
         
         elif task_type == "environment":
-            # Environment task: Find target start after first "+"
+            # Environment task: Find target start after second "+"
+            # Format: A: {fen}+{uci}+ <-- model generates from here
+            plus_count = 0
             for j in range(len(tokens)):
                 current_decoded = self.decode([tokens[j]]).strip()
                 if current_decoded == '+':
-                    return j + 1  # Start after first '+'
+                    plus_count += 1
+                    if plus_count == 2:
+                        return j + 1  # Start after second '+'
         
         # Fallback to prompt length if pattern not found
         return len(tokens)

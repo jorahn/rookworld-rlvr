@@ -93,7 +93,8 @@ class CausalLMPolicy:
             temperature=temperature,
             max_new_tokens=max_new_tokens,
             top_p=top_p,
-            top_k=0
+            top_k=0,
+            pad_token_id=self.tokenizer.eos_token_id
         )
         
         result = self.generate_batch([prompt], config)
@@ -220,9 +221,12 @@ class CausalLMPolicy:
         sequence = input_ids.clone()
         total_logprob = torch.tensor(0.0, device=self.device)
         
+        # Create initial attention mask
+        current_attention_mask = attention_mask.clone() if attention_mask is not None else torch.ones_like(input_ids)
+        
         for _ in range(generation_config.max_new_tokens):
             # Forward pass
-            outputs = self.model(sequence, attention_mask=None)
+            outputs = self.model(sequence, attention_mask=current_attention_mask)
             logits = outputs["logits"]
             next_token_logits = logits[0, -1, :] # Last position logits
             
@@ -264,6 +268,10 @@ class CausalLMPolicy:
             # Append to sequence (ensure tensor is on correct device)
             next_token = next_token.to(self.device)
             sequence = torch.cat([sequence, next_token.unsqueeze(0)], dim=1)
+            
+            # Expand attention mask for new token
+            new_attention = torch.ones((1, 1), device=self.device, dtype=current_attention_mask.dtype)
+            current_attention_mask = torch.cat([current_attention_mask, new_attention], dim=1)
             
             # Check for early stopping
             if (generation_config.pad_token_id is not None and 
@@ -352,8 +360,7 @@ class CausalLMPolicy:
         encoded = self.tokenizer.encode_batch(
             move_prompts,
             max_length=self.config.max_positions,
-            padding=True,
-            truncation=True
+            padding=True
         )
         
         input_ids = encoded['input_ids'].to(self.device)
@@ -452,8 +459,7 @@ class CausalLMPolicy:
         encoded = self.tokenizer.encode_batch(
             all_prompts,
             max_length=self.config.max_positions,
-            padding=True,
-            truncation=True
+            padding=True
         )
         
         input_ids = encoded['input_ids'].to(self.device)

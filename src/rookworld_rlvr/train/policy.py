@@ -213,6 +213,10 @@ class CausalLMPolicy:
         Returns:
             Tuple of (full_sequence, sequence_logprob)
         """
+        # Ensure input tensors are on correct device
+        input_ids = input_ids.to(self.device)
+        attention_mask = attention_mask.to(self.device) if attention_mask is not None else None
+        
         sequence = input_ids.clone()
         total_logprob = torch.tensor(0.0, device=self.device)
         
@@ -257,7 +261,8 @@ class CausalLMPolicy:
             token_logprob = torch.log(probs[next_token.item()] + 1e-10)
             total_logprob += token_logprob
             
-            # Append to sequence
+            # Append to sequence (ensure tensor is on correct device)
+            next_token = next_token.to(self.device)
             sequence = torch.cat([sequence, next_token.unsqueeze(0)], dim=1)
             
             # Check for early stopping
@@ -287,6 +292,12 @@ class CausalLMPolicy:
             Token-mean logprobs for target sequences [batch_size]
         """
         model = self.ref_model if use_ref else self.model
+        
+        # Ensure tensors are on the correct device
+        model_device = next(model.parameters()).device
+        input_ids = input_ids.to(model_device)
+        attention_mask = attention_mask.to(model_device) if attention_mask is not None else None
+        target_start_indices = target_start_indices.to(model_device)
         
         with torch.set_grad_enabled(not use_ref):
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)

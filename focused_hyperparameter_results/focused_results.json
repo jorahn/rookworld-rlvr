@@ -1,0 +1,163 @@
+[
+  {
+    "config": {
+      "exp_id": "focus_000",
+      "lr": 1e-05,
+      "kl_coef": 0.05,
+      "clip_range": 0.1,
+      "temperature": 0.5,
+      "mix_env_ratio": 0.0,
+      "kl_estimator": "kl1",
+      "batch_positions": 1,
+      "group_size": 2,
+      "steps": 30
+    },
+    "results": {
+      "success": true,
+      "kl_divergence": Infinity,
+      "policy_reward": -1.0,
+      "env_reward": -1.0,
+      "steps_completed": 30,
+      "training_time": 69.5023922920227,
+      "error_message": ""
+    }
+  },
+  {
+    "config": {
+      "exp_id": "focus_001",
+      "lr": 1e-05,
+      "kl_coef": 0.05,
+      "clip_range": 0.1,
+      "temperature": 0.5,
+      "mix_env_ratio": 0.0,
+      "kl_estimator": "kl1",
+      "batch_positions": 2,
+      "group_size": 4,
+      "steps": 30
+    },
+    "results": {
+      "success": false,
+      "kl_divergence": Infinity,
+      "policy_reward": -1.0,
+      "env_reward": -1.0,
+      "steps_completed": 0,
+      "training_time": 76.15896534919739,
+      "error_message": "Unknown error"
+    }
+  },
+  {
+    "config": {
+      "exp_id": "focus_002",
+      "lr": 1e-05,
+      "kl_coef": 0.05,
+      "clip_range": 0.1,
+      "temperature": 0.5,
+      "mix_env_ratio": 0.0,
+      "kl_estimator": "kl3",
+      "batch_positions": 1,
+      "group_size": 2,
+      "steps": 30
+    },
+    "results": {
+      "success": false,
+      "kl_divergence": 15.634,
+      "policy_reward": -1.0,
+      "env_reward": -1.0,
+      "steps_completed": 0,
+      "training_time": 41.443591356277466,
+      "error_message": "KL divergence too high"
+    }
+  },
+  {
+    "config": {
+      "exp_id": "focus_003",
+      "lr": 1e-05,
+      "kl_coef": 0.05,
+      "clip_range": 0.1,
+      "temperature": 0.5,
+      "mix_env_ratio": 0.0,
+      "kl_estimator": "kl3",
+      "batch_positions": 2,
+      "group_size": 4,
+      "steps": 30
+    },
+    "results": {
+      "success": false,
+      "kl_divergence": 18.107,
+      "policy_reward": -1.0,
+      "env_reward": -1.0,
+      "steps_completed": 0,
+      "training_time": 53.10359048843384,
+      "error_message": "KL divergence too high"
+    }
+  },
+  {
+    "config": {
+      "exp_id": "focus_004",
+      "lr": 1e-05,
+      "kl_coef": 0.05,
+      "clip_range": 0.1,
+      "temperature": 0.5,
+      "mix_env_ratio": 0.2,
+      "kl_estimator": "kl1",
+      "batch_positions": 1,
+      "group_size": 2,
+      "steps": 30
+    },
+    "results": {
+      "success": true,
+      "kl_divergence": Infinity,
+      "policy_reward": -1.0,
+      "env_reward": -1.0,
+      "steps_completed": 30,
+      "training_time": 74.59629201889038,
+      "error_message": ""
+    }
+  },
+  {
+    "config": {
+      "exp_id": "focus_005",
+      "lr": 1e-05,
+      "kl_coef": 0.05,
+      "clip_range": 0.1,
+      "temperature": 0.5,
+      "mix_env_ratio": 0.2,
+      "kl_estimator": "kl1",
+      "batch_positions": 2,
+      "group_size": 4,
+      "steps": 30
+    },
+    "results": {
+      "success": false,
+      "kl_divergence": Infinity,
+      "policy_reward": -1.0,
+      "env_reward": -1.0,
+      "steps_completed": 17,
+      "training_time": 81.05243587493896,
+      "error_message": "These live storage data ptrs are in the cudagraph pool but not accounted for as an output of cudagraph trees: "
+    }
+  },
+  {
+    "config": {
+      "exp_id": "focus_006",
+      "lr": 1e-05,
+      "kl_coef": 0.05,
+      "clip_range": 0.1,
+      "temperature": 0.5,
+      "mix_env_ratio": 0.2,
+      "kl_estimator": "kl3",
+      "batch_positions": 1,
+      "group_size": 2,
+      "steps": 30
+    },
+    "results": {
+      "success": false,
+      "kl_divergence": 15.634,
+      "policy_reward": -1.0,
+      "env_reward": -1.0,
+      "steps_completed": 0,
+      "training_time": 42.37545871734619,
+      "error_message": "KL divergence too high"
+    }
+  }
+]

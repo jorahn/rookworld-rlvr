@@ -19,6 +19,7 @@ import chess
 import torch
 
 from ..train.policy import CausalLMPolicy, GenerationConfig
+from ..train.grpo_trainer import GRPOBatch
 from ..environment.chess_env import ChessEnvironment, EnvironmentResponse
 from ..reward.policy_reward import PolicyRewardComputer
 from ..engine.stockfish import StockfishAnalysis
@@ -147,11 +148,11 @@ class GRPODataCollector:
         # Get Stockfish analysis for reward computation
         # Create stub analysis for testing (will be replaced with real Stockfish)
         stockfish_analysis = StockfishAnalysis(
+            top5_moves=["e2e4", "g1f3", "d2d4", "b1c3", "c2c4"],
+            top5_evals=[0.2, 0.1, 0.15, -0.05, 0.08],
             best_move="e2e4",
-            evaluation=0.2,
             depth=15,
-            pv_line=["e2e4", "e7e5"],
-            mate_in=None
+            analysis_time=0.1
         )
         
         # Generate structured outputs
@@ -197,22 +198,17 @@ class GRPODataCollector:
             target_start_idx = self.policy.tokenizer.get_target_start_index(full_text, "policy")
             target_start_indices.append(target_start_idx)
         
-        return {
-            "input_ids": encoding["input_ids"],
-            "attention_mask": encoding["attention_mask"],
-            "target_start": torch.tensor(target_start_indices, device=self.config.device),
-            "old_logprobs": outputs["seq_logprob"],
-            "rewards": torch.tensor(rewards, device=self.config.device),
-            "meta": {
-                "task_type": "policy",
-                "fen": fen,
-                "stockfish_analysis": stockfish_analysis,
-                "reward_breakdowns": reward_breakdowns,
-                "generated_texts": outputs["texts"]
-            }
-        }
+        return GRPOBatch(
+            input_ids=encoding["input_ids"],
+            attention_mask=encoding["attention_mask"],
+            target_start_indices=torch.tensor(target_start_indices, device=self.config.device),
+            old_logprobs=outputs["seq_logprob"],
+            rewards=torch.tensor(rewards, device=self.config.device),
+            position_fen=fen,
+            task_type="policy"
+        )
     
-    def collect_env_group(self, board: chess.Board) -> Optional[Dict[str, Any]]:
+    def collect_env_group(self, board: chess.Board) -> Optional[GRPOBatch]:
         """
         Collect GRPO group for Environment (A:) task
         
@@ -280,23 +276,17 @@ class GRPODataCollector:
             target_start_idx = self.policy.tokenizer.get_target_start_index(full_text, "environment")
             target_start_indices.append(target_start_idx)
         
-        return {
-            "input_ids": encoding["input_ids"],
-            "attention_mask": encoding["attention_mask"],
-            "target_start": torch.tensor(target_start_indices, device=self.config.device),
-            "old_logprobs": outputs["seq_logprob"],
-            "rewards": torch.tensor(rewards, device=self.config.device),
-            "meta": {
-                "task_type": "environment",
-                "fen": fen,
-                "uci_move": uci_move,
-                "expected_response": expected_response,
-                "reward_breakdowns": reward_breakdowns,
-                "generated_texts": outputs["texts"]
-            }
-        }
+        return GRPOBatch(
+            input_ids=encoding["input_ids"],
+            attention_mask=encoding["attention_mask"],
+            target_start_indices=torch.tensor(target_start_indices, device=self.config.device),
+            old_logprobs=outputs["seq_logprob"],
+            rewards=torch.tensor(rewards, device=self.config.device),
+            position_fen=fen,
+            task_type="environment"
+        )
     
-    def collect_mixed_batch(self, batch_size: int) -> List[Dict[str, Any]]:
+    def collect_mixed_batch(self, batch_size: int) -> List[GRPOBatch]:
         """
         Collect mixed batch of Policy and Environment tasks
         

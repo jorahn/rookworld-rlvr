@@ -113,8 +113,13 @@ class StockfishEngine:
             # Initialize engine
             self._engine = chess.engine.SimpleEngine.popen_uci(engine_path)
             
-            # Configure engine options
-            self._engine.configure({"MultiPV": self.multipv})
+            # Configure engine options (skip MultiPV as it's automatically managed in newer Stockfish)
+            try:
+                # Only set MultiPV if the engine supports manual configuration
+                if hasattr(self._engine, 'options') and 'MultiPV' in self._engine.options:
+                    self._engine.configure({"MultiPV": self.multipv})
+            except Exception as e:
+                self.logger.warning(f"Could not configure MultiPV (using automatic management): {e}")
             
             # Get engine info
             self._engine_info = {

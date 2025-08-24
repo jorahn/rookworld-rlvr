@@ -184,8 +184,7 @@ class ChessEvaluator:
                 try:
                     # Generate policy task output
                     prompt = f"P: {fen}    M:"
-                    generation_result = policy.generate([prompt], max_new_tokens=50)
-                    generated_text = generation_result['texts'][0] if generation_result['texts'] else ""
+                    generated_text = policy.generate(prompt, max_new_tokens=50)
                     
                     generation_time = time.time() - start_time
                     results['generation_times'].append(generation_time)
@@ -292,8 +291,7 @@ class ChessEvaluator:
                 try:
                     # Generate environment task output
                     prompt = f"A: {fen}+{uci}+"
-                    generation_result = policy.generate([prompt], max_new_tokens=32)
-                    generated_text = generation_result['texts'][0] if generation_result['texts'] else ""
+                    generated_text = policy.generate(prompt, max_new_tokens=32)
                     
                     generation_time = time.time() - start_time
                     results['generation_times'].append(generation_time)
@@ -364,8 +362,7 @@ class ChessEvaluator:
             try:
                 # Generate move for tactical position
                 prompt = f"P: {fen}    M:"
-                generation_result = policy.generate([prompt], max_new_tokens=50)
-                generated_text = generation_result['texts'][0] if generation_result['texts'] else ""
+                generated_text = policy.generate(prompt, max_new_tokens=50)
                 
                 # Parse generated moves
                 parsed = self.policy_reward_computer.parse_policy_output(generated_text)

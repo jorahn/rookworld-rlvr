@@ -62,6 +62,19 @@ class GRPOConfig:
     kl_estimator: str = "kl3"
     """KL estimator type: 'kl1' (simple diff), 'kl2' (exp-based), 'kl3' (quadratic)"""
     
+    # New: Warmup and adaptive KL control
+    kl_warmup_steps: int = 100
+    """Number of steps with reduced/no KL penalty for curriculum learning."""
+    
+    kl_warmup_factor: float = 0.0
+    """KL coefficient multiplier during warmup. 0.0 = no KL penalty during warmup."""
+    
+    kl_divergence_threshold: float = 5.0
+    """KL divergence threshold for early stopping. Set higher for more tolerance."""
+    
+    reward_warmup_steps: int = 100
+    """Number of steps for graduated reward curriculum (structure -> content)."""
+    
     # =============================================================================
     # Sampling Configuration
     # =============================================================================

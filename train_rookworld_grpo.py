@@ -182,9 +182,16 @@ class TrainingOrchestrator:
         self.model.train()
         
         # Create reference model (frozen copy)
-        self.ref_model = GPT2Model(model_config)
-        self.ref_model.load_state_dict(self.model.state_dict())
-        self.ref_model = self.ref_model.to(self.config.device)
+        # If multiple GPUs available, put reference model on second GPU
+        self.ref_device = self.config.device
+        if torch.cuda.device_count() > 1 and self.config.device == 'cuda':
+            self.ref_device = 'cuda:1'
+            self.logger.info(f"Using multi-GPU setup: training model on cuda:0, reference model on cuda:1")
+        
+        self.ref_model = GPT2Model(model_config).to(self.ref_device)
+        # Move state dict to correct device before loading
+        ref_state_dict = {k: v.to(self.ref_device) for k, v in self.model.state_dict().items()}
+        self.ref_model.load_state_dict(ref_state_dict)
         self.ref_model.eval()
         
         # Freeze reference model
@@ -195,6 +202,13 @@ class TrainingOrchestrator:
         if self.config.use_torch_compile:
             self.logger.info("Compiling models with torch.compile...")
             try:
+                # Warm up models with a forward pass before compilation to ensure proper device setup
+                dummy_input = torch.randint(0, 1000, (1, 10), device=self.config.device)
+                with torch.no_grad():
+                    _ = self.model(dummy_input)
+                    dummy_ref_input = dummy_input.to(self.ref_device)
+                    _ = self.ref_model(dummy_ref_input)
+                
                 # Compile the main model
                 self.model = torch.compile(
                     self.model,
@@ -224,8 +238,15 @@ class TrainingOrchestrator:
         """Initialize all training components."""
         self.logger.info("Initializing training components...")
         
-        # Policy wrapper
-        self.policy = CausalLMPolicy(self.model, self.ref_model, self.config)
+        # Policy wrapper - pass reference device info
+        self.policy = CausalLMPolicy(
+            self.model, 
+            self.ref_model, 
+            self.config,
+            device=self.config.device
+        )
+        # Store reference device for policy to use
+        self.policy.ref_device = self.ref_device
         
         # Stockfish engine for ground truth analysis
         self.stockfish = StockfishEngine(
@@ -624,6 +645,12 @@ def create_config_from_args(args) -> GRPOConfig:
         clip_range=args.clip_range,
         temperature=args.temperature,
         
+        # New improved parameters
+        kl_divergence_threshold=args.kl_divergence_threshold,
+        kl_warmup_steps=args.kl_warmup_steps,
+        kl_warmup_factor=args.kl_warmup_factor,
+        reward_warmup_steps=args.reward_warmup_steps,
+        
         # Task mix
         mix_env_ratio=args.mix_env_ratio,
         use_dataset=args.use_dataset,
@@ -687,6 +714,17 @@ def main():
     parser.add_argument("--kl-estimator", type=str, default="kl3", 
                        choices=["kl1", "kl2", "kl3"],
                        help="KL estimator: kl1 (simple), kl2 (exp-based), kl3 (quadratic)")
+    
+    # New improved parameters
+    parser.add_argument("--kl-divergence-threshold", type=float, default=5.0,
+                       help="KL divergence threshold for early stopping (higher = more tolerant)")
+    parser.add_argument("--kl-warmup-steps", type=int, default=100,
+                       help="Number of steps with reduced KL penalty for curriculum learning")
+    parser.add_argument("--kl-warmup-factor", type=float, default=0.0,
+                       help="KL coefficient multiplier during warmup (0.0 = no KL penalty)")
+    parser.add_argument("--reward-warmup-steps", type=int, default=100,
+                       help="Number of steps for graduated reward curriculum learning")
+    
     parser.add_argument("--temperature", type=float, default=0.7,
                        help="Sampling temperature")
     

@@ -284,12 +284,60 @@ class GRPOTrainer:
         # Metrics tracking
         self.metrics_history: List[Dict[str, float]] = []
         
+        # Reward normalization tracking
+        self.reward_mean = 0.0
+        self.reward_std = 1.0
+        self.reward_momentum = 0.99  # Exponential moving average momentum
+        
         # Rollout buffer for sample efficiency
         self.rollout_buffer = RolloutBuffer(capacity=1000)
         
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"Initialized GRPO trainer with config: {config}")
         self.logger.info("Rollout buffer initialized for multi-epoch training")
+        
+        # Log warmup configuration
+        if config.kl_warmup_steps > 0:
+            self.logger.info(f"KL warmup enabled: {config.kl_warmup_steps} steps with factor {config.kl_warmup_factor}")
+        if config.reward_warmup_steps > 0:
+            self.logger.info(f"Reward warmup enabled: {config.reward_warmup_steps} steps for curriculum learning")
+    
+    def get_current_kl_coefficient(self) -> float:
+        """Get current KL coefficient with warmup applied."""
+        base_coef = self.kl_controller.get_coefficient()
+        
+        # Apply KL warmup
+        if self.step_count < self.config.kl_warmup_steps:
+            warmup_factor = self.config.kl_warmup_factor
+            return base_coef * warmup_factor
+        
+        return base_coef
+    
+    def normalize_rewards(self, rewards: torch.Tensor) -> torch.Tensor:
+        """
+        Normalize rewards using exponential moving average of mean/std.
+        
+        Args:
+            rewards: Raw reward tensor [batch_size]
+            
+        Returns:
+            Normalized rewards [batch_size]
+        """
+        # Skip normalization during warmup to let statistics stabilize
+        if self.step_count < max(self.config.kl_warmup_steps, self.config.reward_warmup_steps):
+            return rewards
+        
+        # Update running statistics with exponential moving average
+        batch_mean = rewards.mean().item()
+        batch_std = rewards.std().item() + 1e-8  # Add small epsilon to prevent division by zero
+        
+        self.reward_mean = self.reward_momentum * self.reward_mean + (1 - self.reward_momentum) * batch_mean
+        self.reward_std = self.reward_momentum * self.reward_std + (1 - self.reward_momentum) * batch_std
+        
+        # Normalize rewards
+        normalized_rewards = (rewards - self.reward_mean) / (self.reward_std + 1e-8)
+        
+        return normalized_rewards
     
     def compute_logprobs(self, 
                         input_ids: torch.Tensor,
@@ -317,6 +365,14 @@ class GRPOTrainer:
         # FIXED: Always disable gradients for logprob computation for consistency
         # This ensures identical behavior between test components and production code
         with torch.set_grad_enabled(False):
+            # Move tensors to appropriate device for multi-GPU setup
+            if use_ref_model:
+                # Move to reference model device (might be different GPU)
+                ref_device = next(model.parameters()).device
+                input_ids = input_ids.to(ref_device)
+                if attention_mask is not None:
+                    attention_mask = attention_mask.to(ref_device)
+            
             # Forward pass with optional mixed precision (BF16 for RTX 4090)
             if self.config.use_mixed_precision and not use_ref_model:
                 with torch.amp.autocast('cuda', dtype=torch.bfloat16):
@@ -362,6 +418,10 @@ class GRPOTrainer:
         
         # Restore original training mode
         model.train(original_training_mode)
+        
+        # Move result back to training device if we used reference model
+        if use_ref_model:
+            mean_log_probs = mean_log_probs.to(self.config.device)
         
         return mean_log_probs
     
@@ -453,9 +513,12 @@ class GRPOTrainer:
                 use_ref_model=True
             )
         
+        # Apply reward normalization for stability
+        normalized_rewards = self.normalize_rewards(batch.rewards)
+        
         # Group-relative baseline (key innovation of GRPO)
-        baseline = batch.rewards.mean()
-        advantages = batch.rewards - baseline
+        baseline = normalized_rewards.mean()
+        advantages = normalized_rewards - baseline
         
         # PPO-style clipped objective
         logprob_ratio = torch.exp(current_logprobs - batch.old_logprobs)
@@ -476,7 +539,7 @@ class GRPOTrainer:
         kl_div, kl_per_token = self._compute_token_level_kl(
             current_logprobs, ref_logprobs, batch
         )
-        kl_loss = self.kl_controller.get_coefficient() * kl_div
+        kl_loss = self.get_current_kl_coefficient() * kl_div
         
         # Total loss
         total_loss = policy_loss + kl_loss
@@ -485,7 +548,7 @@ class GRPOTrainer:
         metrics = self._compute_enhanced_metrics(
             policy_loss, kl_loss, total_loss, kl_div,
             batch, advantages, logprob_ratio, current_logprobs, ref_logprobs,
-            kl_per_token
+            kl_per_token, normalized_rewards
         )
         
         return total_loss, metrics
@@ -517,7 +580,7 @@ class GRPOTrainer:
     
     def _compute_enhanced_metrics(self, policy_loss, kl_loss, total_loss, kl_div,
                                  batch, advantages, logprob_ratio, current_logprobs, ref_logprobs,
-                                 kl_per_token=None):
+                                 kl_per_token=None, normalized_rewards=None):
         """Compute enhanced metrics per GRPO best practices"""
         
         # Basic metrics
@@ -525,7 +588,7 @@ class GRPOTrainer:
             'policy_loss': policy_loss.item(),
             'kl_loss': kl_loss.item(), 
             'kl_div': kl_div.item(),
-            'kl_coef': self.kl_controller.get_coefficient(),
+            'kl_coef': self.get_current_kl_coefficient(),
             'total_loss': total_loss.item(),
             'baseline': batch.rewards.mean().item(),
             'mean_reward': batch.rewards.mean().item(),
@@ -553,12 +616,20 @@ class GRPOTrainer:
         clip_mask = torch.abs(logprob_ratio - 1.0) > self.config.clip_range
         metrics['fraction_clipped'] = clip_mask.float().mean().item()
         
-        # Reward distribution analysis
+        # Reward distribution analysis (raw rewards)
         rewards_cpu = batch.rewards.cpu().numpy()
         metrics['reward_min'] = rewards_cpu.min()
         metrics['reward_max'] = rewards_cpu.max()
         metrics['reward_25pct'] = float(np.percentile(rewards_cpu, 25))
         metrics['reward_75pct'] = float(np.percentile(rewards_cpu, 75))
+        
+        # Normalized reward statistics (if available)
+        if normalized_rewards is not None:
+            norm_rewards_cpu = normalized_rewards.cpu().numpy()
+            metrics['norm_reward_mean'] = norm_rewards_cpu.mean()
+            metrics['norm_reward_std'] = norm_rewards_cpu.std()
+            metrics['reward_mean_ema'] = self.reward_mean
+            metrics['reward_std_ema'] = self.reward_std
         
         # Task-specific metrics if we can identify task type
         if hasattr(batch, 'task_type'):
@@ -768,8 +839,8 @@ class GRPOTrainer:
         if kl_tail_heavy:
             self.logger.warning(f"KL tail heavy: mean={mean_kl_div:.4f}, 95pct={kl_95pct:.4f}")
         
-        # KL divergence monitoring and early stopping
-        if abs(mean_kl_div) > 5.0 or kl_95pct > 10.0:
+        # KL divergence monitoring and early stopping with configurable threshold
+        if abs(mean_kl_div) > self.config.kl_divergence_threshold or kl_95pct > self.config.kl_divergence_threshold * 2:
             self.logger.error(f"Extreme KL divergence detected: mean={mean_kl_div:.3f}, 95pct={kl_95pct:.3f}")
             if self.config.enable_recovery and self.last_stable_checkpoint:
                 self.logger.warning("Attempting recovery from extreme KL divergence...")
@@ -778,7 +849,7 @@ class GRPOTrainer:
                     raise RuntimeError(f"Training diverged: extreme KL divergence mean={mean_kl_div:.3f}")
             else:
                 raise RuntimeError(f"Training diverged: extreme KL divergence mean={mean_kl_div:.3f}")
-        elif abs(mean_kl_div) > 2.0 or kl_95pct > 4.0:
+        elif abs(mean_kl_div) > self.config.kl_divergence_threshold / 2.5 or kl_95pct > self.config.kl_divergence_threshold / 1.25:
             self.logger.warning(f"High KL divergence detected: mean={mean_kl_div:.3f}, 95pct={kl_95pct:.3f}")
         
         # Enhanced logging for training health
@@ -950,9 +1021,12 @@ class GRPOTrainer:
     def _compute_loss_with_cached_ref(self, batch, current_logprobs, ref_logprobs):
         """Compute GRPO loss using cached reference logprobs"""
         
+        # Apply reward normalization for stability
+        normalized_rewards = self.normalize_rewards(batch.rewards)
+        
         # Group-relative baseline
-        baseline = batch.rewards.mean()
-        advantages = batch.rewards - baseline
+        baseline = normalized_rewards.mean()
+        advantages = normalized_rewards - baseline
         
         # PPO-style clipped objective
         logprob_ratio = torch.exp(current_logprobs - batch.old_logprobs)
@@ -971,7 +1045,7 @@ class GRPOTrainer:
         kl_div, kl_per_token = self._compute_token_level_kl(
             current_logprobs, ref_logprobs, batch
         )
-        kl_loss = self.kl_controller.get_coefficient() * kl_div
+        kl_loss = self.get_current_kl_coefficient() * kl_div
         
         total_loss = policy_loss + kl_loss
         
@@ -1023,9 +1097,11 @@ class GRPOTrainer:
             'model_state_dict': self.model.state_dict(),
             'step_count': self.step_count,
             'total_samples_trained': self.total_samples_trained,
-            'kl_coef': self.kl_controller.get_coefficient(),
+            'kl_coef': self.get_current_kl_coefficient(),
             'metrics_history': self.metrics_history,
             'config': self.config,
+            'reward_mean': self.reward_mean,
+            'reward_std': self.reward_std,
             'nan_skip_count': self.nan_skip_count,
             'consecutive_nan_count': self.consecutive_nan_count
         }
@@ -1055,6 +1131,8 @@ class GRPOTrainer:
         self.kl_controller.kl_coef = checkpoint['kl_coef']
         self.metrics_history = checkpoint.get('metrics_history', [])
         self.nan_skip_count = checkpoint.get('nan_skip_count', 0)
+        self.reward_mean = checkpoint.get('reward_mean', 0.0)
+        self.reward_std = checkpoint.get('reward_std', 1.0)
         self.consecutive_nan_count = checkpoint.get('consecutive_nan_count', 0)
         
         if load_optimizer and 'optimizer_state_dict' in checkpoint:
@@ -1122,7 +1200,7 @@ class GRPOTrainer:
             'step_count': self.step_count,
             'total_samples_trained': self.total_samples_trained,
             'current_lr': self.scheduler.get_last_lr()[0] if self.scheduler.get_last_lr() else self.config.lr,
-            'kl_coefficient': self.kl_controller.get_coefficient(),
+            'kl_coefficient': self.get_current_kl_coefficient(),
             'model_device': next(self.model.parameters()).device,
             'training_mode': self.model.training,
             'nan_skip_count': self.nan_skip_count,

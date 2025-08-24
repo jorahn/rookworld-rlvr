@@ -88,23 +88,8 @@ class PolicyRewardComputer:
             "total_reward": 0.0
         }
         
-        # Structure verification
-        if parsed.is_valid_format:
-            reward_breakdown["structure_reward"] = self.config.r_policy_structure
-            
-            # Parse verification (correct counts and types)
-            if self._validate_parsed_content(parsed):
-                reward_breakdown["parse_reward"] = self.config.r_policy_parse
-                
-                # Content verification
-                content_rewards = self._compute_content_rewards(parsed, stockfish_analysis)
-                reward_breakdown.update(content_rewards)
-            else:
-                # Parsing succeeded but content validation failed
-                reward_breakdown["malformed_penalty"] = self.config.r_policy_malformed * 0.5
-        else:
-            # Complete parsing failure
-            reward_breakdown["malformed_penalty"] = self.config.r_policy_malformed
+        # Graduated reward system with partial credit
+        reward_breakdown.update(self._compute_graduated_rewards(parsed, stockfish_analysis))
         
         # Calculate total reward
         total_reward = sum(reward_breakdown.values())
@@ -114,9 +99,10 @@ class PolicyRewardComputer:
     
     def parse_policy_output(self, generated_text: str) -> ParsedPolicyOutput:
         """
-        Parse policy task output into structured components
+        Parse policy task output into structured components with flexible parsing
         
         Expected format: " <move1> <move2> <move3> <move4> <move5>    E: <eval1> <eval2> <eval3> <eval4> <eval5>    B: <best_move>"
+        Now supports flexible spacing and partial outputs for curriculum learning.
         
         Args:
             generated_text: Raw model output (typically starts with space)
@@ -130,25 +116,29 @@ class PolicyRewardComputer:
             # Clean the text
             text = generated_text.strip()
             
-            # Look for the pattern: moves followed by E: evaluations followed by B: best_move
-            # Pattern: <moves>    E: <evals>    B: <best_move>
+            # Try flexible parsing approach - look for E: and B: markers with any amount of whitespace
+            # More forgiving regex patterns
+            e_match = re.search(r'\s*E:\s*', text, re.IGNORECASE)
+            b_match = re.search(r'\s*B:\s*', text, re.IGNORECASE)
             
-            # First, try to find the E: and B: markers
-            e_match = re.search(r'\s+E:\s+', text)
-            b_match = re.search(r'\s+B:\s+', text)
+            # If both markers found, use structured parsing
+            if e_match and b_match:
+                return self._parse_structured_format(text, e_match, b_match, parsing_errors)
             
-            if not e_match or not b_match:
-                parsing_errors.append("Missing E: or B: markers")
-                return ParsedPolicyOutput([], [], "", False, parsing_errors)
+            # Fallback: Try to extract moves even without perfect structure
+            return self._parse_flexible_format(text, parsing_errors)
             
+        except Exception as e:
+            parsing_errors.append(f"Parsing exception: {e}")
+            return ParsedPolicyOutput([], [], "", False, parsing_errors)
+    
+    def _parse_structured_format(self, text: str, e_match, b_match, parsing_errors: List[str]) -> ParsedPolicyOutput:
+        """Parse text with both E: and B: markers found"""
+        try:
             e_start = e_match.start()
             e_end = e_match.end()
             b_start = b_match.start()
             b_end = b_match.end()
-            
-            if b_start <= e_end:
-                parsing_errors.append("B: marker comes before E: section ends")
-                return ParsedPolicyOutput([], [], "", False, parsing_errors)
             
             # Extract sections
             moves_section = text[:e_start].strip()
@@ -156,51 +146,233 @@ class PolicyRewardComputer:
             best_move_section = text[b_end:].strip()
             
             # Parse moves
-            moves = []
-            if moves_section:
-                move_tokens = moves_section.split()
-                for token in move_tokens:
-                    # Basic UCI format validation (allow promotions)
-                    if re.match(r'^[a-h][1-8][a-h][1-8][qrbn]?$', token):
-                        moves.append(token)
-                    else:
-                        parsing_errors.append(f"Invalid move format: {token}")
+            moves = self._extract_moves(moves_section, parsing_errors)
             
-            # Parse evaluations
-            evaluations = []
-            if evals_section:
-                eval_tokens = evals_section.split()
-                for token in eval_tokens:
-                    try:
-                        eval_val = float(token)
-                        evaluations.append(eval_val)
-                    except ValueError:
-                        parsing_errors.append(f"Invalid evaluation: {token}")
+            # Parse evaluations  
+            evaluations = self._extract_evaluations(evals_section, parsing_errors)
             
             # Parse best move
-            best_move = ""
-            if best_move_section:
-                best_move_tokens = best_move_section.split()
-                if best_move_tokens:
-                    candidate = best_move_tokens[0]
-                    if re.match(r'^[a-h][1-8][a-h][1-8][qrbn]?$', candidate):
-                        best_move = candidate
-                    else:
-                        parsing_errors.append(f"Invalid best move format: {candidate}")
+            best_move = self._extract_best_move(best_move_section, parsing_errors)
             
-            is_valid = len(parsing_errors) == 0
+            # Consider valid if we got some moves, even with minor errors
+            is_valid = len(moves) > 0
             
             return ParsedPolicyOutput(
                 moves=moves,
-                evaluations=evaluations, 
+                evaluations=evaluations,
+                best_move=best_move,
+                is_valid_format=is_valid,
+                parsing_errors=parsing_errors
+            )
+        except Exception as e:
+            parsing_errors.append(f"Structured parsing error: {e}")
+            return ParsedPolicyOutput([], [], "", False, parsing_errors)
+    
+    def _parse_flexible_format(self, text: str, parsing_errors: List[str]) -> ParsedPolicyOutput:
+        """Flexible parsing for partial outputs - extract whatever moves we can find"""
+        try:
+            # Look for any UCI-format moves in the text
+            moves = []
+            evaluations = []
+            best_move = ""
+            
+            # Find all potential UCI moves
+            uci_pattern = r'\b[a-h][1-8][a-h][1-8][qrbn]?\b'
+            move_matches = re.findall(uci_pattern, text)
+            
+            # Deduplicate while preserving order
+            seen_moves = set()
+            for move in move_matches:
+                if move not in seen_moves:
+                    moves.append(move)
+                    seen_moves.add(move)
+            
+            # Look for evaluation numbers (floats between reasonable bounds)
+            eval_pattern = r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?'
+            eval_matches = re.findall(eval_pattern, text)
+            
+            for eval_str in eval_matches:
+                try:
+                    eval_val = float(eval_str)
+                    # Accept reasonable evaluation range (-50 to +50)
+                    if -50.0 <= eval_val <= 50.0:
+                        evaluations.append(eval_val)
+                except ValueError:
+                    continue
+            
+            # Use first move as best move if no clear indication
+            if moves:
+                best_move = moves[0]
+            
+            # Consider partially valid if we found at least one move
+            is_valid = len(moves) > 0
+            
+            if len(moves) == 0:
+                parsing_errors.append("No valid UCI moves found")
+            
+            return ParsedPolicyOutput(
+                moves=moves,
+                evaluations=evaluations,
                 best_move=best_move,
                 is_valid_format=is_valid,
                 parsing_errors=parsing_errors
             )
             
         except Exception as e:
-            parsing_errors.append(f"Parsing exception: {e}")
+            parsing_errors.append(f"Flexible parsing error: {e}")
             return ParsedPolicyOutput([], [], "", False, parsing_errors)
+    
+    def _extract_moves(self, moves_section: str, parsing_errors: List[str]) -> List[str]:
+        """Extract moves from moves section"""
+        moves = []
+        if moves_section:
+            move_tokens = moves_section.split()
+            for token in move_tokens:
+                # Basic UCI format validation (allow promotions)
+                if re.match(r'^[a-h][1-8][a-h][1-8][qrbn]?$', token):
+                    moves.append(token)
+                else:
+                    # Don't treat invalid format as hard error for flexibility
+                    parsing_errors.append(f"Invalid move format: {token}")
+        return moves
+    
+    def _extract_evaluations(self, evals_section: str, parsing_errors: List[str]) -> List[float]:
+        """Extract evaluations from evaluations section"""
+        evaluations = []
+        if evals_section:
+            eval_tokens = evals_section.split()
+            for token in eval_tokens:
+                try:
+                    eval_val = float(token)
+                    # Accept reasonable evaluation range
+                    if -50.0 <= eval_val <= 50.0:
+                        evaluations.append(eval_val)
+                    else:
+                        parsing_errors.append(f"Evaluation out of range: {token}")
+                except ValueError:
+                    parsing_errors.append(f"Invalid evaluation: {token}")
+        return evaluations
+    
+    def _extract_best_move(self, best_move_section: str, parsing_errors: List[str]) -> str:
+        """Extract best move from best move section"""
+        best_move = ""
+        if best_move_section:
+            best_move_tokens = best_move_section.split()
+            if best_move_tokens:
+                candidate = best_move_tokens[0]
+                if re.match(r'^[a-h][1-8][a-h][1-8][qrbn]?$', candidate):
+                    best_move = candidate
+                else:
+                    parsing_errors.append(f"Invalid best move format: {candidate}")
+        return best_move
+    
+    def _compute_graduated_rewards(self, parsed: ParsedPolicyOutput, stockfish_analysis: StockfishAnalysis) -> Dict[str, float]:
+        """
+        Compute graduated rewards with partial credit for curriculum learning
+        
+        Reward levels:
+        - 0.2: Found some valid moves (structure attempt)
+        - 0.4: Found moves with some evaluations (partial parse)
+        - 0.6: Majority of moves/evals valid (good parse)  
+        - 0.8: Most content matches Stockfish (good content)
+        - 1.0: Perfect match (full reward)
+        
+        Args:
+            parsed: Parsed policy output
+            stockfish_analysis: Ground truth analysis
+            
+        Returns:
+            Dictionary with reward breakdown
+        """
+        rewards = {
+            "structure_reward": 0.0,
+            "parse_reward": 0.0, 
+            "move_match_reward": 0.0,
+            "eval_accuracy_reward": 0.0,
+            "best_move_reward": 0.0,
+            "malformed_penalty": 0.0
+        }
+        
+        # Level 1: Structure attempt (0.2) - Found at least one valid move
+        if len(parsed.moves) > 0:
+            rewards["structure_reward"] = 0.2
+            
+            # Level 2: Partial parse (0.4) - Has both moves and evaluations  
+            if len(parsed.moves) > 0 and len(parsed.evaluations) > 0:
+                rewards["parse_reward"] = 0.2  # Additional 0.2 (total 0.4)
+                
+                # Level 3: Good parse (0.6) - Has reasonable number of elements
+                move_count_good = 2 <= len(parsed.moves) <= 6
+                eval_count_good = 2 <= len(parsed.evaluations) <= 6
+                
+                if move_count_good and eval_count_good:
+                    rewards["move_match_reward"] = 0.2  # Additional 0.2 (total 0.6)
+                    
+                    # Level 4: Content matching (0.8) - Some moves match Stockfish
+                    content_score = self._compute_content_match_score(parsed, stockfish_analysis)
+                    if content_score > 0.3:  # At least 30% content match
+                        rewards["eval_accuracy_reward"] = 0.2  # Additional 0.2 (total 0.8)
+                        
+                        # Level 5: Excellent match (1.0) - High content accuracy
+                        if content_score > 0.7:  # At least 70% content match
+                            rewards["best_move_reward"] = 0.2  # Additional 0.2 (total 1.0)
+        
+        # Small penalty for completely empty output (but not -1.0)
+        if len(parsed.moves) == 0 and len(parsed.evaluations) == 0:
+            rewards["malformed_penalty"] = -0.1  # Much smaller penalty
+        
+        return rewards
+    
+    def _compute_content_match_score(self, parsed: ParsedPolicyOutput, stockfish_analysis: StockfishAnalysis) -> float:
+        """Compute how well parsed content matches Stockfish analysis"""
+        if not stockfish_analysis or not parsed.moves:
+            return 0.0
+        
+        total_score = 0.0
+        components = 0
+        
+        # Move matching score
+        if stockfish_analysis.top5_moves:
+            move_matches = 0
+            for move in parsed.moves[:5]:  # Check up to 5 moves
+                if move in stockfish_analysis.top5_moves:
+                    move_matches += 1
+            move_score = move_matches / min(5, len(parsed.moves))
+            total_score += move_score
+            components += 1
+        
+        # Best move matching
+        if stockfish_analysis.best_move and parsed.best_move:
+            if parsed.best_move == stockfish_analysis.best_move:
+                total_score += 1.0
+            components += 1
+        
+        # Evaluation accuracy (if both have evaluations)
+        if stockfish_analysis.top5_evals and parsed.evaluations:
+            eval_score = self._compute_eval_accuracy(parsed.evaluations, stockfish_analysis.top5_evals)
+            total_score += eval_score
+            components += 1
+        
+        return total_score / max(1, components)
+    
+    def _compute_eval_accuracy(self, parsed_evals: List[float], stockfish_evals: List[float]) -> float:
+        """Compute evaluation accuracy score"""
+        if not parsed_evals or not stockfish_evals:
+            return 0.0
+        
+        # Compare up to min(len) evaluations
+        comparisons = min(len(parsed_evals), len(stockfish_evals))
+        if comparisons == 0:
+            return 0.0
+        
+        accurate_count = 0
+        for i in range(comparisons):
+            # Consider accurate if within tolerance
+            diff = abs(parsed_evals[i] - stockfish_evals[i])
+            if diff <= self.config.eval_tolerance / 100.0:  # Convert centipawns to eval scale
+                accurate_count += 1
+        
+        return accurate_count / comparisons
     
     def _validate_parsed_content(self, parsed: ParsedPolicyOutput) -> bool:
         """

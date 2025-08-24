@@ -275,7 +275,7 @@ uv run python train_rookworld_grpo.py --recovery-mode
 ### RookWorld Foundation
 - **Base Model**: [jrahn/RookWorld-LM-124M](https://huggingface.co/jrahn/RookWorld-LM-124M)
 - **Dataset**: [jrahn/rookworld_7m](https://huggingface.co/datasets/jrahn/rookworld_7m) - 6.96M samples
-- **Original Work**: [LAION RookWorld](https://laion.ai/blog/rookworld)
+- **Original Work**: [LAION ROOK](https://laion.ai/notes/rook)
 
 ### Production Implementation
 - **PyTorch**: Pure PyTorch implementation (no HuggingFace dependency)

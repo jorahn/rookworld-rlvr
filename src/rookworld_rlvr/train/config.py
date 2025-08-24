@@ -90,6 +90,9 @@ class GRPOConfig:
     """Fraction of training samples that are A: (environment) tasks vs P: (policy). 
     Validated: 20% environment tasks provide 36.9% stability improvement."""
     
+    use_dataset: bool = True
+    """Use RookWorld dataset for diverse training positions. If False, uses only self-play."""
+    
     # =============================================================================
     # Self-Play Configuration
     # =============================================================================

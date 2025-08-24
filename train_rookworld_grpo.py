@@ -33,6 +33,7 @@ import signal
 
 import torch
 import numpy as np
+import chess
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -44,6 +45,7 @@ from rookworld_rlvr.train.self_play import SelfPlayManager
 from rookworld_rlvr.train.evaluator import ChessEvaluator
 from rookworld_rlvr.train.checkpoint_manager import CheckpointManager
 from rookworld_rlvr.data.collector import GRPODataCollector  
+from rookworld_rlvr.data.rookworld_dataset import RookWorldDatasetProcessor
 from rookworld_rlvr.engine.stockfish import StockfishEngine
 from rookworld_rlvr.model.gpt2 import GPT2Model
 from rookworld_rlvr.model.config import GPT2Config
@@ -75,6 +77,7 @@ class TrainingOrchestrator:
         self.self_play: Optional[SelfPlayManager] = None
         self.evaluator: Optional[ChessEvaluator] = None
         self.checkpoint_manager: Optional[CheckpointManager] = None
+        self.dataset_processor: Optional[RookWorldDatasetProcessor] = None
         
         # Training state
         self.training_active = False
@@ -244,6 +247,14 @@ class TrainingOrchestrator:
         # Evaluator
         self.evaluator = ChessEvaluator(self.config, self.stockfish)
         
+        # Dataset processor for diverse training positions (if enabled)
+        if self.config.use_dataset:
+            self.dataset_processor = RookWorldDatasetProcessor()
+            self.logger.info("Dataset processor initialized for diverse training positions")
+        else:
+            self.dataset_processor = None
+            self.logger.info("Using self-play only for training positions")
+        
         self.logger.info("All components initialized successfully")
     
     def _optimize_cuda_performance(self):
@@ -388,32 +399,46 @@ class TrainingOrchestrator:
             self._print_training_summary(total_time)
     
     def _collect_training_data(self) -> GRPOTrainingStep:
-        """Collect GRPO training data for one step."""
-        # Sample training positions
+        """Collect GRPO training data for one step using diverse sources."""
+        # Sample training positions from multiple sources for better diversity
         n_positions = self.config.batch_positions
-        
-        # Mix of self-play and buffer positions
         positions = []
-        current_game_positions = self.self_play.get_current_positions()
-        n_from_games = min(len(current_game_positions), n_positions // 2)
         
+        # 1. Current game positions (immediate exploration)
+        current_game_positions = self.self_play.get_current_positions()
+        n_from_games = min(len(current_game_positions), n_positions // 3)
         positions.extend(current_game_positions[:n_from_games])
         
-        # Fill remaining from buffer
-        remaining = n_positions - len(positions)
-        if remaining > 0:
-            buffer_positions = self.self_play.sample_training_positions(remaining)
+        # 2. Dataset positions (high-quality diverse positions) - if enabled
+        remaining_after_games = n_positions - len(positions)
+        n_from_dataset = min(remaining_after_games, n_positions // 2) if self.config.use_dataset else 0
+        
+        if n_from_dataset > 0 and self.dataset_processor:
+            try:
+                dataset_positions = self._sample_dataset_positions(n_from_dataset)
+                positions.extend(dataset_positions)
+                self.logger.debug(f"Added {len(dataset_positions)} positions from dataset")
+            except Exception as e:
+                self.logger.warning(f"Failed to sample from dataset: {e}, using self-play instead")
+        
+        # 3. Fill remaining from self-play buffer
+        final_remaining = n_positions - len(positions)
+        if final_remaining > 0:
+            buffer_positions = self.self_play.sample_training_positions(final_remaining)
             positions.extend(buffer_positions)
         
         # Collect GRPO groups
         groups = []
         for fen in positions:
             try:
+                # Convert FEN string to chess.Board object
+                board = chess.Board(fen)
+                
                 # Decide task type
                 if random.random() < self.config.mix_env_ratio:
-                    group = self.data_collector.collect_environment_group(fen)
+                    group = self.data_collector.collect_env_group(board)
                 else:
-                    group = self.data_collector.collect_policy_group(fen)
+                    group = self.data_collector.collect_policy_group(board)
                 
                 if group is not None:
                     groups.append(group)
@@ -421,6 +446,34 @@ class TrainingOrchestrator:
                 self.logger.warning(f"Failed to collect group for {fen}: {e}")
         
         return GRPOTrainingStep(groups=groups)
+    
+    def _sample_dataset_positions(self, n_positions: int) -> List[str]:
+        """Sample diverse positions from the RookWorld dataset."""
+        try:
+            # Load dataset if not already loaded
+            if not hasattr(self.dataset_processor, '_dataset_cache'):
+                self.logger.info("Loading RookWorld dataset for diverse training positions...")
+                dataset = self.dataset_processor.load_dataset()
+                # Extract unique FEN positions from the dataset
+                positions = set()
+                for sample in dataset.select(range(min(1000, len(dataset)))):  # Sample first 1000 for efficiency
+                    # Extract FEN from the sample text
+                    fen = self.dataset_processor.extract_position_from_text(sample['text'])
+                    if fen:
+                        positions.add(fen)
+                self.dataset_processor._dataset_cache = list(positions)
+                self.logger.info(f"Cached {len(positions)} unique positions from dataset")
+            
+            # Sample requested number of positions
+            available_positions = self.dataset_processor._dataset_cache
+            if len(available_positions) < n_positions:
+                return random.sample(available_positions, len(available_positions))
+            else:
+                return random.sample(available_positions, n_positions)
+                
+        except Exception as e:
+            self.logger.warning(f"Dataset sampling failed: {e}, using fallback")
+            return []
     
     def _log_training_progress(self, step: int, metrics: Dict[str, float], step_time: float):
         """Log enhanced training progress information with GRPO best practices metrics."""
@@ -573,6 +626,7 @@ def create_config_from_args(args) -> GRPOConfig:
         
         # Task mix
         mix_env_ratio=args.mix_env_ratio,
+        use_dataset=args.use_dataset,
         
         # Self-play
         n_parallel_games=args.n_parallel_games,
@@ -639,6 +693,10 @@ def main():
     # Task configuration
     parser.add_argument("--mix-env-ratio", type=float, default=0.2,
                        help="Fraction of environment (A:) tasks vs policy (P:) tasks (validated 36.9% stability improvement)")
+    parser.add_argument("--use-dataset", action="store_true", default=True,
+                       help="Use RookWorld dataset for diverse training positions")
+    parser.add_argument("--no-dataset", dest="use_dataset", action="store_false",
+                       help="Use only self-play for training positions")
     
     # Self-play
     parser.add_argument("--n-parallel-games", type=int, default=4,

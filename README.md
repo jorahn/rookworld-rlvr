@@ -1065,6 +1065,40 @@ python train_rookworld_grpo.py \\
 1. **Longer Horizons**: Full-game rewards with value function
 1. **External Validation**: Integration with chess engines for evaluation
 
+### Multi-GPU Training (Out of Scope)
+
+**Current Status**: The implementation is designed for single-GPU training and does not include distributed training support.
+
+**Required Changes for Multi-GPU**:
+While `torchrun` could launch multiple processes, significant architectural changes would be needed:
+
+1. **Distributed Initialization**:
+   ```python
+   import torch.distributed as dist
+   dist.init_process_group(backend='nccl')
+   local_rank = int(os.environ['LOCAL_RANK'])
+   torch.cuda.set_device(local_rank)
+   ```
+
+2. **Model Wrapping**:
+   ```python
+   from torch.nn.parallel import DistributedDataParallel as DDP
+   model = DDP(model, device_ids=[local_rank])
+   ```
+
+3. **Data Distribution**: Self-play position generation and GRPO group batching would need coordination across processes
+
+4. **Reference Model**: Handling the frozen reference model in a distributed context requires careful synchronization
+
+5. **Metrics & Checkpoints**: Aggregation and synchronization across processes
+
+**Complexity Assessment**: Multi-GPU support would require substantial refactoring of the self-play system, GRPO batching logic, and checkpoint management. For the 124M parameter model size, single-GPU training is typically sufficient and recommended.
+
+**Alternative Approaches**:
+- **Data Parallel Self-Play**: Run separate self-play processes per GPU, aggregate positions
+- **Model Parallel**: Split model across GPUs (unnecessary for 124M parameters)  
+- **Multiple Single-GPU Runs**: Train separate models with different hyperparameters/seeds
+
 ### Research Directions
 
 1. **Token-Level GRPO**: Fine-grained credit assignment

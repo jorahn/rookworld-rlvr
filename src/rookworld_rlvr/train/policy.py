@@ -338,7 +338,7 @@ class CausalLMPolicy:
         target_start_indices = torch.full((len(legal_moves),), base_length, dtype=torch.long)
         
         # Forward pass through model (batch all moves at once)
-        with torch.cuda.amp.autocast(enabled=self.config.use_mixed_precision):
+        with torch.cuda.amp.autocast(enabled=self.config.use_mixed_precision, dtype=torch.bfloat16):
             outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
             logits = outputs["logits"][:, :-1, :]  # Shift for next token prediction
             targets = input_ids[:, 1:]
@@ -412,7 +412,7 @@ class CausalLMPolicy:
         attention_mask = encoded['attention_mask'].to(self.device)
         
         # Get scores for all prompts
-        with torch.cuda.amp.autocast(enabled=self.config.use_mixed_precision):
+        with torch.cuda.amp.autocast(enabled=self.config.use_mixed_precision, dtype=torch.bfloat16):
             outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
             
             # Compute scores efficiently (simplified version)

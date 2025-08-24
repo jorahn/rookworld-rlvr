@@ -156,6 +156,36 @@ class GRPOConfig:
     """Save model checkpoint every N training steps."""
     
     # =============================================================================
+    # Resume and Recovery Configuration
+    # =============================================================================
+    resume_from_checkpoint: Optional[str] = None
+    """Path to checkpoint to resume from. If None, starts fresh training."""
+    
+    auto_resume: bool = False
+    """Automatically resume from latest checkpoint if available in output_dir."""
+    
+    enable_recovery: bool = True
+    """Enable automatic recovery on training instability (NaN losses)."""
+    
+    force_new_run: bool = False
+    """Force new run even if checkpoint exists (for experiments)."""
+    
+    max_checkpoint_keep: int = 3
+    """Maximum number of regular checkpoints to keep (rotating deletion)."""
+    
+    recovery_lr_factor: float = 0.5
+    """Factor to reduce learning rate by after recovery from instability."""
+    
+    recovery_checkpoint_interval: int = 500
+    """Steps between creating special recovery checkpoints."""
+    
+    run_id: Optional[str] = None
+    """Unique run identifier. Auto-generated if None."""
+    
+    append_logs_on_resume: bool = True
+    """Append to existing log files on resume instead of overwriting."""
+    
+    # =============================================================================
     # Stockfish Engine Configuration
     # =============================================================================
     stockfish_time_limit: float = 0.1
@@ -186,7 +216,7 @@ class GRPOConfig:
     # Performance Optimizations
     # =============================================================================
     use_mixed_precision: bool = field(default_factory=lambda: torch.cuda.is_available())
-    """Enable mixed precision training with autocast for memory efficiency. Auto-enabled for CUDA."""
+    """Enable mixed precision training with BF16 autocast for RTX 4090 optimization. Auto-enabled for CUDA."""
     
     use_torch_compile: bool = True
     """Enable torch.compile optimization for faster model execution."""
@@ -341,10 +371,10 @@ Self-Play:
 - Opening Fraction: {100*self.sample_opening_frac:.1f}%
 
 Performance Optimizations:
-- Mixed Precision: {self.use_mixed_precision}
+- Mixed Precision (BF16): {self.use_mixed_precision}
 - Torch Compile: {self.use_torch_compile} ({self.torch_compile_mode})
 - Gradient Checkpointing: {self.use_gradient_checkpointing}
-- CUDA Optimizations: {self.enable_cudnn_benchmark}
+- CUDA/Tensor Core Optimizations: {self.enable_cudnn_benchmark}
 
 Device: {self.device}
 Output Directory: {self.output_dir}

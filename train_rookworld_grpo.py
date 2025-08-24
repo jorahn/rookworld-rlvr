@@ -25,6 +25,8 @@ import sys
 import json
 import time
 import random
+import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import signal
@@ -40,6 +42,7 @@ from rookworld_rlvr.train.grpo_trainer import GRPOTrainer, GRPOTrainingStep
 from rookworld_rlvr.train.policy import CausalLMPolicy
 from rookworld_rlvr.train.self_play import SelfPlayManager
 from rookworld_rlvr.train.evaluator import ChessEvaluator
+from rookworld_rlvr.train.checkpoint_manager import CheckpointManager
 from rookworld_rlvr.data.collector import GRPODataCollector  
 from rookworld_rlvr.engine.stockfish import StockfishEngine
 from rookworld_rlvr.model.gpt2 import GPT2Model
@@ -70,10 +73,19 @@ class TrainingOrchestrator:
         self.data_collector: Optional[GRPODataCollector] = None
         self.self_play: Optional[SelfPlayManager] = None
         self.evaluator: Optional[ChessEvaluator] = None
+        self.checkpoint_manager: Optional[CheckpointManager] = None
         
         # Training state
         self.training_active = False
         self.should_stop = False
+        
+        # Run identity and recovery state
+        self.run_id = None
+        self.run_start_time = None
+        self.resume_count = 0
+        self.is_resumed = False
+        self.start_step = 0
+        self.last_stable_checkpoint = None
         
         # Setup signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -82,21 +94,43 @@ class TrainingOrchestrator:
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"Initialized GRPO training orchestrator")
     
-    def setup_logging(self):
-        """Setup comprehensive logging configuration."""
-        log_dir = Path(self.config.output_dir)
+    def setup_logging(self, is_resume=False):
+        """Setup comprehensive logging configuration with resume support."""
+        # Create run-specific directory if not resuming
+        if not is_resume and not self.run_id:
+            self.run_id = self.config.run_id or f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Use run-specific subdirectory
+        log_dir = Path(self.config.output_dir) / self.run_id
         log_dir.mkdir(parents=True, exist_ok=True)
         
+        # Update config with run-specific output directory
+        self.config.output_dir = str(log_dir)
+        
         log_file = log_dir / self.config.log_file
+        
+        # Use append mode for resume, write mode for new runs
+        log_mode = 'a' if (is_resume and self.config.append_logs_on_resume) else 'w'
         
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
             handlers=[
-                logging.FileHandler(log_file),
+                logging.FileHandler(log_file, mode=log_mode),
                 logging.StreamHandler(sys.stdout)
             ]
         )
+        
+        # Add resume marker to logs
+        if is_resume:
+            self.logger.info("="*60)
+            self.logger.info(f"RESUMING TRAINING - Run ID: {self.run_id}")
+            self.logger.info(f"Resume count: {self.resume_count}")
+            self.logger.info(f"Resumed from step: {self.start_step}")
+            self.logger.info("="*60)
+        else:
+            self.logger.info(f"NEW TRAINING RUN - Run ID: {self.run_id}")
+            self.run_start_time = time.time()
     
     def setup_reproducibility(self):
         """Setup reproducible training environment."""
@@ -232,6 +266,11 @@ class TrainingOrchestrator:
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
             self.logger.info("Enabled TF32 for better performance on Ampere GPUs")
+        
+        # Optimize tensor operations for Tensor Core utilization
+        if hasattr(torch, 'set_float32_matmul_precision'):
+            torch.set_float32_matmul_precision('high')
+            self.logger.info("Set float32 matmul precision to 'high' for optimal Tensor Core usage")
     
     def _manage_cuda_memory(self):
         """Manage CUDA memory during training."""
@@ -518,7 +557,13 @@ def create_config_from_args(args) -> GRPOConfig:
         use_mixed_precision=args.mixed_precision if args.mixed_precision is not None else torch.cuda.is_available(),
         use_torch_compile=args.torch_compile if args.torch_compile is not None else True,
         torch_compile_mode=args.compile_mode,
-        use_gradient_checkpointing=args.gradient_checkpointing
+        use_gradient_checkpointing=args.gradient_checkpointing,
+        
+        # Resume and recovery settings
+        resume_from_checkpoint=args.resume_from_checkpoint,
+        auto_resume=args.auto_resume,
+        enable_recovery=args.recovery_mode,
+        force_new_run=args.new_run
     )
 
 
@@ -593,6 +638,16 @@ def main():
                        help="Directory for saving outputs")
     parser.add_argument("--seed", type=int, default=42,
                        help="Random seed")
+    
+    # Resume and recovery options
+    parser.add_argument("--resume-from-checkpoint", type=str, default=None,
+                       help="Path to checkpoint to resume from")
+    parser.add_argument("--auto-resume", action="store_true",
+                       help="Automatically resume from latest checkpoint if available")
+    parser.add_argument("--recovery-mode", action="store_true", default=True,
+                       help="Enable automatic recovery on training instability")
+    parser.add_argument("--new-run", action="store_true",
+                       help="Force new run even if checkpoint exists (for experiments)")
     
     # Debug options
     parser.add_argument("--debug", action="store_true",

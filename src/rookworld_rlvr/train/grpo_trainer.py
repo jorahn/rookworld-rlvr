@@ -19,6 +19,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 import logging
 import numpy as np
+import time
 
 from .config import GRPOConfig
 
@@ -157,6 +158,12 @@ class GRPOTrainer:
         # Training state
         self.step_count = 0
         self.total_samples_trained = 0
+        self.nan_skip_count = 0
+        self.consecutive_nan_count = 0
+        
+        # Recovery state
+        self.last_stable_checkpoint = None
+        self.recovery_attempt_count = 0
         
         # Metrics tracking
         self.metrics_history: List[Dict[str, float]] = []
@@ -184,9 +191,9 @@ class GRPOTrainer:
         model = self.ref_model if use_ref_model else self.model
         
         with torch.set_grad_enabled(not use_ref_model):
-            # Forward pass with optional mixed precision
+            # Forward pass with optional mixed precision (BF16 for RTX 4090)
             if self.config.use_mixed_precision and not use_ref_model:
-                with torch.cuda.amp.autocast():
+                with torch.cuda.amp.autocast(dtype=torch.bfloat16):
                     outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             else:
                 outputs = model(input_ids=input_ids, attention_mask=attention_mask)
@@ -335,6 +342,57 @@ class GRPOTrainer:
         if self.config.gradient_accumulation_steps > 1:
             total_loss = total_loss / self.config.gradient_accumulation_steps
         
+        # NaN/Inf guard: Check loss before backward pass
+        if not torch.isfinite(total_loss):
+            self.logger.warning(f"NaN/Inf detected in loss at step {self.step_count}, skipping update")
+            self.optimizer.zero_grad()
+            self.nan_skip_count += 1
+            self.consecutive_nan_count += 1
+            
+            # Add NaN skip flag to metrics
+            final_metrics['nan_skip'] = 1
+            final_metrics['nan_skip_count'] = self.nan_skip_count
+            final_metrics['consecutive_nan_count'] = self.consecutive_nan_count
+            
+            # Attempt recovery if enabled and we have a stable checkpoint
+            if self.consecutive_nan_count >= 10:
+                if (self.config.enable_recovery and 
+                    self.last_stable_checkpoint and 
+                    self.recovery_attempt_count < 3):  # Max 3 recovery attempts
+                    
+                    self.logger.warning(f"Training instability detected (step {self.step_count}), attempting recovery...")
+                    
+                    # Save debug checkpoint before recovery
+                    debug_checkpoint_path = f"debug_nan_step{self.step_count}_attempt{self.recovery_attempt_count + 1}"
+                    try:
+                        self._save_debug_checkpoint(debug_checkpoint_path)
+                    except Exception as e:
+                        self.logger.warning(f"Failed to save debug checkpoint: {e}")
+                    
+                    # Attempt recovery
+                    recovery_success = self._attempt_recovery()
+                    
+                    if recovery_success:
+                        self.logger.info(f"Recovery successful from step {self.step_count}, continuing training")
+                        return final_metrics  # Continue training from recovered state
+                    else:
+                        self.recovery_attempt_count += 1
+                        if self.recovery_attempt_count >= 3:
+                            self.logger.error("Maximum recovery attempts reached, stopping training")
+                        else:
+                            self.logger.warning(f"Recovery attempt {self.recovery_attempt_count} failed, will retry")
+                            return final_metrics  # Try again next step
+                
+                # If recovery disabled or failed, stop training
+                self.logger.error(f"Too many consecutive NaN losses ({self.consecutive_nan_count}), stopping training")
+                raise RuntimeError("Training diverged: too many consecutive NaN losses")
+            
+            return final_metrics
+        
+        # Reset consecutive NaN count on successful loss
+        self.consecutive_nan_count = 0
+        self.recovery_attempt_count = 0  # Reset recovery attempts on successful step
+        
         # Backward pass with gradient scaling if using mixed precision
         if self.scaler is not None:
             self.scaler.scale(total_loss).backward()
@@ -381,7 +439,10 @@ class GRPOTrainer:
             'learning_rate': self.scheduler.get_last_lr()[0],
             'step': self.step_count,
             'total_samples': self.total_samples_trained,
-            'num_groups': len(step_data.groups)
+            'num_groups': len(step_data.groups),
+            'nan_skip': 0,  # Default to 0 if no NaN detected
+            'nan_skip_count': self.nan_skip_count,
+            'consecutive_nan_count': self.consecutive_nan_count
         })
         
         # Update training state
@@ -429,7 +490,9 @@ class GRPOTrainer:
             'total_samples_trained': self.total_samples_trained,
             'kl_coef': self.kl_controller.get_coefficient(),
             'metrics_history': self.metrics_history,
-            'config': self.config
+            'config': self.config,
+            'nan_skip_count': self.nan_skip_count,
+            'consecutive_nan_count': self.consecutive_nan_count
         }
         
         if include_optimizer:
@@ -456,12 +519,67 @@ class GRPOTrainer:
         self.total_samples_trained = checkpoint['total_samples_trained']
         self.kl_controller.kl_coef = checkpoint['kl_coef']
         self.metrics_history = checkpoint.get('metrics_history', [])
+        self.nan_skip_count = checkpoint.get('nan_skip_count', 0)
+        self.consecutive_nan_count = checkpoint.get('consecutive_nan_count', 0)
         
         if load_optimizer and 'optimizer_state_dict' in checkpoint:
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         
         self.logger.info(f"Checkpoint loaded from {path}")
+    
+    def set_last_stable_checkpoint(self, checkpoint_path: str):
+        """Set the path to the last stable checkpoint for recovery."""
+        self.last_stable_checkpoint = checkpoint_path
+        self.logger.debug(f"Updated last stable checkpoint: {checkpoint_path}")
+    
+    def _save_debug_checkpoint(self, debug_name: str):
+        """Save debug checkpoint for troubleshooting."""
+        debug_path = f"/tmp/grpo_debug_{debug_name}.pt"
+        
+        debug_data = {
+            'step_count': self.step_count,
+            'consecutive_nan_count': self.consecutive_nan_count,
+            'nan_skip_count': self.nan_skip_count,
+            'current_lr': self.scheduler.get_last_lr()[0] if self.scheduler.get_last_lr() else self.config.lr,
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'scheduler_state_dict': self.scheduler.state_dict(),
+            'debug_timestamp': time.time()
+        }
+        
+        torch.save(debug_data, debug_path)
+        self.logger.debug(f"Debug checkpoint saved: {debug_path}")
+    
+    def _attempt_recovery(self) -> bool:
+        """Attempt to recover from training instability by loading last stable checkpoint."""
+        if not self.last_stable_checkpoint:
+            self.logger.warning("No stable checkpoint available for recovery")
+            return False
+        
+        try:
+            # Load stable checkpoint
+            self.logger.info(f"Loading stable checkpoint: {self.last_stable_checkpoint}")
+            self.load_checkpoint(self.last_stable_checkpoint, load_optimizer=True)
+            
+            # Reduce learning rate as recovery strategy
+            current_lr = self.scheduler.get_last_lr()[0] if self.scheduler.get_last_lr() else self.config.lr
+            new_lr = current_lr * self.config.recovery_lr_factor
+            
+            # Update optimizer learning rate
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = new_lr
+            
+            # Reset NaN counters
+            self.consecutive_nan_count = 0
+            self.nan_skip_count = 0  # Reset for this recovery attempt
+            
+            self.logger.info(f"Recovery completed: reduced LR from {current_lr:.2e} to {new_lr:.2e}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Recovery attempt failed: {e}")
+            return False
     
     def get_training_state(self) -> Dict[str, Any]:
         """Get current training state for monitoring."""
@@ -471,5 +589,7 @@ class GRPOTrainer:
             'current_lr': self.scheduler.get_last_lr()[0] if self.scheduler.get_last_lr() else self.config.lr,
             'kl_coefficient': self.kl_controller.get_coefficient(),
             'model_device': next(self.model.parameters()).device,
-            'training_mode': self.model.training
+            'training_mode': self.model.training,
+            'nan_skip_count': self.nan_skip_count,
+            'consecutive_nan_count': self.consecutive_nan_count
         }

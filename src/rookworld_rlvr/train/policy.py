@@ -43,45 +43,61 @@ class CausalLMPolicy:
     
     def __init__(
         self, 
-        model_name_or_path: str,
+        model: torch.nn.Module,
+        ref_model: torch.nn.Module,
+        config,
         device: Union[str, torch.device] = "cpu",
         torch_dtype: torch.dtype = torch.float32
     ):
         """
-        Initialize unified policy wrapper
+        Initialize unified policy wrapper with pre-loaded models
         
         Args:
-            model_name_or_path: Path to RookWorld-LM model
-            device: Device to load models on
+            model: Pre-loaded trainable model
+            ref_model: Pre-loaded reference model (frozen)
+            config: Training configuration
+            device: Device models are on
             torch_dtype: Data type for model weights
         """
         self.device = device
         self.torch_dtype = torch_dtype
+        self.config = config
         
         # Initialize tokenizer
         self.tokenizer = TokenizerBridge()
         
-        # Load trainable model
-        print(f"Loading trainable model from {model_name_or_path}")
-        self.model = load_pretrained_model(
-            model_name_or_path, 
-            device=device, 
-            torch_dtype=torch_dtype
-        )
-        self.model.train()
+        # Use pre-loaded models
+        self.model = model
+        self.ref_model = ref_model
+    
+    def generate(
+        self, 
+        prompt: str, 
+        temperature: float = 0.7,
+        max_new_tokens: int = 64,
+        top_p: float = 0.95
+    ) -> str:
+        """
+        Generate single response for evaluation purposes
         
-        # Load reference model (frozen copy for GRPO baseline)
-        print(f"Loading reference model from {model_name_or_path}")
-        self.ref_model = load_pretrained_model(
-            model_name_or_path, 
-            device=device, 
-            torch_dtype=torch_dtype
+        Args:
+            prompt: Single prompt string
+            temperature: Sampling temperature
+            max_new_tokens: Maximum tokens to generate
+            top_p: Top-p sampling threshold
+            
+        Returns:
+            Generated text string (without prompt)
+        """
+        config = GenerationConfig(
+            temperature=temperature,
+            max_new_tokens=max_new_tokens,
+            top_p=top_p,
+            top_k=0
         )
-        self.ref_model.eval()
         
-        # Freeze reference model
-        for param in self.ref_model.parameters():
-            param.requires_grad_(False)
+        result = self.generate_batch([prompt], config)
+        return result['texts'][0]
     
     @torch.no_grad()
     def generate_batch(
@@ -133,7 +149,7 @@ class CausalLMPolicy:
             )
             
             generated_sequences.append(sequence[0])  # Remove batch dimension
-            generated_logprobs.append(logprobs[0])   # Remove batch dimension
+            generated_logprobs.append(logprobs.item() if logprobs.dim() == 0 else logprobs[0])   # Handle scalar or tensor
         
         # Pad generated sequences to same length
         max_total_len = max(seq.size(0) for seq in generated_sequences)
@@ -211,7 +227,7 @@ class CausalLMPolicy:
                 next_token_logits = next_token_logits / generation_config.temperature
             
             # Apply top-k filtering
-            if generation_config.top_k is not None:
+            if generation_config.top_k is not None and generation_config.top_k > 0:
                 top_k = min(generation_config.top_k, next_token_logits.size(-1))
                 indices_to_remove = next_token_logits < torch.topk(next_token_logits, top_k)[0][..., -1, None]
                 next_token_logits[indices_to_remove] = float('-inf')

@@ -21,6 +21,13 @@ except ImportError:
     SAFETENSORS_AVAILABLE = False
     print("Warning: safetensors not available. Install with: pip install safetensors")
 
+try:
+    from huggingface_hub import snapshot_download
+    HF_HUB_AVAILABLE = True
+except ImportError:
+    HF_HUB_AVAILABLE = False
+    print("Warning: huggingface_hub not available. Install with: pip install huggingface-hub")
+
 from .gpt2 import GPT2Model
 from .config import GPT2Config
 
@@ -240,12 +247,21 @@ def load_pretrained_model(
     if torch_dtype is None:
         torch_dtype = torch.float32
     
-    # Handle HuggingFace model names (for future hub integration)
+    # Handle HuggingFace model names
     if isinstance(model_path, str) and "/" in model_path and not Path(model_path).exists():
-        # This would be a HF hub model name - for now just error
-        raise NotImplementedError("HuggingFace Hub loading not yet implemented. Use local path.")
-    
-    model_path = Path(model_path)
+        if not HF_HUB_AVAILABLE:
+            raise ImportError("huggingface_hub is required for loading from HF Hub. Install with: pip install huggingface-hub")
+        
+        print(f"Downloading model from HuggingFace Hub: {model_path}")
+        # Download the model to cache and get local path
+        local_model_path = snapshot_download(
+            repo_id=model_path,
+            allow_patterns=["*.safetensors", "*.bin", "config.json"],
+            local_files_only=False
+        )
+        model_path = Path(local_model_path)
+    else:
+        model_path = Path(model_path)
     
     # Load config and create model
     config = load_hf_config(model_path)

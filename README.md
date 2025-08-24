@@ -384,7 +384,7 @@ uv run python train_rookworld_grpo.py --recovery-mode
 ### Model & Dataset
 - **Base Model**: [jrahn/RookWorld-LM-124M](https://huggingface.co/jrahn/RookWorld-LM-124M)
 - **Training Dataset**: [jrahn/rookworld_7m](https://huggingface.co/datasets/jrahn/rookworld_7m)
-- **Original Research**: [LAION RookWorld Blog](https://laion.ai/blog/rookworld)
+- **Original Research**: [LAION RookWorld Blog](https://laion.ai/notes/rook)
 
 ### Development
 - **Testing**: `uv run pytest` for comprehensive test suite

@@ -7,9 +7,9 @@ Verify policy and environment reward computation for RookWorld GRPO training.
 import pytest
 import chess
 from src.rookworld_rlvr.reward.policy_reward import (
-    PolicyRewardComputer, PolicyRewardConfig, ParsedPolicyOutput,
-    get_stockfish_analysis_stub
+    PolicyRewardComputer, PolicyRewardConfig, ParsedPolicyOutput
 )
+from src.rookworld_rlvr.engine.stockfish import StockfishAnalysis
 from src.rookworld_rlvr.reward.env_reward import (
     EnvRewardComputer, EnvRewardConfig
 )
@@ -32,11 +32,13 @@ class TestPolicyRewardComputer:
     @pytest.fixture
     def stockfish_analysis(self):
         """Mock Stockfish analysis"""
-        return {
-            'top5_moves': ['e2e4', 'd2d4', 'g1f3', 'b1c3', 'f2f3'],
-            'top5_evals': [0.25, 0.18, 0.12, 0.08, -0.15],
-            'best_move': 'e2e4'
-        }
+        return StockfishAnalysis(
+            top5_moves=['e2e4', 'd2d4', 'g1f3', 'b1c3', 'f2f3'],
+            top5_evals=[0.25, 0.18, 0.12, 0.08, -0.15],
+            best_move='e2e4',
+            depth=10,
+            analysis_time=0.05
+        )
     
     def test_parse_valid_output(self, reward_computer):
         """Test parsing valid policy output"""
@@ -121,20 +123,18 @@ class TestPolicyRewardComputer:
         
         assert reward == reward_computer.config.r_policy_malformed  # Should be negative
     
-    def test_stockfish_analysis_stub(self, board):
-        """Test Stockfish analysis stub"""
-        analysis = get_stockfish_analysis_stub(board)
+    def test_stockfish_analysis_structure(self, stockfish_analysis):
+        """Test Stockfish analysis structure"""
+        assert isinstance(stockfish_analysis.top5_moves, list)
+        assert isinstance(stockfish_analysis.top5_evals, list)  
+        assert isinstance(stockfish_analysis.best_move, str)
         
-        assert "top5_moves" in analysis
-        assert "top5_evals" in analysis  
-        assert "best_move" in analysis
-        
-        assert len(analysis["top5_moves"]) > 0
-        assert len(analysis["top5_evals"]) == len(analysis["top5_moves"])
-        assert analysis["best_move"] in analysis["top5_moves"]
+        assert len(stockfish_analysis.top5_moves) > 0
+        assert len(stockfish_analysis.top5_evals) == len(stockfish_analysis.top5_moves)
+        assert stockfish_analysis.best_move in stockfish_analysis.top5_moves
         
         # All moves should be valid UCI format
-        for move in analysis["top5_moves"]:
+        for move in stockfish_analysis.top5_moves:
             try:
                 chess.Move.from_uci(move)
             except ValueError:

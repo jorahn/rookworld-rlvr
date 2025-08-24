@@ -20,7 +20,8 @@ import torch
 
 from ..train.policy import CausalLMPolicy, GenerationConfig
 from ..environment.chess_env import ChessEnvironment, EnvironmentResponse
-from ..reward.policy_reward import PolicyRewardComputer, get_stockfish_analysis_stub
+from ..reward.policy_reward import PolicyRewardComputer
+from ..engine.stockfish import StockfishAnalysis
 from ..reward.env_reward import EnvRewardComputer
 
 
@@ -144,7 +145,14 @@ class GRPODataCollector:
         prompts = self.policy.tokenizer.create_chess_prompts([fen] * self.config.group_size, "policy")
         
         # Get Stockfish analysis for reward computation
-        stockfish_analysis = get_stockfish_analysis_stub(board)  # Will be replaced with real Stockfish
+        # Create stub analysis for testing (will be replaced with real Stockfish)
+        stockfish_analysis = StockfishAnalysis(
+            best_move="e2e4",
+            evaluation=0.2,
+            depth=15,
+            pv_line=["e2e4", "e7e5"],
+            mate_in=None
+        )
         
         # Generate structured outputs
         generation_config = GenerationConfig(

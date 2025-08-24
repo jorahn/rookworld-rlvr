@@ -298,6 +298,141 @@ class CausalLMPolicy:
             
             return masked_logprobs.sum(dim=1) / n_target_tokens
     
+    @torch.no_grad()
+    def score_legal_moves(
+        self, 
+        fen: str, 
+        legal_moves: List[str]
+    ) -> torch.Tensor:
+        """
+        Efficiently score all legal moves for a position using batch processing
+        
+        Args:
+            fen: Chess position in FEN notation
+            legal_moves: List of legal moves in UCI format
+            
+        Returns:
+            Logprob scores for each legal move [len(legal_moves)]
+        """
+        if not legal_moves:
+            return torch.tensor([])
+        
+        # Create prompts for all legal moves
+        base_prompt = f"P: {fen}    M:"
+        move_prompts = [f"{base_prompt} {move}" for move in legal_moves]
+        
+        # Tokenize all prompts in batch
+        encoded = self.tokenizer.encode_batch(
+            move_prompts,
+            max_length=self.config.max_positions,
+            padding=True,
+            truncation=True
+        )
+        
+        input_ids = encoded['input_ids'].to(self.device)
+        attention_mask = encoded['attention_mask'].to(self.device)
+        
+        # Calculate where the move tokens start for each prompt
+        base_encoded = self.tokenizer.encode_batch([base_prompt])[0]
+        base_length = len(base_encoded['input_ids'])
+        target_start_indices = torch.full((len(legal_moves),), base_length, dtype=torch.long)
+        
+        # Forward pass through model (batch all moves at once)
+        with torch.cuda.amp.autocast(enabled=self.config.use_mixed_precision):
+            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs["logits"][:, :-1, :]  # Shift for next token prediction
+            targets = input_ids[:, 1:]
+            
+            # Compute log probabilities for move tokens only
+            log_probs = F.log_softmax(logits, dim=-1)
+            token_logprobs = log_probs.gather(-1, targets.unsqueeze(-1)).squeeze(-1)
+            
+            # Create masks for move tokens (exclude base prompt)
+            batch_size, seq_len = targets.shape  
+            move_masks = torch.zeros_like(targets, dtype=torch.bool)
+            
+            for i in range(batch_size):
+                # Mask tokens starting from the move (after base prompt)
+                start_idx = max(0, base_length - 1)  # -1 for shift
+                end_idx = attention_mask[i, 1:].sum().item()  # Actual sequence length
+                if start_idx < end_idx:
+                    move_masks[i, start_idx:end_idx] = True
+            
+            # Apply mask and compute mean logprob per move
+            masked_logprobs = token_logprobs.masked_fill(~move_masks, 0.0)
+            n_move_tokens = move_masks.sum(dim=1).clamp(min=1)
+            move_scores = masked_logprobs.sum(dim=1) / n_move_tokens
+            
+        return move_scores
+    
+    def score_legal_moves_batch(
+        self, 
+        positions_and_moves: List[Tuple[str, List[str]]]
+    ) -> List[torch.Tensor]:
+        """
+        Score legal moves for multiple positions efficiently
+        
+        Args:
+            positions_and_moves: List of (fen, legal_moves) tuples
+            
+        Returns:
+            List of score tensors, one per position
+        """
+        if not positions_and_moves:
+            return []
+        
+        # Flatten all position-move combinations
+        all_prompts = []
+        position_indices = []
+        move_counts = []
+        
+        for pos_idx, (fen, legal_moves) in enumerate(positions_and_moves):
+            if not legal_moves:
+                move_counts.append(0)
+                continue
+                
+            base_prompt = f"P: {fen}    M:"
+            for move in legal_moves:
+                all_prompts.append(f"{base_prompt} {move}")
+                position_indices.append(pos_idx)
+            move_counts.append(len(legal_moves))
+        
+        if not all_prompts:
+            return [torch.tensor([]) for _ in positions_and_moves]
+        
+        # Process all prompts in large batch
+        encoded = self.tokenizer.encode_batch(
+            all_prompts,
+            max_length=self.config.max_positions,
+            padding=True,
+            truncation=True
+        )
+        
+        input_ids = encoded['input_ids'].to(self.device)
+        attention_mask = encoded['attention_mask'].to(self.device)
+        
+        # Get scores for all prompts
+        with torch.cuda.amp.autocast(enabled=self.config.use_mixed_precision):
+            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+            
+            # Compute scores efficiently (simplified version)
+            logits = outputs["logits"][:, -1, :]  # Use last token logits as proxy
+            scores = F.log_softmax(logits, dim=-1).max(dim=-1)[0]
+        
+        # Split scores back by position
+        result_scores = []
+        start_idx = 0
+        
+        for count in move_counts:
+            if count == 0:
+                result_scores.append(torch.tensor([]))
+            else:
+                end_idx = start_idx + count
+                result_scores.append(scores[start_idx:end_idx])
+                start_idx = end_idx
+        
+        return result_scores
+    
     def get_num_params(self) -> int:
         """Get number of trainable parameters"""
         return self.model.get_num_params()

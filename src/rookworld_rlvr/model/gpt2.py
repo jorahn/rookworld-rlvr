@@ -236,12 +236,30 @@ class GPT2Model(nn.Module):
         presents = [] if use_cache else None
         for i, block in enumerate(self.h):
             past_key_value = past_key_values[i] if past_key_values is not None else None
-            hidden_states, present = block(
-                hidden_states,
-                attention_mask=attention_mask,
-                past_key_value=past_key_value,
-                use_cache=use_cache
-            )
+            
+            # Use gradient checkpointing if enabled and in training mode
+            if self.config.use_gradient_checkpointing and self.training:
+                def create_custom_forward(module):
+                    def custom_forward(*inputs):
+                        return module(*inputs, use_cache=use_cache)
+                    return custom_forward
+                
+                # Gradient checkpointing with custom forward function
+                hidden_states, present = torch.utils.checkpoint.checkpoint(
+                    create_custom_forward(block),
+                    hidden_states,
+                    attention_mask,
+                    past_key_value,
+                    use_reentrant=False
+                )
+            else:
+                hidden_states, present = block(
+                    hidden_states,
+                    attention_mask=attention_mask,
+                    past_key_value=past_key_value,
+                    use_cache=use_cache
+                )
+            
             if use_cache:
                 presents.append(present)
         

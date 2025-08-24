@@ -13,8 +13,9 @@ Two-tier reward system:
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 import chess
-import chess.engine
 import re
+
+from ..engine.stockfish import StockfishEngine, StockfishAnalysis
 
 
 @dataclass 
@@ -61,7 +62,7 @@ class PolicyRewardComputer:
         self,
         generated_text: str,
         board: chess.Board,
-        stockfish_analysis: Dict[str, Any]
+        stockfish_analysis: StockfishAnalysis
     ) -> Tuple[float, Dict[str, Any]]:
         """
         Compute total reward for policy task output
@@ -69,8 +70,7 @@ class PolicyRewardComputer:
         Args:
             generated_text: Model's generated output (should be structured analysis)
             board: Chess board position
-            stockfish_analysis: Ground truth from Stockfish
-                Expected keys: 'top5_moves', 'top5_evals', 'best_move'
+            stockfish_analysis: Ground truth from StockfishAnalysis
         
         Returns:
             Tuple of (total_reward, reward_breakdown)
@@ -234,14 +234,14 @@ class PolicyRewardComputer:
     def _compute_content_rewards(
         self,
         parsed: ParsedPolicyOutput,
-        stockfish_analysis: Dict[str, Any]
+        stockfish_analysis: StockfishAnalysis
     ) -> Dict[str, float]:
         """
         Compute content-based rewards by comparing with Stockfish analysis
         
         Args:
             parsed: Parsed model output
-            stockfish_analysis: Ground truth from Stockfish
+            stockfish_analysis: Ground truth from StockfishAnalysis
             
         Returns:
             Dictionary with content reward components
@@ -252,9 +252,9 @@ class PolicyRewardComputer:
             "best_move_reward": 0.0
         }
         
-        stockfish_moves = stockfish_analysis.get('top5_moves', [])
-        stockfish_evals = stockfish_analysis.get('top5_evals', [])
-        stockfish_best = stockfish_analysis.get('best_move', '')
+        stockfish_moves = stockfish_analysis.top5_moves
+        stockfish_evals = stockfish_analysis.top5_evals
+        stockfish_best = stockfish_analysis.best_move
         
         # Move matching reward (multi-label classification)
         if stockfish_moves:
@@ -293,34 +293,41 @@ class PolicyRewardComputer:
         return rewards
 
 
-# Stockfish integration stub - will be implemented when Stockfish engine is added
-def get_stockfish_analysis_stub(board: chess.Board) -> Dict[str, Any]:
+# Convenience functions for integration
+def compute_policy_reward(
+    generated_text: str,
+    board: chess.Board,
+    stockfish_engine: StockfishEngine,
+    config: Optional[PolicyRewardConfig] = None
+) -> Tuple[float, Dict[str, Any]]:
     """
-    Stub for Stockfish analysis - returns mock data for testing
+    Convenience function to compute policy reward with automatic Stockfish analysis
     
-    This will be replaced with actual Stockfish integration in a future phase.
+    Args:
+        generated_text: Model's generated output
+        board: Chess board position
+        stockfish_engine: Stockfish engine instance
+        config: Reward configuration (uses defaults if None)
+        
+    Returns:
+        Tuple of (total_reward, reward_breakdown)
     """
-    # Generate some legal moves for testing
-    legal_moves = list(board.legal_moves)
+    # Get Stockfish analysis
+    stockfish_analysis = stockfish_engine.analyze(board)
     
-    if len(legal_moves) == 0:
-        return {
-            'top5_moves': [],
-            'top5_evals': [],
-            'best_move': ''
-        }
+    # Compute reward
+    reward_computer = PolicyRewardComputer(config)
+    return reward_computer.compute_reward(generated_text, board, stockfish_analysis)
+
+
+def create_policy_reward_computer(config: Optional[PolicyRewardConfig] = None) -> PolicyRewardComputer:
+    """
+    Factory function to create policy reward computer
     
-    # Take up to 5 legal moves
-    top5_moves = [move.uci() for move in legal_moves[:5]]
-    
-    # Generate mock evaluations (slightly positive for white, negative for black)
-    base_eval = 0.1 if board.turn == chess.WHITE else -0.1
-    top5_evals = [base_eval + i * 0.05 for i in range(len(top5_moves))]
-    
-    best_move = top5_moves[0] if top5_moves else ''
-    
-    return {
-        'top5_moves': top5_moves,
-        'top5_evals': top5_evals,
-        'best_move': best_move
-    }
+    Args:
+        config: Reward configuration (uses defaults if None)
+        
+    Returns:
+        PolicyRewardComputer instance
+    """
+    return PolicyRewardComputer(config)

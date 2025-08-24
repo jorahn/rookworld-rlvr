@@ -47,6 +47,9 @@ class GPT2Config:
     use_cache: bool = True       # Whether to use past key values for efficiency
     tie_word_embeddings: bool = True  # Tie input/output embeddings
     
+    # Performance optimizations
+    use_gradient_checkpointing: bool = False  # Enable gradient checkpointing
+    
     def __post_init__(self):
         """Post-initialization validation and defaults"""
         if self.n_inner is None:

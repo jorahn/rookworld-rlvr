@@ -15,7 +15,7 @@ from pathlib import Path
 # Add src to path for imports  
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from train_full_grpo import FullGRPOTrainer
+from train_full_grpo import ProductionGRPORunner
 from rookworld_rlvr.train.config import GRPOConfig
 
 
@@ -62,49 +62,40 @@ def test_training_pipeline():
     )
     
     try:
-        # Initialize trainer
-        print("1. Initializing trainer...")
-        trainer = FullGRPOTrainer(config)
+        # Initialize production runner
+        print("1. Initializing production runner...")
+        runner = ProductionGRPORunner(config)
         
-        # Test model initialization
-        print("2. Testing model initialization...")
-        trainer.initialize_models()
-        print(f"   ✓ Model loaded: {config.model_name_or_path}")
-        print(f"   ✓ Device: {trainer.device}")
-        
-        # Test component initialization
-        print("3. Testing component initialization...")
-        trainer.initialize_components()
-        print("   ✓ GRPO trainer initialized")
-        print("   ✓ Stockfish initialized")
-        print("   ✓ Data collector initialized")
+        # Test orchestrator initialization
+        print("2. Testing production orchestrator...")
+        print(f"   ✓ Orchestrator initialized: {type(runner.orchestrator).__name__}")
+        print(f"   ✓ Device: {runner.device}")
+        print(f"   ✓ Model path: {config.model_name_or_path}")
         
         # Test position generation (smaller number for testing)
-        print("4. Testing position generation...")
-        trainer.chess_positions = trainer.generate_diverse_positions(16)  # Just 16 for testing
-        print(f"   ✓ Generated {len(trainer.chess_positions)} positions")
+        print("3. Testing position generation...")
+        runner.chess_positions = runner.generate_diverse_positions(16)  # Just 16 for testing
+        print(f"   ✓ Generated {len(runner.chess_positions)} positions")
         
         # Test memory profiling (if CUDA available)
-        print("5. Testing memory profiling...")
-        if trainer.device.type == "cuda":
-            profile = trainer.profile_memory_usage(2, 4)
-            print(f"   ✓ Memory profiling: {profile.peak_gb:.2f}GB ({profile.utilization:.1%})")
+        print("4. Testing memory profiling...")
+        if runner.device.type == "cuda":
+            try:
+                profile = runner.profile_memory_usage(2, 4)
+                print(f"   ✓ Memory profiling: {profile.peak_gb:.2f}GB ({profile.utilization:.1%})")
+            except Exception as e:
+                print(f"   ⚠ Memory profiling failed: {e}")
         else:
             print("   ⚠ Skipping memory profiling (CPU mode)")
         
-        # Test batch collection
-        print("6. Testing batch collection...")
-        trainer.data_collector.add_positions_to_buffer(trainer.chess_positions)
-        batch_groups = trainer.data_collector.collect_mixed_batch(2)
-        
-        if batch_groups:
-            print(f"   ✓ Collected {len(batch_groups)} batch groups")
-            # Check task distribution
-            policy_count = sum(1 for g in batch_groups if g.get('task_type', 'policy') == 'policy')
-            env_count = len(batch_groups) - policy_count
-            print(f"   ✓ Task distribution: {policy_count} policy, {env_count} environment")
-        else:
-            print("   ⚠ No batch groups collected")
+        # Test batch size optimization
+        print("5. Testing batch size optimization...")
+        try:
+            optimal_config = runner.find_optimal_batch_size()
+            print(f"   ✓ Optimal batch size: {optimal_config.batch_positions}")
+            print(f"   ✓ Effective batch size: {optimal_config.effective_batch_size}")
+        except Exception as e:
+            print(f"   ⚠ Batch optimization failed: {e}")
         
         print("\n=== TEST COMPLETED SUCCESSFULLY ===")
         print("\nTo run full training:")

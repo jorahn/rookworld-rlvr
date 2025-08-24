@@ -1,16 +1,17 @@
-# Full GRPO Training Script
+# Production GRPO Training Script
 
-This directory contains the complete GRPO training implementation with automatic batch size optimization.
+This directory contains the production GRPO training implementation using the main `TrainingOrchestrator` with automatic batch size optimization.
 
 ## Files
 
-- **`train_full_grpo.py`** - Main training script with full implementation
+- **`train_full_grpo.py`** - Production training script using main orchestrator
 - **`test_full_grpo.py`** - Validation script for testing the pipeline
 - **`README_train_full_grpo.md`** - This documentation
 
 ## Features
 
-### 🎯 Core Implementation
+### 🎯 Production Integration
+- **Main Orchestrator**: Uses the production `TrainingOrchestrator` from `train_rookworld_grpo.py`
 - **HuggingFace Weight Loading**: Automatically loads `jrahn/RookWorld-LM-124M` weights
 - **256 Diverse Positions**: Generates opening, mid-game, and endgame positions
 - **80/20 Task Distribution**: 80% Policy tasks (P: → M:), 20% Environment tasks (A: → result)

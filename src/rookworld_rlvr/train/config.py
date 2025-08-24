@@ -59,6 +59,9 @@ class GRPOConfig:
     kl_target: Optional[float] = None
     """Target KL divergence for adaptive KL control. If None, uses fixed kl_coef."""
     
+    kl_estimator: str = "kl3"
+    """KL estimator type: 'kl1' (simple diff), 'kl2' (exp-based), 'kl3' (quadratic)"""
+    
     # =============================================================================
     # Sampling Configuration
     # =============================================================================

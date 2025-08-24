@@ -20,8 +20,81 @@ from dataclasses import dataclass
 import logging
 import numpy as np
 import time
+import os
 
 from .config import GRPOConfig
+
+
+class RolloutBuffer:
+    """Buffer for storing and reusing rollouts across multiple training epochs"""
+    
+    def __init__(self, capacity: int = 1000):
+        """
+        Initialize rollout buffer
+        
+        Args:
+            capacity: Maximum number of samples to store
+        """
+        self.capacity = capacity
+        self.data = []
+        self.epoch_count = 0
+        self.max_epochs = 2  # Default max epochs per rollout batch
+        
+    def store_rollout(self, batch: 'GRPOBatch', ref_logprobs: torch.Tensor):
+        """Store a rollout with cached reference logprobs"""
+        self.data.append({
+            'batch': batch,
+            'ref_logprobs': ref_logprobs,
+            'epoch_count': 0
+        })
+        
+        # Remove oldest if over capacity
+        if len(self.data) > self.capacity:
+            self.data.pop(0)
+    
+    def get_epoch_iterator(self, batch_size: int, n_epochs: int = 2):
+        """Get iterator for training epochs over stored rollouts"""
+        if not self.data:
+            return []
+        
+        # Filter rollouts that haven't exceeded max epochs
+        available_data = [item for item in self.data if item['epoch_count'] < self.max_epochs]
+        
+        if not available_data:
+            # All rollouts exhausted, clear buffer
+            self.data.clear()
+            return []
+        
+        # Create epoch batches
+        epoch_batches = []
+        for epoch in range(n_epochs):
+            # Shuffle available data
+            indices = torch.randperm(len(available_data))
+            
+            for i in range(0, len(available_data), batch_size):
+                batch_indices = indices[i:i+batch_size]
+                epoch_batch = [available_data[idx.item()] for idx in batch_indices]
+                epoch_batches.append(epoch_batch)
+        
+        # Increment epoch counts
+        for item in available_data:
+            item['epoch_count'] += n_epochs
+        
+        return epoch_batches
+    
+    def should_collect_new_rollouts(self) -> bool:
+        """Check if we need to collect new rollouts"""
+        # Need new rollouts if buffer is empty or all rollouts are exhausted
+        fresh_rollouts = [item for item in self.data if item['epoch_count'] < self.max_epochs]
+        return len(fresh_rollouts) < self.capacity // 4  # Collect when < 25% fresh
+    
+    def clear(self):
+        """Clear all stored rollouts"""
+        self.data.clear()
+    
+    def __len__(self) -> int:
+        """Number of stored rollouts"""
+        return len(self.data)
 
 
 @dataclass
@@ -108,35 +181,78 @@ class GRPOTrainer:
     - PPO-style clipped policy gradients for stable updates
     - KL regularization to prevent policy drift
     - Support for mixed policy/environment tasks
+    - RTX 4090 / Ada Lovelace optimizations
     """
+    
+    def _setup_pytorch_optimizations(self):
+        """Setup PyTorch optimizations for RTX 4090 / Ada Lovelace"""
+        # Enable TF32 for faster matmuls on Ampere/Ada GPUs
+        torch.set_float32_matmul_precision("high")
+        
+        # CUDA memory allocator optimization for 24GB cards
+        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
+        
+        # Enable optimized CUDA kernels
+        torch.backends.cudnn.benchmark = True
+    
+    def _setup_gradient_checkpointing(self):
+        """Setup gradient checkpointing with best practices"""
+        try:
+            # Use the recommended non-reentrant version for DDP compatibility
+            if hasattr(self.model, 'gradient_checkpointing_enable'):
+                self.model.gradient_checkpointing_enable(
+                    gradient_checkpointing_kwargs={"use_reentrant": False}
+                )
+            else:
+                # Fallback for models without the method
+                self.model.gradient_checkpointing = True
+        except TypeError:
+            # Fallback if use_reentrant parameter not supported
+            if hasattr(self.model, 'gradient_checkpointing_enable'):
+                self.model.gradient_checkpointing_enable()
+            else:
+                self.model.gradient_checkpointing = True
+            logging.getLogger(__name__).warning(
+                "Gradient checkpointing enabled without use_reentrant=False. "
+                "Consider upgrading PyTorch for better DDP compatibility."
+            )
     
     def __init__(self, 
                  model: nn.Module,
                  ref_model: nn.Module, 
                  config: GRPOConfig):
         """
-        Initialize GRPO trainer
+        Initialize GRPO trainer with RTX 4090 optimizations
         
         Args:
             model: Policy model to train (RookWorld-LM)
             ref_model: Frozen reference model for KL penalty
             config: GRPO training configuration
         """
+        # RTX 4090 / Ada Lovelace optimizations
+        self._setup_pytorch_optimizations()
+        
         self.model = model
         self.ref_model = ref_model
         self.config = config
+        
+        # Setup gradient checkpointing if enabled
+        if config.use_gradient_checkpointing:
+            self._setup_gradient_checkpointing()
         
         # Freeze reference model
         for param in self.ref_model.parameters():
             param.requires_grad_(False)
         self.ref_model.eval()
         
-        # Optimizer
+        # Optimized AdamW with modern LLM training settings
         self.optimizer = AdamW(
             self.model.parameters(),
             lr=config.lr,
+            betas=(0.9, 0.95),  # Modern LLM beta2 setting
+            eps=1e-8,
             weight_decay=config.weight_decay,
-            eps=1e-8
+            foreach=True  # Faster grouped operations
         )
         
         # Learning rate scheduler
@@ -153,7 +269,7 @@ class GRPOTrainer:
         )
         
         # Mixed precision training
-        self.scaler = torch.cuda.amp.GradScaler() if config.use_mixed_precision else None
+        self.scaler = torch.amp.GradScaler('cuda') if config.use_mixed_precision else None
         
         # Training state
         self.step_count = 0
@@ -168,8 +284,12 @@ class GRPOTrainer:
         # Metrics tracking
         self.metrics_history: List[Dict[str, float]] = []
         
+        # Rollout buffer for sample efficiency
+        self.rollout_buffer = RolloutBuffer(capacity=1000)
+        
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"Initialized GRPO trainer with config: {config}")
+        self.logger.info("Rollout buffer initialized for multi-epoch training")
     
     def compute_logprobs(self, 
                         input_ids: torch.Tensor,
@@ -199,7 +319,7 @@ class GRPOTrainer:
         with torch.set_grad_enabled(False):
             # Forward pass with optional mixed precision (BF16 for RTX 4090)
             if self.config.use_mixed_precision and not use_ref_model:
-                with torch.cuda.amp.autocast(dtype=torch.bfloat16):
+                with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                     outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             else:
                 outputs = model(input_ids=input_ids, attention_mask=attention_mask)
@@ -261,7 +381,7 @@ class GRPOTrainer:
         
         # Forward pass with gradients enabled
         if self.config.use_mixed_precision:
-            with torch.cuda.amp.autocast(dtype=torch.bfloat16):
+            with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                 outputs = model(input_ids=input_ids, attention_mask=attention_mask)
         else:
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
@@ -352,29 +472,164 @@ class GRPOTrainer:
         # Take minimum (conservative estimate)
         policy_loss = -torch.min(unclipped_objective, clipped_objective).mean()
         
-        # KL divergence penalty
-        kl_div = (current_logprobs - ref_logprobs).mean()
+        # Token-level KL divergence penalty (per GRPO best practices)
+        kl_div, kl_per_token = self._compute_token_level_kl(
+            current_logprobs, ref_logprobs, batch
+        )
         kl_loss = self.kl_controller.get_coefficient() * kl_div
         
         # Total loss
         total_loss = policy_loss + kl_loss
         
-        # Metrics for logging
+        # Enhanced metrics for comprehensive logging per best practices
+        metrics = self._compute_enhanced_metrics(
+            policy_loss, kl_loss, total_loss, kl_div,
+            batch, advantages, logprob_ratio, current_logprobs, ref_logprobs,
+            kl_per_token
+        )
+        
+        return total_loss, metrics
+    
+    def _compute_token_level_kl(self, current_logprobs, ref_logprobs, batch):
+        """Compute token-level KL divergence with proper masking and estimator options"""
+        
+        # For now, we'll use the sequence-level logprobs and extend to token-level
+        # This is a simplified implementation - full token-level requires modifying logprob computation
+        
+        # Compute basic KL divergence per sample
+        kl_per_sample = current_logprobs - ref_logprobs
+        
+        # Apply KL estimator (kl1, kl2, kl3 variants from best practices)
+        if self.config.kl_estimator == "kl1":
+            # Simple difference (what we had before)
+            kl_values = kl_per_sample
+        elif self.config.kl_estimator == "kl2":
+            # Exponential-based estimator: exp(kl) - 1 - kl
+            kl_values = torch.exp(kl_per_sample) - 1 - kl_per_sample
+        else:  # kl3 (default)
+            # Quadratic approximation: 0.5 * kl^2
+            kl_values = 0.5 * kl_per_sample ** 2
+        
+        # Average across samples in the batch
+        mean_kl = kl_values.mean()
+        
+        return mean_kl, kl_values
+    
+    def _compute_enhanced_metrics(self, policy_loss, kl_loss, total_loss, kl_div,
+                                 batch, advantages, logprob_ratio, current_logprobs, ref_logprobs,
+                                 kl_per_token=None):
+        """Compute enhanced metrics per GRPO best practices"""
+        
+        # Basic metrics
         metrics = {
             'policy_loss': policy_loss.item(),
             'kl_loss': kl_loss.item(), 
             'kl_div': kl_div.item(),
             'kl_coef': self.kl_controller.get_coefficient(),
             'total_loss': total_loss.item(),
-            'baseline': baseline.item(),
+            'baseline': batch.rewards.mean().item(),
             'mean_reward': batch.rewards.mean().item(),
             'std_reward': batch.rewards.std().item(),
             'mean_advantage': advantages.mean().item(),
             'mean_logprob_ratio': logprob_ratio.mean().item(),
-            'fraction_clipped': (torch.abs(logprob_ratio - 1.0) > self.config.clip_range).float().mean().item()
         }
         
-        return total_loss, metrics
+        # Enhanced KL monitoring using token-level information
+        if kl_per_token is not None and len(kl_per_token) > 1:
+            metrics['kl_div_95pct'] = torch.quantile(kl_per_token, 0.95).item()
+            metrics['kl_div_5pct'] = torch.quantile(kl_per_token, 0.05).item()
+            metrics['kl_estimator'] = self.config.kl_estimator
+        else:
+            # Fallback to simple difference-based percentiles
+            kl_diffs = current_logprobs - ref_logprobs
+            if len(kl_diffs) > 1:
+                metrics['kl_div_95pct'] = torch.quantile(kl_diffs, 0.95).item()
+                metrics['kl_div_5pct'] = torch.quantile(kl_diffs, 0.05).item()
+            else:
+                metrics['kl_div_95pct'] = metrics['kl_div']
+                metrics['kl_div_5pct'] = metrics['kl_div']
+        
+        # Clipping analysis
+        clip_mask = torch.abs(logprob_ratio - 1.0) > self.config.clip_range
+        metrics['fraction_clipped'] = clip_mask.float().mean().item()
+        
+        # Reward distribution analysis
+        rewards_cpu = batch.rewards.cpu().numpy()
+        metrics['reward_min'] = rewards_cpu.min()
+        metrics['reward_max'] = rewards_cpu.max()
+        metrics['reward_25pct'] = float(np.percentile(rewards_cpu, 25))
+        metrics['reward_75pct'] = float(np.percentile(rewards_cpu, 75))
+        
+        # Task-specific metrics if we can identify task type
+        if hasattr(batch, 'task_type'):
+            metrics['task_type'] = batch.task_type
+        
+        # Advantage distribution
+        advantages_cpu = advantages.cpu().numpy()
+        metrics['advantage_min'] = advantages_cpu.min()
+        metrics['advantage_max'] = advantages_cpu.max()
+        metrics['fraction_positive_advantages'] = (advantages > 0).float().mean().item()
+        
+        # Policy ratio analysis for stability monitoring
+        metrics['logprob_ratio_min'] = logprob_ratio.min().item()
+        metrics['logprob_ratio_max'] = logprob_ratio.max().item()
+        
+        # Entropy estimation (approximate from logprobs)
+        # Note: This is a rough approximation - true entropy would need full distribution
+        with torch.no_grad():
+            approx_entropy = -current_logprobs.mean().item()
+            metrics['approx_entropy'] = approx_entropy
+        
+        return metrics
+    
+    def _log_training_health(self, aggregated_metrics, mean_kl_div, kl_95pct):
+        """Log comprehensive training health metrics per GRPO best practices"""
+        
+        # Calculate aggregate statistics across all groups
+        clip_fraction = np.mean(aggregated_metrics.get('fraction_clipped', [0.0]))
+        mean_reward = np.mean(aggregated_metrics.get('mean_reward', [0.0]))
+        entropy = np.mean(aggregated_metrics.get('approx_entropy', [0.0]))
+        
+        # Clipping analysis
+        if clip_fraction > 0.5:
+            self.logger.warning(f"High clipping rate: {clip_fraction:.2%} of samples clipped")
+        elif clip_fraction > 0.3:
+            self.logger.info(f"Moderate clipping: {clip_fraction:.2%} of samples clipped")
+        
+        # Entropy monitoring for exploration
+        if entropy < 0.1:
+            self.logger.warning(f"Low entropy detected: {entropy:.4f} - policy may be collapsing")
+        
+        # Task-specific reward analysis (for our chess domain)
+        task_rewards = {}
+        for key, values in aggregated_metrics.items():
+            if 'task_type' in key:
+                continue
+            if 'reward' in key:
+                task_rewards[key] = np.mean(values)
+        
+        # Log task distribution if available
+        if 'task_type' in aggregated_metrics:
+            task_types = aggregated_metrics['task_type']
+            if isinstance(task_types, list):
+                task_counts = {}
+                for task in task_types:
+                    task_counts[task] = task_counts.get(task, 0) + 1
+                self.logger.debug(f"Task distribution: {task_counts}")
+        
+        # Periodic detailed health report (every 10 steps)
+        if self.step_count % 10 == 0:
+            reward_std = np.mean(aggregated_metrics.get('std_reward', [0.0]))
+            logprob_ratio_max = np.mean(aggregated_metrics.get('logprob_ratio_max', [1.0]))
+            
+            self.logger.info(
+                f"Health Report Step {self.step_count}: "
+                f"KL={mean_kl_div:.4f} (95p={kl_95pct:.4f}), "
+                f"Reward={mean_reward:.3f}±{reward_std:.3f}, "
+                f"Clip={clip_fraction:.2%}, "
+                f"Entropy={entropy:.4f}, "
+                f"MaxRatio={logprob_ratio_max:.3f}"
+            )
     
     def training_step(self, step_data: GRPOTrainingStep) -> Dict[str, float]:
         """
@@ -505,23 +760,42 @@ class GRPOTrainer:
         mean_kl_div = np.mean(aggregated_metrics.get('kl_div', [0.0]))
         self.kl_controller.update(mean_kl_div)
         
+        # Enhanced KL monitoring per best practices (track tail as well as mean)
+        kl_95pct = np.mean(aggregated_metrics.get('kl_div_95pct', [mean_kl_div]))
+        kl_tail_heavy = kl_95pct > 2 * abs(mean_kl_div) if mean_kl_div != 0 else False
+        
+        # Log enhanced KL statistics
+        if kl_tail_heavy:
+            self.logger.warning(f"KL tail heavy: mean={mean_kl_div:.4f}, 95pct={kl_95pct:.4f}")
+        
         # KL divergence monitoring and early stopping
-        if abs(mean_kl_div) > 5.0:
-            self.logger.error(f"Extreme KL divergence detected: {mean_kl_div:.3f}, indicating training instability")
+        if abs(mean_kl_div) > 5.0 or kl_95pct > 10.0:
+            self.logger.error(f"Extreme KL divergence detected: mean={mean_kl_div:.3f}, 95pct={kl_95pct:.3f}")
             if self.config.enable_recovery and self.last_stable_checkpoint:
                 self.logger.warning("Attempting recovery from extreme KL divergence...")
                 recovery_success = self._attempt_recovery()
                 if not recovery_success:
-                    raise RuntimeError(f"Training diverged: extreme KL divergence {mean_kl_div:.3f}")
+                    raise RuntimeError(f"Training diverged: extreme KL divergence mean={mean_kl_div:.3f}")
             else:
-                raise RuntimeError(f"Training diverged: extreme KL divergence {mean_kl_div:.3f}")
-        elif abs(mean_kl_div) > 2.0:
-            self.logger.warning(f"High KL divergence detected: {mean_kl_div:.3f}, monitoring for instability")
+                raise RuntimeError(f"Training diverged: extreme KL divergence mean={mean_kl_div:.3f}")
+        elif abs(mean_kl_div) > 2.0 or kl_95pct > 4.0:
+            self.logger.warning(f"High KL divergence detected: mean={mean_kl_div:.3f}, 95pct={kl_95pct:.3f}")
+        
+        # Enhanced logging for training health
+        self._log_training_health(aggregated_metrics, mean_kl_div, kl_95pct)
         
         # Prepare final metrics
         final_metrics = {}
         for key, values in aggregated_metrics.items():
-            final_metrics[key] = float(np.mean(values))
+            # Check if values are numeric before averaging
+            if values and all(isinstance(v, (int, float)) for v in values):
+                final_metrics[key] = float(np.mean(values))
+            elif len(values) == 1:
+                # Single value, use as-is
+                final_metrics[key] = values[0]
+            else:
+                # Multiple non-numeric values, use the most common one
+                final_metrics[key] = max(set(values), key=values.count)
         
         # Add training state info
         final_metrics.update({
@@ -540,6 +814,178 @@ class GRPOTrainer:
         self.metrics_history.append(final_metrics)
         
         return final_metrics
+    
+    def store_rollout_for_epochs(self, batch: GRPOBatch, ref_logprobs: torch.Tensor):
+        """Store a rollout in buffer for multi-epoch training"""
+        self.rollout_buffer.store_rollout(batch, ref_logprobs.detach().clone())
+        
+    def training_step_with_rollout_epochs(self, step_data: GRPOTrainingStep) -> Dict[str, float]:
+        """
+        Enhanced training step that can use rollout epochs for efficiency
+        
+        This method implements the GRPO best practice of:
+        1. Collect rollouts with cached ref logprobs
+        2. Train for 1-2 epochs over the rollouts
+        3. Refresh rollouts when exhausted
+        """
+        # Store new rollouts in buffer
+        for batch in step_data.groups:
+            # Compute and cache reference logprobs
+            with torch.no_grad():
+                ref_logprobs = self.compute_logprobs(
+                    batch.input_ids.to(self.config.device),
+                    batch.attention_mask.to(self.config.device),
+                    batch.target_start_indices.to(self.config.device),
+                    use_ref_model=True
+                )
+                self.store_rollout_for_epochs(batch, ref_logprobs)
+        
+        # If we have enough stored rollouts, train on them for multiple epochs
+        if not self.rollout_buffer.should_collect_new_rollouts():
+            return self._train_on_buffered_rollouts()
+        else:
+            # Otherwise, use standard single-step training
+            return self.training_step(step_data)
+    
+    def _train_on_buffered_rollouts(self) -> Dict[str, float]:
+        """Train on buffered rollouts for multiple epochs"""
+        if len(self.rollout_buffer) == 0:
+            return {}
+            
+        # Get epoch iterator (2 epochs by default)
+        epoch_batches = self.rollout_buffer.get_epoch_iterator(
+            batch_size=self.config.batch_positions, 
+            n_epochs=2
+        )
+        
+        if not epoch_batches:
+            return {}
+        
+        self.logger.debug(f"Training on {len(epoch_batches)} epoch batches from rollout buffer")
+        
+        aggregated_metrics = {}
+        total_loss = 0.0
+        
+        # Train on each epoch batch
+        for epoch_batch in epoch_batches:
+            # Convert stored rollouts back to training format
+            batch_groups = []
+            
+            for stored_item in epoch_batch:
+                batch = stored_item['batch']
+                # Move batch to device
+                batch.input_ids = batch.input_ids.to(self.config.device)
+                batch.attention_mask = batch.attention_mask.to(self.config.device)
+                batch.target_start_indices = batch.target_start_indices.to(self.config.device)
+                batch.old_logprobs = batch.old_logprobs.to(self.config.device)
+                batch.rewards = batch.rewards.to(self.config.device)
+                
+                # Compute current policy logprobs (with gradients)
+                self.model.train()
+                current_logprobs = self._compute_logprobs_with_gradients(
+                    batch.input_ids,
+                    batch.attention_mask, 
+                    batch.target_start_indices
+                )
+                
+                # Use cached reference logprobs
+                ref_logprobs = stored_item['ref_logprobs'].to(self.config.device)
+                
+                # Compute loss for this group
+                loss, metrics = self._compute_loss_with_cached_ref(
+                    batch, current_logprobs, ref_logprobs
+                )
+                total_loss += loss
+                
+                # Aggregate metrics
+                for key, value in metrics.items():
+                    if key not in aggregated_metrics:
+                        aggregated_metrics[key] = []
+                    aggregated_metrics[key].append(value)
+        
+        # Standard training step completion
+        if len(epoch_batches) > 0:
+            total_loss = total_loss / len(epoch_batches)
+            
+            # Backward pass and optimizer step
+            if self.scaler is not None:
+                self.scaler.scale(total_loss).backward()
+                self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.grad_clip_norm)
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+            else:
+                total_loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.grad_clip_norm)
+                self.optimizer.step()
+            
+            self.optimizer.zero_grad()
+            self.scheduler.step()
+        
+        # Prepare final metrics
+        final_metrics = {}
+        for key, values in aggregated_metrics.items():
+            # Check if values are numeric before averaging
+            if values and all(isinstance(v, (int, float)) for v in values):
+                final_metrics[key] = float(np.mean(values))
+            elif len(values) == 1:
+                # Single value, use as-is
+                final_metrics[key] = values[0]
+            else:
+                # Multiple non-numeric values, use the most common one
+                final_metrics[key] = max(set(values), key=values.count)
+        
+        final_metrics.update({
+            'learning_rate': self.scheduler.get_last_lr()[0],
+            'step': self.step_count,
+            'rollout_buffer_size': len(self.rollout_buffer),
+            'used_rollout_epochs': True
+        })
+        
+        self.step_count += 1
+        self.metrics_history.append(final_metrics)
+        
+        return final_metrics
+    
+    def _compute_loss_with_cached_ref(self, batch, current_logprobs, ref_logprobs):
+        """Compute GRPO loss using cached reference logprobs"""
+        
+        # Group-relative baseline
+        baseline = batch.rewards.mean()
+        advantages = batch.rewards - baseline
+        
+        # PPO-style clipped objective
+        logprob_ratio = torch.exp(current_logprobs - batch.old_logprobs)
+        
+        unclipped_objective = logprob_ratio * advantages
+        clipped_ratio = torch.clamp(
+            logprob_ratio,
+            1.0 - self.config.clip_range,
+            1.0 + self.config.clip_range
+        )
+        clipped_objective = clipped_ratio * advantages
+        
+        policy_loss = -torch.min(unclipped_objective, clipped_objective).mean()
+        
+        # Token-level KL divergence penalty
+        kl_div, kl_per_token = self._compute_token_level_kl(
+            current_logprobs, ref_logprobs, batch
+        )
+        kl_loss = self.kl_controller.get_coefficient() * kl_div
+        
+        total_loss = policy_loss + kl_loss
+        
+        # Basic metrics
+        metrics = {
+            'policy_loss': policy_loss.item(),
+            'kl_loss': kl_loss.item(),
+            'kl_div': kl_div.item(),
+            'total_loss': total_loss.item(),
+            'mean_reward': batch.rewards.mean().item(),
+            'baseline': baseline.item()
+        }
+        
+        return total_loss, metrics
     
     def get_metrics_summary(self, last_n_steps: int = 10) -> Dict[str, float]:
         """

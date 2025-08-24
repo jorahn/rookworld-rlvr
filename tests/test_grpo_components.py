@@ -38,7 +38,7 @@ class TestGRPOConfig:
         config = GRPOConfig()
         assert config.group_size == 8
         assert config.clip_range == 0.2
-        assert config.kl_coef == 0.02
+        assert config.kl_coef == 0.01
         assert config.steps == 1000
         assert 0 <= config.mix_env_ratio <= 1
     

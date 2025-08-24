@@ -190,7 +190,13 @@ class GRPOTrainer:
         """
         model = self.ref_model if use_ref_model else self.model
         
-        with torch.set_grad_enabled(not use_ref_model):
+        # FIXED: Ensure consistent model state for reproducible logprob computation
+        original_training_mode = model.training
+        model.eval()  # Force eval mode for consistency
+        
+        # FIXED: Always disable gradients for logprob computation for consistency
+        # This ensures identical behavior between test components and production code
+        with torch.set_grad_enabled(False):
             # Forward pass with optional mixed precision (BF16 for RTX 4090)
             if self.config.use_mixed_precision and not use_ref_model:
                 with torch.cuda.amp.autocast(dtype=torch.bfloat16):
@@ -233,8 +239,71 @@ class GRPOTrainer:
             token_counts = target_mask.sum(dim=1).clamp(min=1)  # Avoid division by zero
             
             mean_log_probs = masked_log_probs.sum(dim=1) / token_counts
-            
-            return mean_log_probs
+        
+        # Restore original training mode
+        model.train(original_training_mode)
+        
+        return mean_log_probs
+    
+    def _compute_logprobs_with_gradients(
+        self, 
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        target_start_indices: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Compute logprobs with gradients enabled for training
+        
+        This is used during loss computation when we need gradients for backprop.
+        For consistent evaluation, use compute_logprobs() instead.
+        """
+        model = self.model  # Always use policy model for gradient computation
+        
+        # Forward pass with gradients enabled
+        if self.config.use_mixed_precision:
+            with torch.cuda.amp.autocast(dtype=torch.bfloat16):
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        else:
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        
+        logits = outputs["logits"]  # [batch_size, seq_len, vocab_size]
+        
+        # Shift for autoregressive loss (predict next token)
+        shift_logits = logits[:, :-1, :]  # [batch_size, seq_len-1, vocab_size]
+        shift_labels = input_ids[:, 1:]   # [batch_size, seq_len-1]
+        
+        # Handle attention mask (create all-ones if None)
+        if attention_mask is None:
+            batch_size, seq_len = input_ids.shape
+            shift_attention = torch.ones(batch_size, seq_len - 1, dtype=torch.long, device=input_ids.device)
+        else:
+            shift_attention = attention_mask[:, 1:]  # [batch_size, seq_len-1]
+        
+        # Convert to log probabilities
+        log_probs = torch.log_softmax(shift_logits, dim=-1)  # [batch_size, seq_len-1, vocab_size]
+        
+        # Gather log probs for actual tokens
+        token_log_probs = torch.gather(
+            log_probs, 
+            dim=-1, 
+            index=shift_labels.unsqueeze(-1)
+        ).squeeze(-1)  # [batch_size, seq_len-1]
+        
+        # Create target mask (only count tokens after target_start_indices)
+        batch_size, seq_len = token_log_probs.shape
+        target_mask = torch.zeros_like(token_log_probs, dtype=torch.bool)
+        
+        for i in range(batch_size):
+            start_idx = max(0, target_start_indices[i] - 1)  # -1 for shift
+            target_mask[i, start_idx:] = shift_attention[i, start_idx:].bool()
+        
+        # Apply mask and compute mean
+        masked_log_probs = token_log_probs.masked_fill(~target_mask, 0.0)
+        token_counts = target_mask.sum(dim=1).clamp(min=1)  # Avoid division by zero
+        
+        mean_log_probs = masked_log_probs.sum(dim=1) / token_counts
+        
+        return mean_log_probs
     
     def compute_grpo_loss(self, batch: GRPOBatch) -> Tuple[torch.Tensor, Dict[str, float]]:
         """
@@ -246,12 +315,13 @@ class GRPOTrainer:
         Returns:
             Tuple of (loss_tensor, metrics_dict)
         """
-        # Current policy log probabilities
-        current_logprobs = self.compute_logprobs(
+        # Current policy log probabilities - ENABLE GRADIENTS FOR TRAINING
+        # Temporarily enable gradients for backward pass computation
+        self.model.train()  # Ensure training mode for gradient computation
+        current_logprobs = self._compute_logprobs_with_gradients(
             batch.input_ids,
             batch.attention_mask, 
-            batch.target_start_indices,
-            use_ref_model=False
+            batch.target_start_indices
         )
         
         # Reference policy log probabilities (for KL penalty)

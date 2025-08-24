@@ -88,7 +88,13 @@ class GPT2Attention(nn.Module):
         
         # Apply attention mask if provided
         if attention_mask is not None:
-            attn_weights += attention_mask
+            # Convert standard attention mask (0 for pad, 1 for valid) to additive mask
+            # attention_mask shape: [batch_size, seq_len] 
+            # Need: [batch_size, 1, 1, seq_len] for broadcasting with attn_weights
+            mask = attention_mask.unsqueeze(1).unsqueeze(1)  # [batch_size, 1, 1, seq_len]
+            # Convert 0s to -inf and 1s to 0 for additive masking
+            mask = (1.0 - mask) * torch.finfo(attn_weights.dtype).min
+            attn_weights = attn_weights + mask
         
         # Softmax and dropout
         attn_weights = F.softmax(attn_weights, dim=-1)

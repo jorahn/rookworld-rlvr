@@ -197,12 +197,18 @@ class GRPOTrainer:
                     outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             else:
                 outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            logits = outputs.logits  # [batch_size, seq_len, vocab_size]
+            logits = outputs["logits"]  # [batch_size, seq_len, vocab_size]
             
             # Shift for autoregressive loss (predict next token)
             shift_logits = logits[:, :-1, :]  # [batch_size, seq_len-1, vocab_size]
             shift_labels = input_ids[:, 1:]   # [batch_size, seq_len-1]
-            shift_attention = attention_mask[:, 1:]  # [batch_size, seq_len-1]
+            
+            # Handle attention mask (create all-ones if None)
+            if attention_mask is None:
+                batch_size, seq_len = input_ids.shape
+                shift_attention = torch.ones(batch_size, seq_len - 1, dtype=torch.long, device=input_ids.device)
+            else:
+                shift_attention = attention_mask[:, 1:]  # [batch_size, seq_len-1]
             
             # Convert to log probabilities
             log_probs = torch.log_softmax(shift_logits, dim=-1)  # [batch_size, seq_len-1, vocab_size]

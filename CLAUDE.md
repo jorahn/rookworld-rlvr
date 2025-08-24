@@ -94,7 +94,7 @@ uv run python train_rookworld_grpo.py --auto-resume
   - `src/rookworld_rlvr/reward/policy_reward.py` - Stockfish-verified policy rewards
   - `src/rookworld_rlvr/reward/env_reward.py` - Chess-rules verified environment rewards
 
-#### **Phase 3: Production Training Features** ✅
+#### **Phase 3: Training Features** 🚧
 - **Resume & Recovery System**: Complete checkpoint management with automatic recovery
   - `src/rookworld_rlvr/train/checkpoint_manager.py` - Advanced checkpoint management
   - CLI support: `--resume-from-checkpoint`, `--auto-resume`, `--recovery-mode`
@@ -105,11 +105,12 @@ uv run python train_rookworld_grpo.py --auto-resume
   - torch.compile optimization (1.29x speedup) 
   - Tensor Core utilization (`torch.set_float32_matmul_precision('high')`)
   - TF32 acceleration for Ampere GPUs
-- **Major Stability Breakthrough**: **Success rate improved from 0% to 25-50%**
+- **Stability Improvements (Work in Progress)**: **Partial progress in training stability**
   - Graduated 5-level reward system (0.2→0.4→0.6→0.8→1.0)
   - KL warmup with configurable factor (fully implemented)
   - Reward normalization using exponential moving average
   - Higher KL divergence threshold (10.0) for training tolerance
+  - **Note**: Improvements show promise in initial training phases but do not persist through full training runs
 - **Evaluation & Monitoring**: Chess-specific evaluators with tactical position testing
 
 ### 🚧 Next Phase Components (In Progress)

@@ -1,10 +1,10 @@
-# RookWorld-RLVR: Production GRPO Training System
+# RookWorld-RLVR: GRPO Training System (Work in Progress)
 
 **Fine-tune RookWorld-LM with Group Relative Policy Optimization on real chess data**
 
 ## Executive Summary
 
-Production-ready implementation of Group Relative Policy Optimization (GRPO) for fine-tuning RookWorld-LM (GPT-2 124M) to **increase best move accuracy** on the **rookworld_7m dataset**. The system trains on dual tasks: (1) **Policy Task (P:)**: generating structured chess analysis with improved move accuracy, and (2) **Environment Task (A:)**: maintaining chess state prediction correctness.
+Work-in-progress implementation of Group Relative Policy Optimization (GRPO) for fine-tuning RookWorld-LM (GPT-2 124M) to **increase best move accuracy** on the **rookworld_7m dataset**. The system trains on dual tasks: (1) **Policy Task (P:)**: generating structured chess analysis with improved move accuracy, and (2) **Environment Task (A:)**: maintaining chess state prediction correctness.
 
 ## Project Goals
 
@@ -39,9 +39,9 @@ Production-ready implementation of Group Relative Policy Optimization (GRPO) for
    - Configurable mixing: 80% real data + 20% synthetic generation
    - Automatic task detection and preprocessing
 
-## Implementation Status: Production Ready ✅
+## Implementation Status: Work in Progress 🚧
 
-**Current State**: Complete production training system with verified stability and performance optimizations.
+**Current State**: Training system with ongoing stability challenges. Some improvements have been implemented but do not consistently persist through full training runs.
 
 ### ✅ **Phase 1-3: Complete** (Production Ready)
 
@@ -60,11 +60,12 @@ Production-ready implementation of Group Relative Policy Optimization (GRPO) for
 #### **Production Features & Latest Stability Improvements**
 - **Resume/Recovery**: Complete checkpoint management with automatic NaN recovery
 - **RTX 4090 Optimized**: 4-5x speedup (BF16, torch.compile, Tensor Core utilization)
-- **Training Stability**: **Major breakthrough** - Success rate improved from 0% to 25-50%
+- **Training Stability**: **Partial improvements** - Some progress in initial training phases
   - KL warmup with configurable factor (0.0 = no KL penalty during warmup)
   - Graduated reward parsing with partial credit system
   - Reward normalization using exponential moving average
   - Higher KL divergence threshold (10.0) for training tolerance
+  - **Note**: Stability improvements show promise early but do not persist through full training runs
 - **CLI Support**: `--auto-resume`, `--recovery-mode`, `--mixed-precision`, `--torch-compile`, `--kl-warmup-steps`
 
 ### 🔧 **Phase 4: In Progress** (Advanced Features)
@@ -254,7 +255,7 @@ uv run python train_rookworld_grpo.py --recovery-mode
 - **Optimized**: ~180-200 TFLOPs/sec (4-5x improvement)
 - **Memory**: 12-16GB peak usage (efficient for 24GB card)
 - **Model FLOPs Utilization**: 60%+ (excellent for transformer training)
-- **Training Success Rate**: **25-50%** (major improvement from 0% baseline)
+- **Training Success Rate**: **Variable** (shows promise in early phases but instability persists)
 
 ### Training Metrics
 - **Best Move Accuracy**: Primary objective metric on rookworld_7m
@@ -283,13 +284,13 @@ uv run python train_rookworld_grpo.py --recovery-mode
 
 ## Production Readiness
 
-### ✅ Ready for Production Use
-1. **Complete Training Pipeline**: From dataset loading to model checkpoints
-2. **Breakthrough Stability**: **25-50% success rate** with graduated rewards and KL warmup
-3. **Optimized Performance**: RTX 4090 optimizations providing expected gains
-4. **Real Data Integration**: 6.96M sample dataset fully integrated
-5. **Mixed Task Training**: Prevents divergence with 80/20 policy/environment split
-6. **Robust Reward System**: 5-level graduated rewards with normalization
+### 🚧 Development Status
+1. **Training Pipeline**: Implemented from dataset loading to model checkpoints
+2. **Stability Challenges**: Partial improvements in early training phases, but instability persists in full runs
+3. **Performance Optimizations**: RTX 4090 optimizations implemented and functional
+4. **Data Integration**: 6.96M sample dataset fully integrated
+5. **Mixed Task Training**: Implemented 80/20 policy/environment split
+6. **Reward System**: 5-level graduated rewards with normalization implemented
 
 ### 🔧 Recommended Next Steps
 1. **Extended Training**: Multi-day training runs on full rookworld_7m dataset
@@ -370,4 +371,4 @@ uv run python train_rookworld_grpo.py --recovery-mode
 
 ---
 
-**Production Status**: This system is ready for serious chess AI research with verified stability, performance optimizations, and real data integration. The goal of increasing best move accuracy on the rookworld_7m dataset while maintaining environment task correctness is fully supported by the implementation.
+**Development Status**: This system implements GRPO training for chess AI research with performance optimizations and data integration. While some stability improvements have been achieved, training instability remains an ongoing challenge that requires further development to achieve consistent results.

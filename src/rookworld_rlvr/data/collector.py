@@ -278,7 +278,7 @@ class GRPODataCollector:
                     self.logger.debug(f"Environment parsing failed: '{full_text}' (tokens: {len(generated_tokens)})")
             
             reward, breakdown = self.env_reward_computer.compute_reward(
-                generated_text, expected_response
+                full_text, expected_response
             )
             rewards.append(reward)
             reward_breakdowns.append(breakdown)

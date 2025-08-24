@@ -300,8 +300,9 @@ class ChessEvaluator:
                     expected_response = self.chess_env.apply_move(fen, uci)
                     
                     # Compute detailed reward breakdown
+                    full_text = prompt + generated_text
                     total_reward, reward_breakdown = compute_env_reward(
-                        generated_text, expected_response
+                        full_text, expected_response
                     )
                     
                     # Update metrics

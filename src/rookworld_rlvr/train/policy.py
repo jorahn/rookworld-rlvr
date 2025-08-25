@@ -368,14 +368,14 @@ class CausalLMPolicy:
         
         # Calculate where the move tokens start for each prompt
         # Need to find target start index by searching for 'M:' pattern
-        base_encoded = self.tokenizer.encode_batch([base_prompt])[0]
-        base_tokens = base_encoded['input_ids']
+        base_encoded = self.tokenizer.encode_batch([base_prompt])
+        base_tokens = base_encoded['input_ids'][0]  # Get first sequence from batch
         
         # Find the actual target start position by looking for 'M:' pattern
         target_start_idx = None
         for j in range(len(base_tokens) - 1):
-            current_decoded = self.tokenizer.decode([base_tokens[j]]).strip()
-            next_decoded = self.tokenizer.decode([base_tokens[j + 1]]).strip()
+            current_decoded = self.tokenizer.decode([base_tokens[j].item()]).strip()
+            next_decoded = self.tokenizer.decode([base_tokens[j + 1].item()]).strip()
             if current_decoded == 'M' and next_decoded == ':':
                 target_start_idx = j + 2  # Start after both 'M' and ':'
                 break
@@ -408,7 +408,7 @@ class CausalLMPolicy:
             
             for i in range(batch_size):
                 # Mask tokens starting from the move (after base prompt)
-                start_idx = max(0, base_length - 1)  # -1 for shift
+                start_idx = max(0, target_start_idx - 1)  # -1 for shift
                 end_idx = attention_mask[i, 1:].sum().item()  # Actual sequence length
                 if start_idx < end_idx:
                     move_masks[i, start_idx:end_idx] = True

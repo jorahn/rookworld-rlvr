@@ -250,7 +250,7 @@ class SelfPlayManager:
             return legal_moves[move_idx]
             
         except Exception as e:
-            self.logger.warning(f"Policy move selection failed: {e}, using random")
+            self.logger.warning(f"Policy move selection failed: {type(e).__name__}: {e}, using random")
             return random.choice(legal_moves)
     
     def _finalize_game(self, game_state: GameState):

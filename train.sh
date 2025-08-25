@@ -26,18 +26,19 @@ fi
 
 # Training configuration
 STEPS=${STEPS:-1000}
-LR=${LR:-1e-5}
+LR=${LR:-5e-6}
 KL_COEF=${KL_COEF:-0.001}
 CLIP_RANGE=${CLIP_RANGE:-0.1}
-TEMPERATURE=${TEMPERATURE:-0.3}
+TEMPERATURE=${TEMPERATURE:-0.5}
 BATCH_POSITIONS=${BATCH_POSITIONS:-2}
 GROUP_SIZE=${GROUP_SIZE:-2}
 MIX_ENV_RATIO=${MIX_ENV_RATIO:-0.2}  # Enable environment tasks for testing
-MAX_NEW_TOKENS_ENV=${MAX_NEW_TOKENS_ENV:-80}  # Increased for full environment completions
+MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-100}  # Increased from 64 to allow complete policy analysis
+MAX_NEW_TOKENS_ENV=${MAX_NEW_TOKENS_ENV:-150}  # Increased from 80 to prevent truncation
 
 # Improved stability parameters
 KL_DIVERGENCE_THRESHOLD=${KL_DIVERGENCE_THRESHOLD:-50.0}
-KL_WARMUP_STEPS=${KL_WARMUP_STEPS:-200}
+KL_WARMUP_STEPS=${KL_WARMUP_STEPS:-500}
 KL_WARMUP_FACTOR=${KL_WARMUP_FACTOR:-0.0}
 REWARD_WARMUP_STEPS=${REWARD_WARMUP_STEPS:-100}
 
@@ -55,6 +56,7 @@ echo "  Temperature: $TEMPERATURE"
 echo "  Batch Positions: $BATCH_POSITIONS"
 echo "  Group Size: $GROUP_SIZE"
 echo "  Mix Env Ratio: $MIX_ENV_RATIO"
+echo "  Max New Tokens: $MAX_NEW_TOKENS"
 echo "  Max New Tokens Env: $MAX_NEW_TOKENS_ENV"
 echo "  KL Divergence Threshold: $KL_DIVERGENCE_THRESHOLD"
 echo "  KL Warmup Steps: $KL_WARMUP_STEPS"
@@ -75,6 +77,7 @@ ARGS=(
     --batch-positions "$BATCH_POSITIONS"
     --group-size "$GROUP_SIZE"
     --mix-env-ratio "$MIX_ENV_RATIO"
+    --max-new-tokens "$MAX_NEW_TOKENS"
     --max-new-tokens-env "$MAX_NEW_TOKENS_ENV"
     
     # Improved stability parameters

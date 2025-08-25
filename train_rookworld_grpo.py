@@ -44,7 +44,7 @@ from rookworld_rlvr.train.policy import CausalLMPolicy
 from rookworld_rlvr.train.self_play import SelfPlayManager
 from rookworld_rlvr.train.evaluator import ChessEvaluator
 from rookworld_rlvr.train.checkpoint_manager import CheckpointManager
-from rookworld_rlvr.data.collector import GRPODataCollector  
+from rookworld_rlvr.data.collector import GRPODataCollector, GRPOCollectionConfig  
 from rookworld_rlvr.data.rookworld_dataset import RookWorldDatasetProcessor
 from rookworld_rlvr.engine.stockfish import StockfishEngine
 from rookworld_rlvr.model.gpt2 import GPT2Model
@@ -259,8 +259,18 @@ class TrainingOrchestrator:
         # GRPO trainer
         self.trainer = GRPOTrainer(self.model, self.ref_model, self.config)
         
-        # Data collector for GRPO batches  
-        self.data_collector = GRPODataCollector(self.policy)
+        # Data collector for GRPO batches with proper config
+        collection_config = GRPOCollectionConfig(
+            group_size=self.config.group_size,
+            max_new_tokens_policy=self.config.max_new_tokens,
+            max_new_tokens_env=self.config.max_new_tokens_env,
+            temperature=self.config.temperature,
+            top_k=self.config.top_k,
+            top_p=self.config.top_p,
+            mix_env_ratio=self.config.mix_env_ratio,
+            device=self.config.device
+        )
+        self.data_collector = GRPODataCollector(self.policy, collection_config)
         
         # Self-play manager
         self.self_play = SelfPlayManager(self.config, self.policy)

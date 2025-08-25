@@ -87,11 +87,11 @@ class GRPOConfig:
     top_p: float = 0.95
     """Nucleus (top-p) sampling threshold."""
     
-    max_new_tokens: int = 64
-    """Maximum tokens to generate for policy (P:) tasks."""
+    max_new_tokens: int = 100
+    """Maximum tokens to generate for policy (P:) tasks. Increased from 64 to allow complete analysis output."""
     
-    max_new_tokens_env: int = 80
-    """Maximum tokens to generate for environment (A:) tasks. Needs 56-69 tokens for completion."""
+    max_new_tokens_env: int = 150
+    """Maximum tokens to generate for environment (A:) tasks. Increased from 80 to prevent truncation of complete responses."""
     
     max_positions: int = 512
     """Maximum sequence length for model input (needed for tokenization)."""

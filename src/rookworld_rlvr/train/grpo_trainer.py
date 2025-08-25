@@ -28,29 +28,36 @@ from .config import GRPOConfig
 class RolloutBuffer:
     """Buffer for storing and reusing rollouts across multiple training epochs"""
     
-    def __init__(self, capacity: int = 1000):
+    def __init__(self, capacity: int = 100):
         """
         Initialize rollout buffer
         
         Args:
-            capacity: Maximum number of samples to store
+            capacity: Maximum number of samples to store (reduced default for memory efficiency)
         """
         self.capacity = capacity
         self.data = []
         self.epoch_count = 0
         self.max_epochs = 2  # Default max epochs per rollout batch
+        self.memory_cleanup_interval = 20  # Clear buffer every N steps
         
     def store_rollout(self, batch: 'GRPOBatch', ref_logprobs: torch.Tensor):
         """Store a rollout with cached reference logprobs"""
+        # Ensure all tensors are properly detached and moved to CPU if needed
+        detached_batch = self._detach_batch_tensors(batch)
+        detached_ref_logprobs = ref_logprobs.detach().cpu()
+        
         self.data.append({
-            'batch': batch,
-            'ref_logprobs': ref_logprobs,
+            'batch': detached_batch,
+            'ref_logprobs': detached_ref_logprobs,
             'epoch_count': 0
         })
         
         # Remove oldest if over capacity
         if len(self.data) > self.capacity:
-            self.data.pop(0)
+            # Explicitly delete old data to free memory
+            old_item = self.data.pop(0)
+            self._cleanup_rollout_item(old_item)
     
     def get_epoch_iterator(self, batch_size: int, n_epochs: int = 2):
         """Get iterator for training epochs over stored rollouts"""
@@ -88,9 +95,56 @@ class RolloutBuffer:
         fresh_rollouts = [item for item in self.data if item['epoch_count'] < self.max_epochs]
         return len(fresh_rollouts) < self.capacity // 4  # Collect when < 25% fresh
     
-    def clear(self):
-        """Clear all stored rollouts"""
+    def _detach_batch_tensors(self, batch: 'GRPOBatch') -> 'GRPOBatch':
+        """Detach all tensors in batch to prevent memory leaks"""
+        import copy
+        detached_batch = copy.deepcopy(batch)
+        
+        # Detach tensor attributes
+        for group in detached_batch.groups:
+            if hasattr(group, 'input_ids') and group.input_ids is not None:
+                group.input_ids = group.input_ids.detach().cpu()
+            if hasattr(group, 'attention_mask') and group.attention_mask is not None:
+                group.attention_mask = group.attention_mask.detach().cpu()
+            if hasattr(group, 'old_logprobs') and group.old_logprobs is not None:
+                group.old_logprobs = group.old_logprobs.detach().cpu()
+            if hasattr(group, 'rewards') and group.rewards is not None:
+                group.rewards = group.rewards.detach().cpu()
+                
+        return detached_batch
+    
+    def _cleanup_rollout_item(self, item):
+        """Cleanup memory from a rollout item"""
+        try:
+            # Delete tensors explicitly
+            if 'batch' in item:
+                del item['batch']
+            if 'ref_logprobs' in item:
+                del item['ref_logprobs']
+        except Exception:
+            pass  # Ignore cleanup errors
+    
+    def clear_buffer(self):
+        """Clear entire buffer and free memory"""
+        for item in self.data:
+            self._cleanup_rollout_item(item)
         self.data.clear()
+        
+        # Force garbage collection
+        import gc
+        gc.collect()
+        
+        # Clear CUDA cache if available
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception:
+            pass
+    
+    def clear(self):
+        """Clear all stored rollouts (legacy method)"""
+        self.clear_buffer()
     
     def __len__(self) -> int:
         """Number of stored rollouts"""
@@ -289,8 +343,8 @@ class GRPOTrainer:
         self.reward_std = 1.0
         self.reward_momentum = 0.99  # Exponential moving average momentum
         
-        # Rollout buffer for sample efficiency
-        self.rollout_buffer = RolloutBuffer(capacity=1000)
+        # Rollout buffer for sample efficiency (reduced capacity for memory efficiency)
+        self.rollout_buffer = RolloutBuffer(capacity=100)
         
         self.logger = logging.getLogger(__name__)
         self.logger.info(f"Initialized GRPO trainer with config: {config}")
@@ -367,14 +421,14 @@ class GRPOTrainer:
         with torch.set_grad_enabled(False):
             # Move tensors to appropriate device for multi-GPU setup
             if use_ref_model:
-                # Move to reference model device (might be different GPU)
+                # Move to reference model device (might be different GPU) - non-blocking for performance
                 ref_device = next(model.parameters()).device
-                input_ids = input_ids.to(ref_device)
+                input_ids = input_ids.to(ref_device, non_blocking=True)
                 if attention_mask is not None:
-                    attention_mask = attention_mask.to(ref_device)
+                    attention_mask = attention_mask.to(ref_device, non_blocking=True)
             
             # Forward pass with optional mixed precision (BF16 for RTX 4090)
-            if self.config.use_mixed_precision and not use_ref_model:
+            if self.config.use_mixed_precision:
                 with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                     outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             else:
@@ -893,6 +947,10 @@ class GRPOTrainer:
         """Store a rollout in buffer for multi-epoch training"""
         self.rollout_buffer.store_rollout(batch, ref_logprobs.detach().clone())
         
+        # Periodic memory cleanup
+        if self.step_count % self.rollout_buffer.memory_cleanup_interval == 0:
+            self._cleanup_memory()
+        
     def training_step_with_rollout_epochs(self, step_data: GRPOTrainingStep) -> Dict[str, float]:
         """
         Enhanced training step that can use rollout epochs for efficiency
@@ -1197,9 +1255,29 @@ class GRPOTrainer:
             self.logger.error(f"Recovery attempt failed: {e}")
             return False
     
+    def _cleanup_memory(self):
+        """Cleanup memory and perform garbage collection"""
+        try:
+            # Clear CUDA cache
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                
+            # Log memory usage
+            if torch.cuda.is_available():
+                allocated = torch.cuda.memory_allocated() / 1024**3  # GB
+                reserved = torch.cuda.memory_reserved() / 1024**3   # GB
+                self.logger.info(f"Memory cleanup: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
+                
+            # Force garbage collection
+            import gc
+            gc.collect()
+            
+        except Exception as e:
+            self.logger.warning(f"Memory cleanup failed: {e}")
+    
     def get_training_state(self) -> Dict[str, Any]:
         """Get current training state for monitoring."""
-        return {
+        state = {
             'step_count': self.step_count,
             'total_samples_trained': self.total_samples_trained,
             'current_lr': self.scheduler.get_last_lr()[0] if self.scheduler.get_last_lr() else self.config.lr,
@@ -1209,3 +1287,13 @@ class GRPOTrainer:
             'nan_skip_count': self.nan_skip_count,
             'consecutive_nan_count': self.consecutive_nan_count
         }
+        
+        # Add memory information if CUDA available
+        if torch.cuda.is_available():
+            state.update({
+                'gpu_memory_allocated_gb': torch.cuda.memory_allocated() / 1024**3,
+                'gpu_memory_reserved_gb': torch.cuda.memory_reserved() / 1024**3,
+                'gpu_memory_free_gb': (torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_reserved()) / 1024**3
+            })
+            
+        return state

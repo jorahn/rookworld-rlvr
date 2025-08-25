@@ -252,7 +252,7 @@ class ChessEvaluator:
     def evaluate_environment_task(self, 
                                 policy: CausalLMPolicy,
                                 positions: List[str],
-                                n_samples_per_position: int = 3) -> Dict[str, float]:
+                                n_samples_per_position: int = 1) -> Dict[str, float]:  # Reduced from 3 to 1 for memory efficiency
         """
         Evaluate environment (A:) task performance
         
@@ -327,6 +327,12 @@ class ChessEvaluator:
                 except Exception as e:
                     self.logger.warning(f"Environment evaluation failed for {fen}+{uci}: {e}")
                     results['total_samples'] += 1
+                    
+                    # Cleanup memory on error to prevent accumulation
+                    try:
+                        torch.cuda.empty_cache()
+                    except Exception:
+                        pass
         
         # Convert to rates and averages
         total = max(results['total_samples'], 1)
@@ -414,21 +420,35 @@ class ChessEvaluator:
         """
         eval_start_time = time.time()
         
-        # Policy task evaluation
-        self.logger.info("Evaluating policy (P:) task performance...")
-        policy_metrics = self.evaluate_policy_task(policy, self.test_positions)
+        # Clear memory before evaluation
+        self._cleanup_memory()
         
-        # Environment task evaluation  
-        self.logger.info("Evaluating environment (A:) task performance...")
-        env_metrics = self.evaluate_environment_task(policy, self.test_positions)
-        
-        # Tactical evaluation (optional)
-        tactical_metrics = {}
-        if include_tactical:
-            self.logger.info("Evaluating tactical performance...")
-            tactical_metrics = self.evaluate_tactical_performance(policy)
-        
-        total_eval_time = time.time() - eval_start_time
+        try:
+            # Policy task evaluation
+            self.logger.info("Evaluating policy (P:) task performance...")
+            policy_metrics = self.evaluate_policy_task(policy, self.test_positions)
+            
+            # Clear memory between tasks
+            self._cleanup_memory()
+            
+            # Environment task evaluation  
+            self.logger.info("Evaluating environment (A:) task performance...")
+            env_metrics = self.evaluate_environment_task(policy, self.test_positions)
+            
+            # Clear memory between tasks
+            self._cleanup_memory()
+            
+            # Tactical evaluation (optional)
+            tactical_metrics = {}
+            if include_tactical:
+                self.logger.info("Evaluating tactical performance...")
+                tactical_metrics = self.evaluate_tactical_performance(policy)
+            
+            total_eval_time = time.time() - eval_start_time
+            
+        finally:
+            # Always cleanup memory after evaluation
+            self._cleanup_memory()
         
         # Combine metrics
         metrics = EvaluationMetrics(
@@ -513,6 +533,21 @@ class ChessEvaluator:
         print(f"  Evaluation Time:      {metrics.evaluation_time:.2f}s")
         
         print("\n" + "="*60)
+
+
+    def _cleanup_memory(self):
+        """Cleanup GPU memory and perform garbage collection"""
+        try:
+            # Clear CUDA cache if available
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                
+            # Force garbage collection
+            import gc
+            gc.collect()
+            
+        except Exception as e:
+            self.logger.warning(f"Memory cleanup failed: {e}")
 
 
 def create_evaluator(config: GRPOConfig, stockfish_engine: StockfishEngine) -> ChessEvaluator:

@@ -45,7 +45,7 @@ REWARD_WARMUP_STEPS=${REWARD_WARMUP_STEPS:-100}
 # Additional options
 USE_DATASET=${USE_DATASET:-true}
 NEW_RUN=${NEW_RUN:-true}
-USE_TORCH_COMPILE=${USE_TORCH_COMPILE:-false}
+USE_TORCH_COMPILE=${USE_TORCH_COMPILE:-true}
 
 echo "Configuration:"
 echo "  Steps: $STEPS"
@@ -100,9 +100,12 @@ if [ "$USE_TORCH_COMPILE" = "false" ]; then
     ARGS+=(--no-torch-compile)
 fi
 
-# Execute training
+# Execute training with memory optimizations
 echo "🏃 Executing training command..."
 echo "uv run python train_rookworld_grpo.py ${ARGS[*]}"
 echo "============================================================"
+
+# Set CUDA memory allocator for better memory management
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 exec uv run python train_rookworld_grpo.py "${ARGS[@]}"

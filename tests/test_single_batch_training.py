@@ -31,7 +31,7 @@ from typing import Dict, List, Any
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from rookworld_rlvr.train.config import GRPOConfig
-from rookworld_rlvr.train.grpo_trainer import GRPOTrainer, GRPOBatch
+from rookworld_rlvr.train.grpo_trainer import GRPOTrainer, GRPOBatch, GRPOTrainingStep
 from rookworld_rlvr.train.policy import CausalLMPolicy, GenerationConfig
 from rookworld_rlvr.data.collector import GRPODataCollector, GRPOCollectionConfig
 from rookworld_rlvr.engine.stockfish import StockfishEngine, StockfishAnalysis
@@ -156,10 +156,10 @@ class TestSingleBatchTraining:
         try:
             model_config = GPT2Config(
                 vocab_size=50257,
-                context_length=1024,
-                d_model=768,
-                n_heads=12,
-                n_layers=12
+                n_positions=1024,
+                n_embd=768,
+                n_head=12,
+                n_layer=12
             )
             model = GPT2Model(model_config)
             
@@ -167,7 +167,13 @@ class TestSingleBatchTraining:
             ref_model = GPT2Model(model_config)
             ref_model.load_state_dict(model.state_dict())
             
-            self.logger.info(f"✅ Models loaded: {model.config.total_params:,} parameters")
+            # Move models to the specified device
+            device = minimal_config.device
+            model = model.to(device)
+            ref_model = ref_model.to(device)
+            
+            total_params = sum(p.numel() for p in model.parameters())
+            self.logger.info(f"✅ Models loaded: {total_params:,} parameters")
         except Exception as e:
             self.logger.error(f"❌ Model loading failed: {e}")
             # Try to continue with a simpler setup for testing
@@ -177,22 +183,23 @@ class TestSingleBatchTraining:
                 raise Exception(f"Model loading failed: {e}")
 
         # Initialize policy wrapper
-        policy = CausalLMPolicy(model, GenerationConfig(
-            max_new_tokens_policy=minimal_config.max_new_tokens_policy,
-            max_new_tokens_env=minimal_config.max_new_tokens_env,
-            temperature=minimal_config.temperature
-        ))
+        policy = CausalLMPolicy(
+            model=model,
+            ref_model=ref_model,
+            config=minimal_config,
+            device=device
+        )
         
         # Initialize reward computers
         policy_reward_config = PolicyRewardConfig()
         env_reward_config = EnvRewardConfig()
-        policy_reward_computer = PolicyRewardComputer(policy_reward_config, stockfish)
+        policy_reward_computer = PolicyRewardComputer(policy_reward_config)
         env_reward_computer = EnvRewardComputer(env_reward_config)
         
         # Initialize data collector
         collection_config = GRPOCollectionConfig(
             group_size=minimal_config.group_size,
-            max_new_tokens_policy=minimal_config.max_new_tokens_policy,
+            max_new_tokens_policy=minimal_config.max_new_tokens,
             max_new_tokens_env=minimal_config.max_new_tokens_env,
             temperature=minimal_config.temperature,
             mix_env_ratio=minimal_config.mix_env_ratio
@@ -200,9 +207,7 @@ class TestSingleBatchTraining:
         
         data_collector = GRPODataCollector(
             policy=policy,
-            collection_config=collection_config,
-            policy_reward_computer=policy_reward_computer,
-            env_reward_computer=env_reward_computer
+            config=collection_config
         )
         
         # Initialize GRPO trainer
@@ -215,75 +220,60 @@ class TestSingleBatchTraining:
         
         try:
             # Collect batch data
-            batch_data = data_collector.collect_batch(test_positions[:minimal_config.batch_positions])
+            batch_list = data_collector.collect_mixed_batch(minimal_config.batch_positions)
             
-            self.logger.info(f"✅ Collected batch with {len(batch_data.samples)} samples")
+            self.logger.info(f"✅ Collected {len(batch_list)} batches")
             
-            # Log each sample in detail
-            for i, sample in enumerate(batch_data.samples):
-                # Determine task type
-                task_type = "policy" if sample.prompt.startswith("P:") else "environment"
+            # Log batch details
+            for i, batch in enumerate(batch_list):
+                self.logger.info(f"  📋 Batch {i+1}:")
+                self.logger.info(f"    Task: {batch.task_type}")
+                self.logger.info(f"    Position: {batch.position_fen}")
+                self.logger.info(f"    Group size: {batch.input_ids.shape[0]}")
+                self.logger.info(f"    Sequence length: {batch.input_ids.shape[1]}")
+                self.logger.info(f"    Rewards shape: {batch.rewards.shape}")
+                self.logger.info(f"    Mean reward: {batch.rewards.mean().item():.3f}")
                 
-                # Get expected completion from ground truth
-                if task_type == "policy":
-                    # Generate expected policy completion using Stockfish
-                    fen = sample.prompt.split()[1]  # Extract FEN from "P: <FEN> M:"
-                    board = chess.Board(fen)
-                    analysis = stockfish.analyze_position(board, depth=10, multipv=5)
-                    expected = self._format_expected_policy(analysis)
-                else:
-                    # Generate expected environment completion
-                    expected = self._format_expected_environment(sample.prompt)
-                
-                # Check format validation
-                format_valid = sample.rewards.get("structure_reward", 0) > 0
-                
-                # Extract reward components
-                reward_components = dict(sample.rewards)
-                total_reward = sample.total_reward
-                
-                # Log sample data
-                self.log_sample_data(
-                    sample_idx=i,
-                    task_type=task_type,
-                    prompt=sample.prompt,
-                    completion=sample.completion,
-                    expected=expected,
-                    format_valid=format_valid,
-                    reward_components=reward_components,
-                    total_reward=total_reward
-                )
+                # Basic validation
+                assert batch.input_ids.shape[0] == minimal_config.group_size, f"Wrong group size: {batch.input_ids.shape[0]}"
+                assert batch.rewards.shape[0] == minimal_config.group_size, f"Wrong reward count: {batch.rewards.shape[0]}"
+                assert batch.task_type in ["policy", "environment"], f"Invalid task type: {batch.task_type}"
+            
+            self.logger.info("✅ All batches validated successfully")
             
         except Exception as e:
             self.logger.error(f"❌ Data collection failed: {e}")
-            pytest.fail(f"Data collection failed: {e}")
+            if hasattr(self, '_pytest_running'):
+                pytest.fail(f"Data collection failed: {e}")
+            else:
+                raise Exception(f"Data collection failed: {e}")
+                
+        batch_list = batch_list  # Make batch_list available for training
         
         # === STEP 2: Training Step ===
         self.logger.info("🏋️ Running training step...")
         
         try:
             # Run single training step
-            training_step = trainer.train_step(batch_data)
+            # Create training step from batch list
+            step_data = GRPOTrainingStep(groups=batch_list)
+            training_metrics = trainer.training_step(step_data)
             
             # Log training results
             self.training_log["step_data"] = {
-                "policy_loss": float(training_step.policy_loss),
-                "kl_divergence": float(training_step.kl_divergence),
-                "entropy": float(training_step.entropy),
-                "advantages_mean": float(training_step.advantages.mean()),
-                "advantages_std": float(training_step.advantages.std()),
-                "rewards_mean": float(batch_data.rewards.mean()),
-                "rewards_std": float(batch_data.rewards.std())
+                "loss": float(training_metrics.get("loss", 0.0)),
+                "kl_divergence": float(training_metrics.get("kl_div", 0.0)),
+                "entropy": float(training_metrics.get("entropy", 0.0)),
+                "lr": float(training_metrics.get("lr", 0.0))
             }
             
-            total_loss = training_step.policy_loss
+            total_loss = training_metrics.get("loss", 0.0)
             
             self.logger.info("=== TRAINING STEP RESULTS ===")
-            self.logger.info(f"Policy Loss: {training_step.policy_loss:.6f}")
-            self.logger.info(f"KL Divergence: {training_step.kl_divergence:.6f}")
-            self.logger.info(f"Entropy: {training_step.entropy:.6f}")
-            self.logger.info(f"Advantages - Mean: {training_step.advantages.mean():.6f}, Std: {training_step.advantages.std():.6f}")
-            self.logger.info(f"Rewards - Mean: {batch_data.rewards.mean():.6f}, Std: {batch_data.rewards.std():.6f}")
+            self.logger.info(f"Loss: {training_metrics.get('loss', 0.0):.6f}")
+            self.logger.info(f"KL Divergence: {training_metrics.get('kl_div', 0.0):.6f}")
+            self.logger.info(f"Entropy: {training_metrics.get('entropy', 0.0):.6f}")
+            self.logger.info(f"Learning Rate: {training_metrics.get('lr', 0.0):.8f}")
             self.logger.info(f"Total Loss: {total_loss:.6f}")
             self.logger.info("=" * 30)
             

@@ -751,10 +751,13 @@ class GRPOTrainer:
             self.nan_skip_count += 1
             self.consecutive_nan_count += 1
             
-            # Add NaN skip flag to metrics
-            final_metrics['nan_skip'] = 1
-            final_metrics['nan_skip_count'] = self.nan_skip_count
-            final_metrics['consecutive_nan_count'] = self.consecutive_nan_count
+            # Initialize final_metrics for NaN case
+            final_metrics = {
+                'loss': float('nan'),
+                'nan_skip': 1,
+                'nan_skip_count': self.nan_skip_count,
+                'consecutive_nan_count': self.consecutive_nan_count
+            }
             
             # Attempt recovery if enabled and we have a stable checkpoint
             if self.consecutive_nan_count >= 10:

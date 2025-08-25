@@ -51,9 +51,9 @@ def main():
         # Task configuration  
         mix_env_ratio=0.5,            # 1 policy + 1 environment
         
-        # Model settings (use base GPT-2 for testing)
-        model_name="gpt2",
-        max_new_tokens_policy=50,
+        # Model settings (use RookWorld-LM for testing)
+        model_name_or_path="jrahn/RookWorld-LM-124M",
+        max_new_tokens=50,
         max_new_tokens_env=80,
         temperature=0.3,
         
@@ -63,12 +63,8 @@ def main():
         clip_range=0.05,
         
         # Performance settings (disabled for testing)
-        mixed_precision=False,
-        torch_compile=False,
-        
-        # Logging
-        log_level="INFO",
-        verbose_logging=True
+        use_mixed_precision=False,
+        use_torch_compile=False
     )
     
     # Test positions 

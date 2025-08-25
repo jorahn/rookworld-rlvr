@@ -32,8 +32,8 @@ class GRPOConfig:
     # =============================================================================
     # Optimization Parameters
     # =============================================================================
-    lr: float = 1e-5
-    """Learning rate for policy optimization. Validated for stability with mixed tasks."""
+    lr: float = 1e-6
+    """Learning rate for policy optimization. Conservative rate to prevent gradient explosion."""
     
     weight_decay: float = 0.01
     """L2 regularization weight for AdamW optimizer."""
@@ -50,11 +50,11 @@ class GRPOConfig:
     group_size: int = 8
     """Number of samples per position for group-relative baseline (G parameter)."""
     
-    clip_range: float = 0.2
-    """PPO-style policy gradient clipping range."""
+    clip_range: float = 0.1
+    """PPO-style policy gradient clipping range. Reduced for more conservative training."""
     
-    kl_coef: float = 0.01
-    """KL divergence penalty coefficient for policy regularization. Reduced for stability."""
+    kl_coef: float = 0.001
+    """KL divergence penalty coefficient for policy regularization. Very low for stability."""
     
     kl_target: Optional[float] = None
     """Target KL divergence for adaptive KL control. If None, uses fixed kl_coef."""
@@ -145,8 +145,8 @@ class GRPOConfig:
     r_policy_best_move: float = 1.0
     """Bonus reward when best move matches Stockfish #1 recommendation."""
     
-    r_policy_malformed: float = -1.0
-    """Penalty for malformed or unparseable P: task output."""
+    r_policy_malformed: float = -0.3
+    """Penalty for malformed or unparseable P: task output. Reduced from -1.0 to prevent extreme gradients."""
     
     # =============================================================================
     # Environment Task Rewards (A: state transition prediction)
@@ -166,8 +166,8 @@ class GRPOConfig:
     r_env_flags_accuracy: float = 0.1
     """Reward for accurate terminated/truncated flag prediction (classification)."""
     
-    r_env_malformed: float = -1.0
-    """Penalty for malformed or unparseable A: task output."""
+    r_env_malformed: float = -0.3
+    """Penalty for malformed or unparseable A: task output. Reduced from -1.0 to prevent extreme gradients."""
     
     # =============================================================================
     # Evaluation Configuration

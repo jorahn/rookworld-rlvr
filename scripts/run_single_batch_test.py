@@ -41,12 +41,12 @@ def main():
     test = TestSingleBatchTraining()
     test.setup_method()
     
-    # Configure minimal test settings
+    # Configure test settings for bs=8 with 4 P: and 4 A: tasks
     config = GRPOConfig(
         # Core training settings
         steps=1,                      # Single step
-        batch_positions=2,            # 2 samples
-        group_size=2,                 # Group size 2
+        batch_positions=8,            # 8 samples total (4 P: + 4 A:)
+        group_size=2,                 # Group size 2 (so 4 batches total)
         
         # Task configuration  
         mix_env_ratio=0.5,            # 1 policy + 1 environment
@@ -57,10 +57,12 @@ def main():
         max_new_tokens_env=80,
         temperature=0.3,
         
-        # Training hyperparameters
-        lr=1e-6,
-        kl_coef=0.001,
-        clip_range=0.05,
+        # Training hyperparameters - DISABLE WARMUP to test real KL impact  
+        lr=1e-5,                      # Higher LR to see actual training effects
+        kl_coef=0.01,                 # Higher KL coefficient to see real impact
+        clip_range=0.1,               # Allow more policy updates
+        kl_warmup_steps=0,            # DISABLE KL warmup
+        kl_warmup_factor=1.0,         # Full KL coefficient from start
         
         # Performance settings (disabled for testing)
         use_mixed_precision=False,
@@ -78,6 +80,7 @@ def main():
     print(f"  Batch positions: {config.batch_positions}")
     print(f"  Group size: {config.group_size}")
     print(f"  Mix env ratio: {config.mix_env_ratio}")
+    print(f"  Expected: {int(config.batch_positions * (1 - config.mix_env_ratio))} policy + {int(config.batch_positions * config.mix_env_ratio)} environment tasks")
     print(f"  Temperature: {config.temperature}")
     print("=" * 50)
     

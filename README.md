@@ -100,22 +100,20 @@ uv sync                    # Install all dependencies from lock file
 
 ### Basic Training Commands
 ```bash
-# Production training with rookworld_7m dataset
-uv run python scripts/train_with_rookworld_dataset.py --steps 1000
+# Standard stable training (recommended)
+./train.sh
+
+# Short test run
+STEPS=5 ./train.sh
+
+# Custom training with parameters
+STEPS=1000 BATCH_POSITIONS=4 ./train.sh
 
 # High-performance RTX 4090 optimized training
-uv run python train_rookworld_grpo.py \
-    --steps 5000 \
-    --batch-positions 16 \
-    --group-size 16 \
-    --n-parallel-games 8 \
-    --lr 1e-5 \
-    --temperature 0.7 \
-    --mixed-precision \
-    --torch-compile
+STEPS=5000 BATCH_POSITIONS=16 GROUP_SIZE=16 LR=1e-5 USE_TORCH_COMPILE=true ./train.sh
 
-# Resume from checkpoint with automatic recovery
-uv run python train_rookworld_grpo.py --auto-resume
+# Resume from checkpoint (automatic detection)
+./train.sh  # Will auto-resume if checkpoint exists
 ```
 
 ## Configuration & Usage

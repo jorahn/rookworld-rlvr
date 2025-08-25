@@ -212,10 +212,13 @@ class TestImplementationParity(unittest.TestCase):
     
     def _find_env_target_manual(self, tokens: List[int]) -> int:
         """Manual environment target detection"""
+        plus_count = 0
         for j in range(len(tokens)):
             current_decoded = self.tokenizer.decode([tokens[j]]).strip()
             if current_decoded == '+':
-                return j + 1  # After first +
+                plus_count += 1
+                if plus_count == 2:
+                    return j + 1  # After second +
         return len(tokens) - 1
     
     def test_model_state_consistency(self):

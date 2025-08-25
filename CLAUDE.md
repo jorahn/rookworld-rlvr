@@ -52,8 +52,8 @@ STEPS=5 ./train.sh
 # Policy-only fine-tuning (structured analysis generation)
 MIX_ENV_RATIO=0.0 STEPS=2000 ./train.sh
 
-# High-performance fine-tuning settings (RTX 4090 optimized)
-STEPS=5000 BATCH_POSITIONS=16 GROUP_SIZE=16 LR=1e-5 USE_TORCH_COMPILE=true ./train.sh
+# High-performance fine-tuning settings (RTX 4090 optimized) - now default
+STEPS=5000 LR=1e-5 ./train.sh
 
 # Resume fine-tuning (automatic detection)
 ./train.sh  # Auto-resumes if checkpoint exists

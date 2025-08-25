@@ -279,7 +279,16 @@ class CausalLMPolicy:
                 next_token.item() == generation_config.pad_token_id):
                 break
         
-        # Detach tensors and cleanup intermediate variables\n        sequence = sequence.detach()\n        total_logprob = total_logprob.detach()\n        \n        # Cleanup intermediate tensors\n        del current_attention_mask, next_token_logits\n        if torch.cuda.is_available():\n            torch.cuda.empty_cache()\n        \n        return sequence, total_logprob
+        # Detach tensors and cleanup intermediate variables
+        sequence = sequence.detach()
+        total_logprob = total_logprob.detach()
+        
+        # Cleanup intermediate tensors
+        del current_attention_mask, next_token_logits
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        return sequence, total_logprob
     
     def compute_logprobs(
         self, 

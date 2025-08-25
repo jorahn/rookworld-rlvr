@@ -279,6 +279,59 @@ class ChessEnvironment:
         except Exception:
             return False
     
+    def validate_prediction(self, generated_text: str, expected_response: EnvironmentResponse) -> Dict[str, Any]:
+        """
+        Validate model prediction against expected environment response
+        
+        Args:
+            generated_text: Model's generated output (should be A: format)
+            expected_response: Ground truth environment response
+            
+        Returns:
+            Dictionary with validation results
+        """
+        validation = {
+            "is_valid_format": False,
+            "fen_exact_match": False,
+            "fen_similarity_score": 0.0,
+            "reward_accuracy": 0.0,
+            "flag_accuracy": 0.0,
+            "parsed_response": None
+        }
+        
+        # Try to parse the prediction
+        parsed = self.parse_prediction(generated_text)
+        if parsed is None:
+            return validation
+        
+        validation["is_valid_format"] = True
+        validation["parsed_response"] = parsed
+        
+        # Check FEN exact match
+        validation["fen_exact_match"] = (parsed.new_fen == expected_response.new_fen)
+        
+        # Calculate FEN similarity
+        validation["fen_similarity_score"] = self._compute_fen_similarity(
+            parsed.new_fen, expected_response.new_fen
+        )
+        
+        # Calculate reward accuracy (as percentage error)
+        try:
+            reward_diff = abs(parsed.reward - expected_response.reward)
+            max_reward = max(abs(parsed.reward), abs(expected_response.reward), 1.0)
+            validation["reward_accuracy"] = 1.0 - min(reward_diff / max_reward, 1.0)
+        except:
+            validation["reward_accuracy"] = 0.0
+        
+        # Calculate flag accuracy (both terminated and truncated must match)
+        flags_correct = (
+            parsed.terminated == expected_response.terminated and
+            parsed.truncated == expected_response.truncated
+        )
+        validation["flag_accuracy"] = 1.0 if flags_correct else 0.0
+        
+        return validation
+    
     def create_sample_positions(self, n_positions: int = 10) -> List[str]:
         """
         Create sample chess positions for testing

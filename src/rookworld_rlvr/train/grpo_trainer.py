@@ -98,18 +98,17 @@ class RolloutBuffer:
     def _detach_batch_tensors(self, batch: 'GRPOBatch') -> 'GRPOBatch':
         """Detach all tensors in batch to prevent memory leaks"""
         import copy
-        detached_batch = copy.deepcopy(batch)
         
-        # Detach tensor attributes
-        for group in detached_batch.groups:
-            if hasattr(group, 'input_ids') and group.input_ids is not None:
-                group.input_ids = group.input_ids.detach().cpu()
-            if hasattr(group, 'attention_mask') and group.attention_mask is not None:
-                group.attention_mask = group.attention_mask.detach().cpu()
-            if hasattr(group, 'old_logprobs') and group.old_logprobs is not None:
-                group.old_logprobs = group.old_logprobs.detach().cpu()
-            if hasattr(group, 'rewards') and group.rewards is not None:
-                group.rewards = group.rewards.detach().cpu()
+        # Create a new batch with detached tensors (keep on original device for compatibility)
+        detached_batch = GRPOBatch(
+            input_ids=batch.input_ids.detach() if batch.input_ids is not None else None,
+            attention_mask=batch.attention_mask.detach() if batch.attention_mask is not None else None,
+            target_start_indices=batch.target_start_indices.detach() if batch.target_start_indices is not None else None,
+            old_logprobs=batch.old_logprobs.detach() if batch.old_logprobs is not None else None,
+            rewards=batch.rewards.detach() if batch.rewards is not None else None,
+            position_fen=batch.position_fen,
+            task_type=batch.task_type
+        )
                 
         return detached_batch
     
@@ -653,8 +652,10 @@ class GRPOTrainer:
         
         # Enhanced KL monitoring using token-level information
         if kl_per_token is not None and len(kl_per_token) > 1:
-            metrics['kl_div_95pct'] = torch.quantile(kl_per_token, 0.95).item()
-            metrics['kl_div_5pct'] = torch.quantile(kl_per_token, 0.05).item()
+            # Convert to float for quantile calculation
+            kl_float = kl_per_token.float()
+            metrics['kl_div_95pct'] = torch.quantile(kl_float, 0.95).item()
+            metrics['kl_div_5pct'] = torch.quantile(kl_float, 0.05).item()
             metrics['kl_estimator'] = self.config.kl_estimator
         else:
             # Fallback to simple difference-based percentiles

@@ -27,8 +27,8 @@ fi
 
 # Base configuration (fixed parameters)
 BASE_STEPS=500
-BASE_BATCH_POSITIONS=2
-BASE_GROUP_SIZE=2
+BASE_BATCH_POSITIONS=8
+BASE_GROUP_SIZE=16
 BASE_CLIP_RANGE=0.1
 BASE_TEMPERATURE=0.5
 BASE_MIX_ENV_RATIO=0.2
@@ -60,6 +60,7 @@ RESULTS_CSV="$RESULTS_DIR/results.csv"
 echo "run_id,kl_warmup_steps,kl_warmup_factor,learning_rate,kl_coefficient,status,steps_completed,final_kl_mean,final_kl_95pct,final_reward,training_time,diverged_at_step" > "$RESULTS_CSV"
 
 echo "📊 Parameter Grid Configuration:"
+echo "  Base Batch Size: $BASE_BATCH_POSITIONS positions × $BASE_GROUP_SIZE group = $((BASE_BATCH_POSITIONS * BASE_GROUP_SIZE)) effective batch size"
 echo "  KL Warmup Steps: ${KL_WARMUP_STEPS_VALUES[*]}"
 echo "  KL Warmup Factor: ${KL_WARMUP_FACTOR_VALUES[*]}"  
 echo "  Learning Rate: ${LR_VALUES[*]}"

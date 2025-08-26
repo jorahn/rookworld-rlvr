@@ -99,13 +99,13 @@ class RolloutBuffer:
         """Detach all tensors in batch to prevent memory leaks"""
         import copy
         
-        # Create a new batch with detached tensors (keep on original device for compatibility)
+        # Create a new batch with detached tensors moved to CPU to prevent GPU memory accumulation
         detached_batch = GRPOBatch(
-            input_ids=batch.input_ids.detach() if batch.input_ids is not None else None,
-            attention_mask=batch.attention_mask.detach() if batch.attention_mask is not None else None,
-            target_start_indices=batch.target_start_indices.detach() if batch.target_start_indices is not None else None,
-            old_logprobs=batch.old_logprobs.detach() if batch.old_logprobs is not None else None,
-            rewards=batch.rewards.detach() if batch.rewards is not None else None,
+            input_ids=batch.input_ids.detach().cpu() if batch.input_ids is not None else None,
+            attention_mask=batch.attention_mask.detach().cpu() if batch.attention_mask is not None else None,
+            target_start_indices=batch.target_start_indices.detach().cpu() if batch.target_start_indices is not None else None,
+            old_logprobs=batch.old_logprobs.detach().cpu() if batch.old_logprobs is not None else None,
+            rewards=batch.rewards.detach().cpu() if batch.rewards is not None else None,
             position_fen=batch.position_fen,
             task_type=batch.task_type
         )
@@ -475,6 +475,14 @@ class GRPOTrainer:
         # Move result back to training device if we used reference model
         if use_ref_model:
             mean_log_probs = mean_log_probs.to(self.config.device)
+            # Cleanup intermediate tensors to prevent GPU memory accumulation
+            if input_ids.device != self.config.device:
+                del input_ids
+                if attention_mask is not None:
+                    del attention_mask
+                # Force cleanup of GPU cache after multi-GPU operations
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
         
         return mean_log_probs
     
@@ -859,6 +867,18 @@ class GRPOTrainer:
         else:
             total_loss.backward()
         
+        # Explicit gradient cleanup between accumulation steps to prevent memory buildup
+        if (self.step_count + 1) % self.config.gradient_accumulation_steps != 0:
+            # Clear intermediate gradients that won't be used until accumulation is complete
+            for param in self.model.parameters():
+                if param.grad is not None:
+                    # Keep gradients but cleanup any unnecessary references
+                    param.grad.detach_()
+        
+        # Additional cleanup for multi-GPU setups - clear any residual tensors
+        if torch.cuda.device_count() > 1 and self.step_count % 5 == 0:
+            torch.cuda.empty_cache()
+        
         # Optimizer step (every gradient_accumulation_steps)
         if (self.step_count + 1) % self.config.gradient_accumulation_steps == 0:
             if self.scaler is not None:
@@ -948,8 +968,8 @@ class GRPOTrainer:
         """Store a rollout in buffer for multi-epoch training"""
         self.rollout_buffer.store_rollout(batch, ref_logprobs.detach().clone())
         
-        # Periodic memory cleanup
-        if self.step_count % self.rollout_buffer.memory_cleanup_interval == 0:
+        # More frequent memory cleanup to prevent accumulation
+        if self.step_count % 5 == 0:  # Every 5 steps instead of 20
             self._cleanup_memory()
         
     def training_step_with_rollout_epochs(self, step_data: GRPOTrainingStep) -> Dict[str, float]:

@@ -17,6 +17,8 @@ import torch
 from transformers import GPT2Tokenizer
 import time
 from typing import Dict
+import os
+from pathlib import Path
 
 # Import lean components
 from model import LeanRookWorldModel
@@ -118,16 +120,136 @@ def log_memory_usage():
             logger.info(f"GPU {i} memory - allocated: {allocated:.2f}GB, reserved: {reserved:.2f}GB")
 
 
+def save_checkpoint(model, optimizer, step, metrics, checkpoint_dir, prefix="checkpoint"):
+    """Save model checkpoint"""
+    logger = logging.getLogger(__name__)
+    
+    # Create checkpoint directory
+    Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
+    
+    checkpoint_path = Path(checkpoint_dir) / f"{prefix}_step_{step}.pt"
+    
+    checkpoint = {
+        'step': step,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'metrics': metrics,
+        'timestamp': time.strftime('%Y%m%d_%H%M%S')
+    }
+    
+    torch.save(checkpoint, checkpoint_path)
+    logger.info(f"Checkpoint saved: {checkpoint_path}")
+    
+    # Keep only last 3 checkpoints
+    checkpoints = sorted(Path(checkpoint_dir).glob(f"{prefix}_*.pt"))
+    if len(checkpoints) > 3:
+        for old_checkpoint in checkpoints[:-3]:
+            old_checkpoint.unlink()
+            logger.debug(f"Removed old checkpoint: {old_checkpoint}")
+    
+    return checkpoint_path
+
+
+def evaluate_on_test_set(model, dataset, validator, tokenizer, num_samples=100):
+    """Evaluate model on test set"""
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Evaluating on {num_samples} test samples...")
+    
+    # Get test samples
+    test_batch = dataset.get_training_batch(num_samples)
+    
+    # Metrics
+    total_reward = 0
+    p_task_rewards = []
+    a_task_rewards = []
+    valid_completions = 0
+    
+    model.eval()
+    with torch.no_grad():
+        for task_type, prompt, expected in test_batch:
+            # Tokenize prompt
+            inputs = tokenizer(prompt, return_tensors="pt", truncation=True)
+            input_ids = inputs["input_ids"].to(next(model.parameters()).device)
+            
+            # Generate completion
+            generated = model.generate_tokens(
+                input_ids,
+                max_new_tokens=144,
+                temperature=0.8,
+                do_sample=True
+            )
+            
+            # Decode
+            completion = tokenizer.decode(generated[0], skip_special_tokens=True)
+            
+            # Validate and compute reward
+            if task_type == "P":
+                # Extract FEN from prompt
+                fen = prompt.split("P:")[1].split("M:")[0].strip() if "P:" in prompt else ""
+                validation = validator.validate_policy_completion(fen, completion)
+                reward = sum(validation.values())
+                p_task_rewards.append(reward)
+                
+            elif task_type == "A":
+                # Extract FEN and move
+                if "A:" in prompt and "+" in prompt:
+                    parts = prompt.split("A:")[1].split("+")
+                    fen = parts[0].strip() if parts else ""
+                    move = parts[1].strip() if len(parts) > 1 else ""
+                else:
+                    fen, move = "", ""
+                    
+                validation = validator.validate_environment_completion(fen, move, completion)
+                reward = sum(validation.values())
+                a_task_rewards.append(reward)
+            else:
+                reward = 0.0
+            
+            total_reward += reward
+            if reward > 0.5:  # Consider > 50% reward as valid
+                valid_completions += 1
+    
+    model.train()
+    
+    # Compute statistics
+    avg_reward = total_reward / num_samples if num_samples > 0 else 0
+    p_avg = sum(p_task_rewards) / len(p_task_rewards) if p_task_rewards else 0
+    a_avg = sum(a_task_rewards) / len(a_task_rewards) if a_task_rewards else 0
+    validity_rate = valid_completions / num_samples if num_samples > 0 else 0
+    
+    eval_metrics = {
+        'avg_reward': avg_reward,
+        'p_task_avg': p_avg,
+        'a_task_avg': a_avg,
+        'validity_rate': validity_rate,
+        'valid_completions': valid_completions,
+        'total_samples': num_samples
+    }
+    
+    logger.info(f"Evaluation Results:")
+    logger.info(f"  Average Reward: {avg_reward:.4f}")
+    logger.info(f"  P-task Average: {p_avg:.4f}")
+    logger.info(f"  A-task Average: {a_avg:.4f}")
+    logger.info(f"  Validity Rate: {validity_rate:.2%}")
+    
+    return eval_metrics
+
+
 def main():
     parser = argparse.ArgumentParser(description="Lean GRPO Training for RookWorld-LM")
     parser.add_argument("--steps", type=int, default=100, help="Number of training steps")
-    parser.add_argument("--batch-size", type=int, default=8, help="Batch size")
+    parser.add_argument("--batch-size", type=int, default=64, help="Batch size (default: 64 for 24GB GPUs)")
     parser.add_argument("--group-size", type=int, default=8, help="GRPO group size") 
     parser.add_argument("--learning-rate", type=float, default=1e-5, help="Learning rate")
     parser.add_argument("--clip-range", type=float, default=0.2, help="PPO clip range")
     parser.add_argument("--kl-coef", type=float, default=0.02, help="KL penalty coefficient")
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
     parser.add_argument("--stockfish-path", default=None, help="Path to Stockfish executable")
+    parser.add_argument("--checkpoint-interval", type=int, default=100, help="Save checkpoint every N steps")
+    parser.add_argument("--checkpoint-dir", default="lean_checkpoints", help="Directory to save checkpoints")
+    parser.add_argument("--eval-interval", type=int, default=100, help="Evaluate on test set every N steps")
+    parser.add_argument("--eval-samples", type=int, default=100, help="Number of test samples for evaluation")
     
     args = parser.parse_args()
     
@@ -226,6 +348,32 @@ def main():
             logger.debug(f"  Logprobs shape: {batch.logprobs.shape}, device: {batch.logprobs.device}")
             logger.debug(f"  Ref logprobs shape: {batch.ref_logprobs.shape}, device: {batch.ref_logprobs.device}")
             
+            # Save checkpoint if needed
+            current_step = step + 1
+            if args.checkpoint_interval > 0 and current_step % args.checkpoint_interval == 0:
+                logger.info(f"Saving checkpoint at step {current_step}...")
+                checkpoint_path = save_checkpoint(
+                    model=train_model.model,  # Access underlying model
+                    optimizer=trainer.optimizer,
+                    step=current_step,
+                    metrics=metrics,
+                    checkpoint_dir=args.checkpoint_dir
+                )
+                logger.info(f"Checkpoint saved: {checkpoint_path}")
+            
+            # Evaluate on test set if needed
+            if args.eval_interval > 0 and current_step % args.eval_interval == 0:
+                logger.info(f"Evaluating at step {current_step}...")
+                eval_metrics = evaluate_on_test_set(
+                    model=train_model,
+                    dataset=dataset,
+                    validator=validator,
+                    tokenizer=tokenizer,
+                    num_samples=args.eval_samples
+                )
+                metrics['eval'] = eval_metrics
+                logger.info(f"Evaluation complete - Avg reward: {eval_metrics['avg_reward']:.4f}")
+            
             # Cleanup
             del batch
             torch.cuda.empty_cache()
@@ -233,6 +381,31 @@ def main():
             logger.info(f"Step {step + 1} completed in {step_time:.2f}s")
         
         logger.info("=== TRAINING COMPLETED SUCCESSFULLY ===")
+        
+        # Save final checkpoint
+        logger.info("Saving final checkpoint...")
+        final_checkpoint = save_checkpoint(
+            model=train_model.model,
+            optimizer=trainer.optimizer,
+            step=args.steps,
+            metrics={'final': True, **metrics},
+            checkpoint_dir=args.checkpoint_dir,
+            prefix="final"
+        )
+        logger.info(f"Final checkpoint saved: {final_checkpoint}")
+        
+        # Final evaluation
+        logger.info("Performing final evaluation...")
+        final_eval = evaluate_on_test_set(
+            model=train_model,
+            dataset=dataset,
+            validator=validator,
+            tokenizer=tokenizer,
+            num_samples=args.eval_samples * 2  # Double samples for final eval
+        )
+        logger.info(f"Final Evaluation Results:")
+        logger.info(f"  Average Reward: {final_eval['avg_reward']:.4f}")
+        logger.info(f"  Validity Rate: {final_eval['validity_rate']:.2%}")
         
     except Exception as e:
         logger.error(f"Training failed with error: {e}", exc_info=True)

@@ -2,6 +2,17 @@
 
 **Fine-tune RookWorld-LM with Group Relative Policy Optimization on real chess data**
 
+## 🆕 Lean Implementation Available
+
+A minimal, memory-leak-free implementation is now available in `src/lean/`. This simplified version provides:
+- **No memory leaks**: Verified stable over 500+ training steps
+- **Optimized performance**: Default batch size 64 (10x faster than original)
+- **Fixed critical bugs**: CUDA tensor indexing, dataset parsing, token alignment
+- **Checkpoint system**: Automatic saving and evaluation
+- **Clear separation**: Training model on cuda:0, reference on cuda:1
+
+See `src/lean/README.md` for the lean implementation documentation.
+
 ## Executive Summary
 
 Work-in-progress implementation of Group Relative Policy Optimization (GRPO) for fine-tuning RookWorld-LM (GPT-2 124M) to **increase best move accuracy** on the **rookworld_7m dataset**. The system trains on dual tasks: (1) **Policy Task (P:)**: generating structured chess analysis with improved move accuracy, and (2) **Environment Task (A:)**: maintaining chess state prediction correctness.

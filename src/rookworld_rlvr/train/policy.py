@@ -153,8 +153,11 @@ class CausalLMPolicy:
             generated_sequences.append(sequence[0])  # Remove batch dimension
             generated_logprobs.append(logprobs.item() if logprobs.dim() == 0 else logprobs[0])   # Handle scalar or tensor
         
-        # Pad generated sequences to same length
-        max_total_len = max(seq.size(0) for seq in generated_sequences)
+        # Pad generated sequences to same length with strict limit
+        # CRITICAL: Force max_total_len to respect config.max_positions to prevent memory explosion
+        natural_max_len = max(seq.size(0) for seq in generated_sequences)
+        max_total_len = min(natural_max_len, self.config.max_positions)
+        
         padded_sequences = torch.full(
             (batch_size, max_total_len), 
             self.tokenizer.pad_token_id, 
@@ -175,9 +178,9 @@ class CausalLMPolicy:
         generated_texts = []
         
         for i, (seq, logprob, prompt_len) in enumerate(zip(generated_sequences, generated_logprobs, prompt_lengths)):
-            # Store full sequence
-            seq_len = seq.size(0)
-            padded_sequences[i, :seq_len] = seq
+            # Store full sequence with truncation if needed
+            seq_len = min(seq.size(0), max_total_len)  # Truncate if too long
+            padded_sequences[i, :seq_len] = seq[:seq_len]
             
             # Extract generated part
             gen_start = prompt_len.item()
@@ -199,6 +202,7 @@ class CausalLMPolicy:
             "texts": generated_texts
         }
     
+    @torch.no_grad()
     def _generate_with_logprobs(
         self,
         input_ids: torch.Tensor,
@@ -231,6 +235,11 @@ class CausalLMPolicy:
             outputs = self.model(sequence, attention_mask=current_attention_mask)
             logits = outputs["logits"]
             next_token_logits = logits[0, -1, :] # Last position logits
+            
+            # CRITICAL: Delete logits tensor immediately to prevent memory accumulation
+            # Each forward pass creates a [1, seq_len, 50257] tensor (~100-400MB)
+            # Without deletion, 144 generation steps accumulate to 10-20GB+ memory
+            del logits, outputs
             
             # Apply temperature
             if generation_config.temperature != 1.0:
@@ -275,17 +284,23 @@ class CausalLMPolicy:
             new_attention = torch.ones((1, 1), device=self.device, dtype=current_attention_mask.dtype)
             current_attention_mask = torch.cat([current_attention_mask, new_attention], dim=1)
             
+            # Clean up intermediate sampling tensors to prevent accumulation
+            del probs, new_attention
+            
             # Check for early stopping
             if (generation_config.pad_token_id is not None and 
                 next_token.item() == generation_config.pad_token_id):
                 break
+                
+            # Clean up remaining tensors from this iteration
+            del next_token_logits
         
         # Detach tensors and cleanup intermediate variables
         sequence = sequence.detach()
         total_logprob = total_logprob.detach()
         
         # Cleanup intermediate tensors
-        del current_attention_mask, next_token_logits
+        del current_attention_mask
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         

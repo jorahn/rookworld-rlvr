@@ -30,10 +30,10 @@ LR=${LR:-5e-6}
 KL_COEF=${KL_COEF:-0.001}
 CLIP_RANGE=${CLIP_RANGE:-0.1}
 TEMPERATURE=${TEMPERATURE:-0.5}
-BATCH_POSITIONS=${BATCH_POSITIONS:-1}
-GROUP_SIZE=${GROUP_SIZE:-2}
+BATCH_POSITIONS=${BATCH_POSITIONS:-2}
+GROUP_SIZE=${GROUP_SIZE:-4}
 MIX_ENV_RATIO=${MIX_ENV_RATIO:-0.2}  # Enable environment tasks for testing
-MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-100}  # Required for complete policy analysis
+MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-144}  # Required for complete policy analysis
 MAX_NEW_TOKENS_ENV=${MAX_NEW_TOKENS_ENV:-150}  # Required for complete environment response
 
 # Improved stability parameters

@@ -299,15 +299,10 @@ class TrainingOrchestrator:
         if hasattr(torch.cuda, 'empty_cache'):
             torch.cuda.empty_cache()
         
-        # Set memory allocation strategy for better performance
-        if hasattr(torch.cuda, 'set_per_process_memory_fraction'):
-            # Reserve 90% of GPU memory to avoid fragmentation
-            memory_fraction = 0.9
-            try:
-                torch.cuda.set_per_process_memory_fraction(memory_fraction)
-                self.logger.info(f"Set CUDA memory fraction to {memory_fraction}")
-            except Exception as e:
-                self.logger.warning(f"Could not set memory fraction: {e}")
+        # REMOVED: Aggressive memory pre-allocation that was causing artificial OOM
+        # The previous code pre-allocated 90% of GPU memory (~21GB) unnecessarily
+        # This caused "fake" OOM errors when actual usage was only ~1-2GB
+        # Let PyTorch manage memory allocation dynamically for efficiency
         
         # RTX 4090 / Ada Lovelace optimizations
         # 1. TF32 optimization for ~30% matmul speedup on Ampere+

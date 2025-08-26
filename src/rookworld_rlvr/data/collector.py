@@ -187,9 +187,12 @@ class GRPODataCollector:
             full_text = prompt + generated_text
             full_texts.append(full_text)
         
-        # Tokenize full sequences
+        # Tokenize full sequences with proper max_length limit
+        # CRITICAL FIX: Without max_length, tokenizer pads to longest sequence in batch
+        # which can create sequences up to 1024 tokens, causing 22GB+ memory usage
         encoding = self.policy.tokenizer.encode_batch(
             full_texts,
+            max_length=200,  # Force reasonable sequence length limit
             padding=True,
             device=self.config.device
         )
@@ -297,9 +300,12 @@ class GRPODataCollector:
             full_text = prompt + generated_text
             full_texts.append(full_text)
         
-        # Tokenize full sequences
+        # Tokenize full sequences with proper max_length limit
+        # CRITICAL FIX: Without max_length, tokenizer pads to longest sequence in batch
+        # which can create sequences up to 1024 tokens, causing 22GB+ memory usage
         encoding = self.policy.tokenizer.encode_batch(
             full_texts,
+            max_length=200,  # Force reasonable sequence length limit
             padding=True,
             device=self.config.device
         )

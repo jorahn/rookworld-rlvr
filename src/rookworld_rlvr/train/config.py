@@ -93,8 +93,8 @@ class GRPOConfig:
     max_new_tokens_env: int = 150
     """Maximum tokens to generate for environment (A:) tasks. Increased from 80 to prevent truncation of complete responses."""
     
-    max_positions: int = 512
-    """Maximum sequence length for model input (needed for tokenization)."""
+    max_positions: int = 200
+    """Maximum sequence length for model input - optimized for chess tasks (~20 prompt + 144 generated + padding)."""
     
     # =============================================================================
     # Training Schedule

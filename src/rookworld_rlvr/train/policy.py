@@ -70,6 +70,7 @@ class CausalLMPolicy:
         self.model = model
         self.ref_model = ref_model
     
+    @torch.no_grad()
     def generate(
         self, 
         prompt: str, 

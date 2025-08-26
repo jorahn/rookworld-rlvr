@@ -182,9 +182,10 @@ class ChessEvaluator:
                 start_time = time.time()
                 
                 try:
-                    # Generate policy task output
-                    prompt = f"P: {fen}    M:"
-                    generated_text = policy.generate(prompt, max_new_tokens=50)
+                    # Generate policy task output with no gradient computation
+                    with torch.no_grad():
+                        prompt = f"P: {fen}    M:"
+                        generated_text = policy.generate(prompt, max_new_tokens=50)
                     
                     generation_time = time.time() - start_time
                     results['generation_times'].append(generation_time)
@@ -289,9 +290,10 @@ class ChessEvaluator:
                 start_time = time.time()
                 
                 try:
-                    # Generate environment task output
-                    prompt = f"A: {fen}+{uci}+"
-                    generated_text = policy.generate(prompt, max_new_tokens=self.config.max_new_tokens_env)
+                    # Generate environment task output with no gradient computation
+                    with torch.no_grad():
+                        prompt = f"A: {fen}+{uci}+"
+                        generated_text = policy.generate(prompt, max_new_tokens=self.config.max_new_tokens_env)
                     
                     generation_time = time.time() - start_time
                     results['generation_times'].append(generation_time)
@@ -367,9 +369,10 @@ class ChessEvaluator:
             category = pos_data['category']
             
             try:
-                # Generate move for tactical position
-                prompt = f"P: {fen}    M:"
-                generated_text = policy.generate(prompt, max_new_tokens=50)
+                # Generate move for tactical position with no gradient computation
+                with torch.no_grad():
+                    prompt = f"P: {fen}    M:"
+                    generated_text = policy.generate(prompt, max_new_tokens=50)
                 
                 # Parse generated moves
                 parsed = self.policy_reward_computer.parse_policy_output(generated_text)

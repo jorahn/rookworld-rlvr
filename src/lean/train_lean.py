@@ -79,6 +79,8 @@ def setup_models_and_tokenizer():
     tokenizer = GPT2Tokenizer.from_pretrained("jrahn/RookWorld-LM-124M")
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    # Set padding side to left for decoder-only models
+    tokenizer.padding_side = "left"
     
     logger.info(f"Tokenizer loaded - vocab size: {len(tokenizer)}")
     

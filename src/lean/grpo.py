@@ -255,12 +255,20 @@ class LeanGRPOTrainer:
                 logits, _ = self.ref_model(input_ids)
                 logprobs = F.log_softmax(logits, dim=-1)
                 
-                # Extract logprobs for completion tokens only
-                completion_logprobs = logprobs[0, prompt_len:, :]
-                completion_tokens = input_ids[0, prompt_len+1:]  # Shift for next-token prediction
+                # Calculate number of completion tokens
+                num_completion_tokens = input_ids.shape[1] - prompt_len
                 
-                if len(completion_tokens) > 0:
-                    token_logprobs = torch.gather(completion_logprobs[:-1], 0, completion_tokens.unsqueeze(-1)).squeeze(-1)
+                if num_completion_tokens > 0:
+                    # Extract logprobs for positions that predict completion tokens
+                    # logprobs[0, i] predicts token at position i+1
+                    # To score tokens starting at prompt_len, we need logprobs from prompt_len-1
+                    completion_logprobs = logprobs[0, prompt_len-1:prompt_len-1+num_completion_tokens, :]
+                    
+                    # Get the actual completion tokens
+                    completion_tokens = input_ids[0, prompt_len:prompt_len+num_completion_tokens]
+                    
+                    # Gather logprobs for the actual tokens (dim=1 for vocabulary dimension)
+                    token_logprobs = torch.gather(completion_logprobs, 1, completion_tokens.unsqueeze(-1)).squeeze(-1)
                     mean_logprob = token_logprobs.mean()
                 else:
                     mean_logprob = torch.tensor(0.0, device=device)
@@ -287,12 +295,20 @@ class LeanGRPOTrainer:
             logits, _ = self.model(input_ids)
             logprobs = F.log_softmax(logits, dim=-1)
             
-            # Extract logprobs for completion tokens only
-            completion_logprobs = logprobs[0, prompt_len:, :]
-            completion_tokens = input_ids[0, prompt_len+1:]  # Shift for next-token prediction
+            # Calculate number of completion tokens
+            num_completion_tokens = input_ids.shape[1] - prompt_len
             
-            if len(completion_tokens) > 0:
-                token_logprobs = torch.gather(completion_logprobs[:-1], 0, completion_tokens.unsqueeze(-1)).squeeze(-1)
+            if num_completion_tokens > 0:
+                # Extract logprobs for positions that predict completion tokens
+                # logprobs[0, i] predicts token at position i+1
+                # To score tokens starting at prompt_len, we need logprobs from prompt_len-1
+                completion_logprobs = logprobs[0, prompt_len-1:prompt_len-1+num_completion_tokens, :]
+                
+                # Get the actual completion tokens
+                completion_tokens = input_ids[0, prompt_len:prompt_len+num_completion_tokens]
+                
+                # Gather logprobs for the actual tokens (dim=1 for vocabulary dimension)
+                token_logprobs = torch.gather(completion_logprobs, 1, completion_tokens.unsqueeze(-1)).squeeze(-1)
                 mean_logprob = token_logprobs.mean()
             else:
                 mean_logprob = torch.tensor(0.0, device="cuda:0")
@@ -336,28 +352,101 @@ class LeanGRPOTrainer:
     
     def _extract_fen_from_prompt(self, prompt: str) -> str:
         """Extract FEN from P: task prompt"""
-        # Simple extraction - assumes FEN follows P:
         if "P:" in prompt:
-            parts = prompt.split("P:")
+            parts = prompt.split("P:", 1)
             if len(parts) > 1:
-                fen_part = parts[1].strip().split()[0] if parts[1].strip() else ""
-                return fen_part
-        return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"  # Starting position fallback
+                remainder = parts[1].strip()
+                
+                # Remove M: suffix if present
+                if " M:" in remainder:
+                    remainder = remainder.split(" M:")[0].strip()
+                
+                # FEN format: 8 parts separated by / for board, then castling, en passant, etc.
+                # Full FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+                tokens = remainder.split()
+                
+                if tokens and "/" in tokens[0]:
+                    # Build full FEN from available parts
+                    fen_parts = []
+                    for i, token in enumerate(tokens):
+                        fen_parts.append(token)
+                        # A complete FEN has the board (with /), side to move, castling, en passant, halfmove, fullmove
+                        if i >= 5:  # We have at least 6 parts
+                            break
+                    
+                    # Ensure we have a valid FEN with at least board and side to move
+                    if len(fen_parts) >= 2:
+                        # Pad missing parts with defaults
+                        while len(fen_parts) < 6:
+                            if len(fen_parts) == 2:
+                                fen_parts.append("KQkq")  # Castling rights
+                            elif len(fen_parts) == 3:
+                                fen_parts.append("-")  # En passant
+                            elif len(fen_parts) == 4:
+                                fen_parts.append("0")  # Halfmove clock
+                            elif len(fen_parts) == 5:
+                                fen_parts.append("1")  # Fullmove number
+                        
+                        return " ".join(fen_parts)
+                    elif len(fen_parts) == 1:
+                        # Just board position, add defaults
+                        return f"{fen_parts[0]} w KQkq - 0 1"
+        
+        # Fallback to starting position
+        return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     
     def _extract_fen_move_from_prompt(self, prompt: str) -> Tuple[str, str]:
         """Extract FEN and move from A: task prompt"""
-        # Simple extraction - assumes format A: FEN+move+
         if "A:" in prompt:
-            parts = prompt.split("A:")
+            parts = prompt.split("A:", 1)
             if len(parts) > 1:
                 remainder = parts[1].strip()
+                
+                # Handle + delimited format: A: FEN+move+
                 if "+" in remainder:
-                    fen_move = remainder.split("+")[0]
-                    # Split FEN and move (last part is move)
-                    fen_parts = fen_move.split()
-                    if len(fen_parts) >= 6:
-                        move_uci = fen_parts[-1] if len(fen_parts) > 6 else "e2e4"
-                        fen = " ".join(fen_parts[:-1]) if len(fen_parts) > 6 else fen_move
-                        return fen, move_uci
+                    components = remainder.split("+")
+                    if len(components) >= 2:
+                        fen_str = components[0].strip()
+                        move_str = components[1].strip()
+                        
+                        # Parse FEN (might be space-separated within the first component)
+                        fen_tokens = fen_str.split()
+                        if fen_tokens and "/" in fen_tokens[0]:
+                            # Build complete FEN
+                            fen_parts = []
+                            for token in fen_tokens[:6]:  # Max 6 parts for FEN
+                                fen_parts.append(token)
+                            
+                            # Pad with defaults if incomplete
+                            while len(fen_parts) < 6:
+                                if len(fen_parts) == 1:
+                                    fen_parts.append("w")
+                                elif len(fen_parts) == 2:
+                                    fen_parts.append("KQkq")
+                                elif len(fen_parts) == 3:
+                                    fen_parts.append("-")
+                                elif len(fen_parts) == 4:
+                                    fen_parts.append("0")
+                                elif len(fen_parts) == 5:
+                                    fen_parts.append("1")
+                            
+                            fen = " ".join(fen_parts)
+                            
+                            # Clean up move (remove any trailing +)
+                            move = move_str.rstrip("+").strip()
+                            
+                            # Validate move format (should be like e2e4 or e7e8q)
+                            if len(move) >= 4:
+                                return fen, move
+                
+                # Handle space-separated format
+                else:
+                    tokens = remainder.split()
+                    if len(tokens) >= 7 and "/" in tokens[0]:
+                        # Standard FEN format with move at the end
+                        fen = " ".join(tokens[:6])
+                        move = tokens[6] if len(tokens) > 6 else "e2e4"
+                        return fen, move
         
-        return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e2e4"  # Fallbacks
+        # Fallback to starting position and common opening move
+        return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e2e4"

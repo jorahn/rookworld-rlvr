@@ -60,45 +60,101 @@ class LeanRookWorldDataset:
             completion: The expected completion (for validation)
         """
         
+        # Clean up text
+        text = text.strip()
+        
         # Look for task prefixes
         if "P:" in text:
             task_type = "P"
             # Split on the P: to get prompt and completion parts
-            if "P:" in text:
-                parts = text.split("P:", 1)
-                if len(parts) == 2:
-                    prefix = parts[0].strip()
-                    remainder = "P:" + parts[1]
+            parts = text.split("P:", 1)
+            if len(parts) == 2:
+                remainder = "P:" + parts[1].strip()
+                
+                # Find where the completion starts (after M:)
+                if "M:" in remainder:
+                    prompt_part = remainder.split("M:", 1)[0].strip()
+                    # Include "M:" in the prompt to make it complete
+                    prompt_part = prompt_part + " M:"
+                    completion_part = "M:" + remainder.split("M:", 1)[1].strip()
                     
-                    # Find where the completion starts (after M:)
-                    if "M:" in remainder:
-                        prompt_part = remainder.split("M:", 1)[0].strip()
-                        completion_part = remainder[len(prompt_part):].strip()
-                        
-                        logger.debug(f"P: task - prompt: {prompt_part[:50]}..., "
-                                   f"completion: {completion_part[:50]}...")
-                        
-                        return task_type, prompt_part, completion_part
+                    logger.debug(f"P: task - prompt: {prompt_part[:50]}..., "
+                               f"completion: {completion_part[:50]}...")
+                    
+                    return task_type, prompt_part, completion_part
+                else:
+                    # No M: found, treat P: <FEN> as prompt, expect completion
+                    prompt_part = remainder.strip()
+                    return task_type, prompt_part, ""
         
         elif "A:" in text:
             task_type = "A"
             # Split on A: to get prompt and completion
-            if "A:" in text:
-                parts = text.split("A:", 1)
-                if len(parts) == 2:
-                    prefix = parts[0].strip()
-                    remainder = "A:" + parts[1]
-                    
-                    # For A: tasks, the completion is everything after A:
-                    prompt_part = remainder.split()[0] + " " + remainder.split()[1]  # "A: <FEN>+<UCI>+"
-                    completion_part = " ".join(remainder.split()[2:])  # The rest
-                    
-                    logger.debug(f"A: task - prompt: {prompt_part[:50]}..., "
-                               f"completion: {completion_part[:50]}...")
-                    
-                    return task_type, prompt_part, completion_part
+            parts = text.split("A:", 1)
+            if len(parts) == 2:
+                remainder = "A:" + parts[1].strip()
+                
+                # For A: tasks, look for the + delimiter pattern
+                # Format: A: <FEN>+<UCI>+<result>
+                if "+" in remainder:
+                    # Split by + to separate components
+                    components = remainder.split("+")
+                    if len(components) >= 3:
+                        # A: FEN+UCI+ is the prompt, rest is completion
+                        prompt_part = components[0] + "+" + components[1] + "+"
+                        completion_part = "+".join(components[2:])
+                    elif len(components) == 2:
+                        # A: FEN+UCI format (no result yet)
+                        prompt_part = remainder
+                        completion_part = ""
+                    else:
+                        # Malformed, but try to handle
+                        prompt_part = remainder
+                        completion_part = ""
+                else:
+                    # Space-separated format (older style)
+                    tokens = remainder.split()
+                    if len(tokens) >= 2:
+                        # Try to identify FEN (has / chars) and move
+                        fen_end = 1
+                        for i, token in enumerate(tokens[1:], 1):
+                            if "/" not in token and i > 6:  # FEN typically has 6+ parts
+                                break
+                            fen_end = i + 1
+                        prompt_part = " ".join(tokens[:min(fen_end+1, len(tokens))])
+                        completion_part = " ".join(tokens[min(fen_end+1, len(tokens)):]) if fen_end+1 < len(tokens) else ""
+                    else:
+                        prompt_part = remainder
+                        completion_part = ""
+                
+                logger.debug(f"A: task - prompt: {prompt_part[:50]}..., "
+                           f"completion: {completion_part[:50]}...")
+                
+                return task_type, prompt_part, completion_part
         
-        # Fallback - treat as raw text
+        # Check for direct FEN+move pattern without prefix (common in dataset)
+        elif "+" in text and "/" in text:
+            # Likely an environment task without A: prefix
+            components = text.split("+")
+            if len(components) >= 2 and "/" in components[0]:
+                # Treat as A: task
+                task_type = "A"
+                if len(components) >= 3:
+                    prompt_part = "A: " + components[0] + "+" + components[1] + "+"
+                    completion_part = "+".join(components[2:])
+                else:
+                    prompt_part = "A: " + text
+                    completion_part = ""
+                
+                logger.debug(f"Inferred A: task - prompt: {prompt_part[:50]}...")
+                return task_type, prompt_part, completion_part
+        
+        # Fallback - treat as raw text (could be policy without P: prefix)
+        if "/" in text and any(piece in text for piece in ["K", "Q", "R", "B", "N", "k", "q", "r", "b", "n"]):
+            # Looks like chess content, treat as P: task
+            logger.debug(f"Inferred P: task from chess-like content")
+            return "P", "P: " + text[:100], ""
+        
         logger.warning(f"Could not parse task from text: {text[:100]}...")
         return "unknown", text[:50], text[50:]
     

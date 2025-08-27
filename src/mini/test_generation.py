@@ -139,6 +139,10 @@ def generate_completions(
             # Clean up completion (remove excess whitespace, etc)
             completion = completion.strip()
             
+            # Remove <|endoftext|> token if present
+            if '<|endoftext|>' in completion:
+                completion = completion.replace('<|endoftext|>', '').strip()
+            
             # For A: tasks, ensure we don't include the prompt in completion
             if task_type == "A" and completion.startswith("A:"):
                 completion = completion[2:].strip()

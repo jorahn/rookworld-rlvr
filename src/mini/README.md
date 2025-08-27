@@ -166,16 +166,18 @@ uv run python src/mini/validation.py
 4. **Generation Length**: Must generate 144+ tokens for complete output schemas
 5. **Left Padding**: GPT-2 style left-padding with corrected position embeddings
 6. **Weight Loading**: Correct transposition of HF linear weights to PyTorch format
+7. **<|endoftext|> Token Removal**: Clean generated completions by removing end-of-text tokens before scoring
 
 ## Performance Results
 
 With RookWorld-LM-124M (124,439,808 parameters):
 - **Generation Speed**: ~0.2-0.3 seconds per sample on CUDA
-- **P: Tasks**: 93.2% format validity, generates correct M:E:B: structure
-- **A: Tasks**: Generates correct FEN+reward+terminated+truncated format
+- **P: Tasks**: 93.2% format validity, generates correct M:E:B: structure, mean reward: 0.166
+- **A: Tasks**: **100% format validity and scoring** with <|endoftext|> token removal fix, mean reward: 1.000
 - **Mixed Batch Processing**: **100% format validity** with position embedding fix
 - **Batch Size**: Supports batches up to 16 samples efficiently
 - **Memory Usage**: ~500MB GPU memory for model + generation
+- **Overall Performance**: 95% format validity across all tasks, mean reward: 0.383 ± 0.381
 
 ## Key Improvements Over Previous Implementations
 

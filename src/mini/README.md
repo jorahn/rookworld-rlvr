@@ -1,6 +1,6 @@
-# Mini Implementation - Data Preparation and Verification
+# Mini Implementation - Self-Contained GRPO Training
 
-Clean implementation of dataset processing and validation for RookWorld GRPO training.
+Minimal, self-sufficient implementation of GRPO (Group Relative Policy Optimization) for fine-tuning RookWorld-LM on chess tasks. Pure PyTorch, no external dependencies.
 
 ## Key Learnings Applied
 
@@ -188,10 +188,55 @@ With RookWorld-LM-124M (124,439,808 parameters):
 5. **Comprehensive Tests**: 100% test coverage of critical functions
 6. **Pure PyTorch**: No dependency on transformers library for inference
 
-## Next Steps
+## GRPO Training Components
 
-When ready to train:
-1. Use `get_batch_by_type()` to get homogeneous batches
-2. Apply validation to compute weighted rewards
-3. Process P: and A: tasks separately in training loop
-4. Monitor weighted scores to track model improvement
+### `grpo.py` - Core GRPO Algorithm
+- Policy gradient loss with advantages
+- KL divergence regularization
+- Reference model management (frozen copy)
+- PPO-style clipped objectives
+
+### `train.py` - Training Loop
+- Data collection with K samples per prompt
+- Group-relative advantage computation
+- Gradient updates with KL penalty
+- Evaluation and logging
+- Simple command-line interface
+
+### `config.py` - Configuration
+- Hyperparameters as dataclass
+- Default values tuned for RookWorld
+- Easy override via command line
+
+## Training Usage
+
+```bash
+# Basic training with defaults
+uv run python src/mini/train.py
+
+# Custom hyperparameters
+uv run python src/mini/train.py --steps 1000 --k_samples 4 --lr 1e-5
+
+# Quick test run
+uv run python src/mini/train.py --steps 10 --batch_size 2
+
+# Test GRPO implementation
+uv run python src/mini/test_grpo.py
+```
+
+## GRPO Algorithm Details
+
+1. **Initialization**: Load pretrained RookWorld-LM, create frozen reference copy
+2. **Data Collection**: Generate K completions per prompt using current policy
+3. **Reward Scoring**: Score completions using graduated rewards (0.2 → 1.0)
+4. **Advantage Computation**: Subtract group mean as baseline (variance reduction)
+5. **Policy Update**: Maximize advantage-weighted log probs with KL penalty
+6. **Evaluation**: Track format validity and mean rewards
+
+### Hyperparameters
+- `k_samples`: 4 (completions per prompt)
+- `learning_rate`: 1e-5
+- `kl_coef`: 0.02 (KL penalty strength)
+- `clip_range`: 0.2 (PPO clipping)
+- `batch_size`: 8
+- `max_steps`: 1000

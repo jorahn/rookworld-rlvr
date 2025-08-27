@@ -45,6 +45,13 @@ class LeanRookWorldDataset:
         for idx in indices:
             sample = dataset_split[idx]
             text = sample.get('text', str(sample))
+            
+            # CRITICAL: Preprocess the text
+            # If it doesn't start with "P: ", it's an A: task and needs the prefix
+            if not text.startswith("P: "):
+                text = "A: " + text
+                logger.debug(f"Added 'A: ' prefix to sample {idx}")
+            
             samples.append(text)
         
         logger.debug(f"Retrieved {len(samples)} samples from {split}")
@@ -68,116 +75,151 @@ class LeanRookWorldDataset:
         text = text.strip()
         
         # Look for task prefixes
-        if "P:" in text:
+        if text.startswith("P: ") or text.startswith("P:"):
             task_type = "P"
             # Split on the P: to get prompt and completion parts
-            parts = text.split("P:", 1)
-            if len(parts) == 2:
-                remainder = "P:" + parts[1].strip()
-                
-                # Find where the completion starts (after FEN)
-                if "M:" in remainder:
-                    # Extract FEN part only for the prompt
-                    fen_part = remainder.split("M:", 1)[0].strip()
-                    prompt_part = fen_part  # Just "P: [FEN]"
-                    completion_part = "M:" + remainder.split("M:", 1)[1].strip()
-                    
-                    logger.debug(f"P: task - prompt: {prompt_part[:50]}..., "
-                               f"completion: {completion_part[:50]}...")
-                    
-                    return task_type, prompt_part, completion_part
+            if text.startswith("P: "):
+                remainder = text  # Already has proper format
+            else:
+                parts = text.split("P:", 1)
+                if len(parts) == 2:
+                    remainder = "P: " + parts[1].strip()  # Add space after P:
                 else:
-                    # No M: found, treat P: <FEN> as prompt, expect M: E: B: completion
-                    prompt_part = remainder.strip()
-                    return task_type, prompt_part, ""
-        
-        elif "A:" in text:
-            task_type = "A"
-            # Split on A: to get prompt and completion
-            parts = text.split("A:", 1)
-            if len(parts) == 2:
-                remainder = "A:" + parts[1].strip()
+                    remainder = text  # Fallback to original text
+            
+            # Find where the completion starts (after FEN)
+            if "M:" in remainder:
+                # Extract FEN part only for the prompt
+                fen_part = remainder.split("M:", 1)[0].strip()
+                prompt_part = fen_part  # Just "P: [FEN]"
+                completion_part = "M:" + remainder.split("M:", 1)[1].strip()
                 
-                # For A: tasks, look for the + delimiter pattern
-                # NEW FORMAT: A: [FEN]+[move in UCI]+[comma separated move history]+
-                if "+" in remainder:
-                    # Split by + to separate components
-                    components = remainder.split("+")
-                    if len(components) >= 4:
-                        # A: FEN+UCI+history+ is the prompt, rest is completion
-                        # Note: move history should be before the final result
-                        prompt_part = components[0] + "+" + components[1] + "+" + components[2] + "+"
-                        completion_part = "+".join(components[3:])
-                    elif len(components) == 3:
-                        # A: FEN+UCI+history format (no result yet)
-                        prompt_part = remainder + "+"  # Add final + for consistency
-                        completion_part = ""
-                    elif len(components) == 2:
-                        # Old format: A: FEN+UCI (assume no history)
-                        prompt_part = remainder + "+,"  # Add empty history with comma
-                        completion_part = ""
-                    else:
-                        # Malformed, but try to handle
-                        prompt_part = remainder
-                        completion_part = ""
-                else:
-                    # Space-separated format (older style) - convert to new format
-                    tokens = remainder.split()
-                    if len(tokens) >= 2:
-                        # Try to identify FEN (has / chars) and move
-                        fen_end = 1
-                        for i, token in enumerate(tokens[1:], 1):
-                            if "/" not in token and i > 6:  # FEN typically has 6+ parts
-                                break
-                            fen_end = i + 1
-                        
-                        if fen_end + 1 < len(tokens):
-                            fen_part = " ".join(tokens[:fen_end])
-                            move_part = tokens[fen_end]
-                            # No history available in old format
-                            prompt_part = f"A: {fen_part}+{move_part}+,"  # Empty history
-                            completion_part = " ".join(tokens[fen_end+1:]) if fen_end+1 < len(tokens) else ""
-                        else:
-                            prompt_part = remainder
-                            completion_part = ""
-                    else:
-                        prompt_part = remainder
-                        completion_part = ""
-                
-                logger.debug(f"A: task - prompt: {prompt_part[:50]}..., "
+                logger.debug(f"P: task - prompt: {prompt_part[:50]}..., "
                            f"completion: {completion_part[:50]}...")
                 
                 return task_type, prompt_part, completion_part
+            else:
+                # No M: found, treat P: <FEN> as prompt, expect M: E: B: completion
+                prompt_part = remainder.strip()
+                return task_type, prompt_part, ""
         
-        # Check for direct FEN+move pattern without prefix (common in dataset)
-        elif "+" in text and "/" in text:
-            # Likely an environment task without A: prefix
-            components = text.split("+")
-            if len(components) >= 2 and "/" in components[0]:
-                # Treat as A: task and convert to new format
-                task_type = "A"
-                if len(components) >= 3:
-                    # Assume: FEN+move+result format, convert to FEN+move+history+result
-                    fen_part = components[0]
-                    move_part = components[1]
-                    # No history available, use empty
-                    prompt_part = f"A: {fen_part}+{move_part}+,"
-                    completion_part = "+".join(components[2:])
+        elif text.startswith("A: ") or text.startswith("A:"):
+            task_type = "A"
+            # Handle A: tasks with proper spacing
+            if text.startswith("A: "):
+                remainder = text  # Already has proper format
+            else:
+                parts = text.split("A:", 1)
+                if len(parts) == 2:
+                    remainder = "A: " + parts[1].strip()  # Add space after A:
                 else:
-                    prompt_part = f"A: {components[0]}+{components[1]}+,"
-                    completion_part = ""
+                    remainder = text  # Fallback
+            
+            # For A: tasks, look for the + delimiter pattern
+            # CORRECT FORMAT per spec:
+            # Prompt: "A: [FEN]+[move in UCI]+[comma separated move history]+"
+            # Completion: "[new FEN]+[reward]+[terminated]+[truncated]"
+            if "+" in remainder:
+                # Split by + to separate components
+                components = remainder.split("+")
                 
-                logger.debug(f"Inferred A: task - prompt: {prompt_part[:50]}...")
-                return task_type, prompt_part, completion_part
+                # Dataset format for A: tasks (with prefix):
+                # A: FEN+move+history+new_FEN+reward+terminated+truncated
+                # First 3 components = prompt, rest = completion
+                
+                if len(components) >= 7:
+                    # Full format with all components
+                    # Prompt: A: FEN+move+history+
+                    prompt_part = components[0] + "+" + components[1] + "+" + components[2] + "+"
+                    # Completion: new_FEN+reward+terminated+truncated
+                    completion_part = "+".join(components[3:])
+                elif len(components) >= 3:
+                    # Might have partial data, assume first 3 are prompt parts
+                    prompt_part = components[0] + "+" + components[1] + "+" + components[2] + "+"
+                    completion_part = "+".join(components[3:]) if len(components) > 3 else ""
+                elif len(components) == 2:
+                    # Old format: FEN+move only (no history)
+                    prompt_part = components[0] + "+" + components[1] + "+,"  # Add empty history
+                    completion_part = ""
+                else:
+                    # Malformed, but try to handle
+                    prompt_part = remainder
+                    completion_part = ""
+            else:
+                # Space-separated format (older style) - convert to new format
+                tokens = remainder.split()
+                if len(tokens) >= 2:
+                    # Try to identify FEN (has / chars) and move
+                    fen_end = 1
+                    for i, token in enumerate(tokens[1:], 1):
+                        if "/" not in token and i > 6:  # FEN typically has 6+ parts
+                            break
+                        fen_end = i + 1
+                    
+                    if fen_end + 1 < len(tokens):
+                        fen_part = " ".join(tokens[:fen_end])
+                        move_part = tokens[fen_end]
+                        # No history available in old format
+                        prompt_part = f"A: {fen_part}+{move_part}+,"  # Empty history
+                        completion_part = " ".join(tokens[fen_end+1:]) if fen_end+1 < len(tokens) else ""
+                    else:
+                        prompt_part = remainder
+                        completion_part = ""
+                else:
+                    prompt_part = remainder
+                    completion_part = ""
+            
+            logger.debug(f"A: task - prompt: {prompt_part[:50]}..., "
+                       f"completion: {completion_part[:50]}...")
+            
+            return task_type, prompt_part, completion_part
         
-        # Fallback - treat as raw text (could be policy without P: prefix)
-        if "/" in text and any(piece in text for piece in ["K", "Q", "R", "B", "N", "k", "q", "r", "b", "n"]):
-            # Looks like chess content, treat as P: task
-            logger.debug(f"Inferred P: task from chess-like content")
-            return "P", "P: " + text[:100], ""
-        
-        logger.warning(f"Could not parse task from text: {text[:100]}...")
-        return "unknown", text[:50], text[50:]
+        # Check for texts that don't start with P: or A: - these should be A: tasks
+        else:
+            # Per user instruction: if text doesn't start with P: or A:, it's an A: task
+            task_type = "A"
+            # Add A: prefix
+            remainder = "A: " + text
+            
+            # Now parse as A: task
+            # For A: tasks, look for the + delimiter pattern
+            # CORRECT FORMAT per spec:
+            # Prompt: "A: [FEN]+[move in UCI]+[comma separated move history]+"
+            # Completion: "[new FEN]+[reward]+[terminated]+[truncated]"
+            if "+" in remainder:
+                # Split by + to separate components
+                components = remainder.split("+")
+                
+                # Original dataset format (without prefix):
+                # FEN+move+history+new_FEN+reward+terminated+truncated
+                # After adding "A: ": A: FEN+move+history+new_FEN+reward+terminated+truncated
+                # First 3 components = prompt, rest = completion
+                
+                if len(components) >= 7:
+                    # Full format with all components
+                    # Prompt: A: FEN+move+history+
+                    prompt_part = components[0] + "+" + components[1] + "+" + components[2] + "+"
+                    # Completion: new_FEN+reward+terminated+truncated
+                    completion_part = "+".join(components[3:])
+                elif len(components) >= 3:
+                    # Might have partial data, assume first 3 are prompt parts
+                    prompt_part = components[0] + "+" + components[1] + "+" + components[2] + "+"
+                    completion_part = "+".join(components[3:]) if len(components) > 3 else ""
+                elif len(components) == 2:
+                    # Old format: FEN+move only (no history)
+                    prompt_part = components[0] + "+" + components[1] + "+,"  # Add empty history
+                    completion_part = ""
+                else:
+                    # Malformed, but try to handle
+                    prompt_part = remainder
+                    completion_part = ""
+            else:
+                # No + delimiter, might be a different format
+                prompt_part = remainder
+                completion_part = ""
+            
+            logger.debug(f"Inferred A: task (no prefix) - prompt: {prompt_part[:50]}...")
+            return task_type, prompt_part, completion_part
     
     def get_training_batch(self, batch_size: int) -> List[Tuple[str, str, str]]:
         """Get a batch of parsed training samples"""

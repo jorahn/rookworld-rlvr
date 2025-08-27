@@ -60,48 +60,96 @@ class LeanGRPOTrainer:
         task_types: List[str],
         validator
     ) -> GRPOBatch:
-        """Collect rollouts for a batch of prompts"""
+        """Collect rollouts for a batch of prompts - process P: and A: tasks separately to avoid padding issues"""
         
         logger.info(f"Collecting rollouts for {len(prompts)} prompts")
         start_time = time.time()
         
-        completions = []
-        rewards = []
-        logprobs = []
-        ref_logprobs = []
+        # Separate P: and A: tasks to avoid extreme padding differences
+        p_indices = [i for i, t in enumerate(task_types) if t == "P"]
+        a_indices = [i for i, t in enumerate(task_types) if t == "A"]
         
-        # Process prompts in groups
-        for i in range(0, len(prompts), self.group_size):
-            group_prompts = prompts[i:i+self.group_size]
-            group_tasks = task_types[i:i+self.group_size]
-            
-            logger.debug(f"Processing group {i//self.group_size + 1}: {len(group_prompts)} prompts")
-            
-            # Generate completions with training model (cuda:0)
-            group_completions, group_logprobs = self._generate_group(group_prompts, self.model, device="cuda:0")
-            
-            # Get reference logprobs with frozen model (cuda:1)  
-            group_ref_logprobs = self._compute_ref_logprobs(group_prompts, group_completions, device="cuda:1")
-            
-            # Compute rewards using validator
-            group_rewards = self._compute_rewards(group_prompts, group_completions, group_tasks, validator)
-            
-            # Apply group-relative baseline (core of GRPO)
-            baseline = torch.mean(group_rewards)
-            group_advantages = group_rewards - baseline
-            
-            logger.debug(f"Group rewards - mean: {baseline:.3f}, std: {torch.std(group_rewards):.3f}")
-            logger.debug(f"Group advantages - mean: {torch.mean(group_advantages):.3f}")
-            
-            completions.extend(group_completions)
-            rewards.append(group_advantages)  # Use advantages, not raw rewards
-            logprobs.append(group_logprobs)
-            ref_logprobs.append(group_ref_logprobs)
+        logger.info(f"Task distribution - P: {len(p_indices)}, A: {len(a_indices)}")
         
-        # Combine all groups
-        all_rewards = torch.cat(rewards)
-        all_logprobs = torch.cat(logprobs)
-        all_ref_logprobs = torch.cat(ref_logprobs)
+        completions = [""] * len(prompts)
+        rewards_list = [0.0] * len(prompts)
+        logprobs_list = [0.0] * len(prompts)
+        ref_logprobs_list = [0.0] * len(prompts)
+        
+        # Process P: tasks
+        if p_indices:
+            logger.debug(f"Processing {len(p_indices)} P: tasks")
+            p_prompts = [prompts[i] for i in p_indices]
+            p_tasks = ["P"] * len(p_indices)
+            
+            for j in range(0, len(p_prompts), self.group_size):
+                group_prompts = p_prompts[j:j+self.group_size]
+                group_tasks = p_tasks[j:j+self.group_size]
+                group_indices = p_indices[j:j+self.group_size]
+                
+                logger.debug(f"P: group {j//self.group_size + 1}: {len(group_prompts)} prompts")
+                
+                # Generate completions with training model (cuda:0)
+                group_completions, group_logprobs = self._generate_group(group_prompts, self.model, device="cuda:0")
+                
+                # Get reference logprobs with frozen model (cuda:1)  
+                group_ref_logprobs = self._compute_ref_logprobs(group_prompts, group_completions, device="cuda:1")
+                
+                # Compute rewards using validator
+                group_rewards = self._compute_rewards(group_prompts, group_completions, group_tasks, validator)
+                
+                # Apply group-relative baseline (core of GRPO)
+                baseline = torch.mean(group_rewards)
+                group_advantages = group_rewards - baseline
+                
+                logger.debug(f"P: group rewards - mean: {baseline:.3f}, std: {torch.std(group_rewards):.3f}")
+                
+                # Store at original indices
+                for k, idx in enumerate(group_indices):
+                    completions[idx] = group_completions[k]
+                    rewards_list[idx] = group_advantages[k].item()
+                    logprobs_list[idx] = group_logprobs[k].item()
+                    ref_logprobs_list[idx] = group_ref_logprobs[k].item()
+        
+        # Process A: tasks
+        if a_indices:
+            logger.debug(f"Processing {len(a_indices)} A: tasks")
+            a_prompts = [prompts[i] for i in a_indices]
+            a_tasks = ["A"] * len(a_indices)
+            
+            for j in range(0, len(a_prompts), self.group_size):
+                group_prompts = a_prompts[j:j+self.group_size]
+                group_tasks = a_tasks[j:j+self.group_size]
+                group_indices = a_indices[j:j+self.group_size]
+                
+                logger.debug(f"A: group {j//self.group_size + 1}: {len(group_prompts)} prompts")
+                
+                # Generate completions with training model (cuda:0)
+                group_completions, group_logprobs = self._generate_group(group_prompts, self.model, device="cuda:0")
+                
+                # Get reference logprobs with frozen model (cuda:1)  
+                group_ref_logprobs = self._compute_ref_logprobs(group_prompts, group_completions, device="cuda:1")
+                
+                # Compute rewards using validator
+                group_rewards = self._compute_rewards(group_prompts, group_completions, group_tasks, validator)
+                
+                # Apply group-relative baseline (core of GRPO)
+                baseline = torch.mean(group_rewards)
+                group_advantages = group_rewards - baseline
+                
+                logger.debug(f"A: group rewards - mean: {baseline:.3f}, std: {torch.std(group_rewards):.3f}")
+                
+                # Store at original indices
+                for k, idx in enumerate(group_indices):
+                    completions[idx] = group_completions[k]
+                    rewards_list[idx] = group_advantages[k].item()
+                    logprobs_list[idx] = group_logprobs[k].item()
+                    ref_logprobs_list[idx] = group_ref_logprobs[k].item()
+        
+        # Convert lists to tensors
+        all_rewards = torch.tensor(rewards_list, dtype=torch.float32)
+        all_logprobs = torch.tensor(logprobs_list, dtype=torch.float32)
+        all_ref_logprobs = torch.tensor(ref_logprobs_list, dtype=torch.float32)
         
         collection_time = time.time() - start_time
         logger.info(f"Rollout collection completed in {collection_time:.2f}s")
@@ -200,20 +248,33 @@ class LeanGRPOTrainer:
         attention_mask = inputs["attention_mask"].to(device)
         
         logger.debug(f"Input shape: {input_ids.shape}, device: {input_ids.device}")
+        logger.debug(f"First prompt tokens: {input_ids[0, :20].tolist()}")
         
         with torch.no_grad():
             # Generate completions (~144 tokens as requested)
+            # Lower temperature for more coherent generation
+            # Pass attention_mask to model's generate_tokens method
             generated = model.generate_tokens(
                 input_ids,
                 max_new_tokens=144,
-                temperature=0.8,
-                do_sample=True
+                temperature=0.7,
+                do_sample=True,
+                attention_mask=attention_mask
             )
             
             logger.debug(f"Generated shape: {generated.shape}")
+            logger.debug(f"First generated tokens: {generated[0, :20].tolist()}")
         
-        # Decode completions
+        # Decode completions directly - model.generate_tokens returns ONLY new tokens
         completions = self.tokenizer.batch_decode(generated, skip_special_tokens=True)
+        
+        # Log the generated completions for debugging
+        for i, completion in enumerate(completions[:2]):  # Log first 2
+            logger.debug(f"Completion {i}: {completion[:100]}...")
+            
+            # Also log the prompt for comparison
+            prompt_text = self.tokenizer.decode(input_ids[i], skip_special_tokens=True)
+            logger.debug(f"Original prompt {i}: {prompt_text[:100]}...")
         
         # Compute logprobs for generated tokens
         with torch.no_grad():
@@ -221,10 +282,12 @@ class LeanGRPOTrainer:
             logits, _ = model(full_input)
             
             # Get logprobs for generated tokens only
-            gen_logits = logits[:, input_ids.shape[1]:, :]
+            # The logits at position i predict token i+1
+            # So logits[:, input_ids.shape[1]-1:, :] predicts generated tokens
+            gen_logits = logits[:, input_ids.shape[1]-1:-1, :]  # Skip last logit (no target for it)
             gen_logprobs = F.log_softmax(gen_logits, dim=-1)
             
-            # Extract token logprobs
+            # Extract token logprobs for the generated tokens
             token_logprobs = torch.gather(gen_logprobs, 2, generated.unsqueeze(-1)).squeeze(-1)
             
             # Mean logprob per sequence
@@ -235,39 +298,49 @@ class LeanGRPOTrainer:
         return completions, mean_logprobs.detach().cpu()
     
     def _compute_ref_logprobs(self, prompts: List[str], completions: List[str], device: str) -> torch.Tensor:
-        """Compute reference logprobs with frozen model"""
+        """Compute reference logprobs with frozen model - BATCHED for performance"""
         
-        logger.debug(f"Computing reference logprobs on {device}")
+        logger.debug(f"Computing reference logprobs on {device} (batched)")
         
-        ref_logprobs = []
+        # Prepare all sequences for batched processing
+        full_texts = [prompt + completion for prompt, completion in zip(prompts, completions)]
         
-        for prompt, completion in zip(prompts, completions):
-            # Tokenize full sequence
-            full_text = prompt + completion
-            inputs = self.tokenizer(full_text, return_tensors="pt", truncation=True)
-            input_ids = inputs["input_ids"].to(device)
+        # Tokenize all sequences at once with padding
+        full_inputs = self.tokenizer(
+            full_texts, 
+            return_tensors="pt", 
+            padding=True, 
+            truncation=True
+        )
+        full_input_ids = full_inputs["input_ids"].to(device)
+        full_attention_mask = full_inputs["attention_mask"].to(device)
+        
+        # Tokenize prompts to get their lengths
+        prompt_inputs = self.tokenizer(
+            prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True
+        )
+        prompt_lengths = prompt_inputs["attention_mask"].sum(dim=1).tolist()
+        
+        with torch.no_grad():
+            # Single forward pass for all sequences
+            logits, _ = self.ref_model(full_input_ids, attention_mask=full_attention_mask)
+            logprobs = F.log_softmax(logits, dim=-1)
             
-            # Get prompt length
-            prompt_inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True)
-            prompt_len = prompt_inputs["input_ids"].shape[1]
-            
-            with torch.no_grad():
-                logits, _ = self.ref_model(input_ids)
-                logprobs = F.log_softmax(logits, dim=-1)
-                
-                # Calculate number of completion tokens
-                num_completion_tokens = input_ids.shape[1] - prompt_len
+            # Extract logprobs for each sequence
+            ref_logprobs = []
+            for i, prompt_len in enumerate(prompt_lengths):
+                seq_len = full_attention_mask[i].sum().item()
+                num_completion_tokens = seq_len - prompt_len
                 
                 if num_completion_tokens > 0:
-                    # Extract logprobs for positions that predict completion tokens
-                    # logprobs[0, i] predicts token at position i+1
-                    # To score tokens starting at prompt_len, we need logprobs from prompt_len-1
-                    completion_logprobs = logprobs[0, prompt_len-1:prompt_len-1+num_completion_tokens, :]
+                    # Extract logprobs for this sequence's completion
+                    completion_logprobs = logprobs[i, prompt_len-1:prompt_len-1+num_completion_tokens, :]
+                    completion_tokens = full_input_ids[i, prompt_len:prompt_len+num_completion_tokens]
                     
-                    # Get the actual completion tokens
-                    completion_tokens = input_ids[0, prompt_len:prompt_len+num_completion_tokens]
-                    
-                    # Gather logprobs for the actual tokens (dim=1 for vocabulary dimension)
+                    # Gather logprobs for actual tokens
                     token_logprobs = torch.gather(completion_logprobs, 1, completion_tokens.unsqueeze(-1)).squeeze(-1)
                     mean_logprob = token_logprobs.mean()
                 else:
@@ -278,36 +351,46 @@ class LeanGRPOTrainer:
         return torch.stack(ref_logprobs)
     
     def _compute_current_logprobs(self, prompts: List[str], completions: List[str]) -> torch.Tensor:
-        """Compute current model logprobs"""
+        """Compute current model logprobs - BATCHED for performance"""
         
+        # Prepare all sequences for batched processing
+        full_texts = [prompt + completion for prompt, completion in zip(prompts, completions)]
+        
+        # Tokenize all sequences at once with padding
+        full_inputs = self.tokenizer(
+            full_texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True
+        )
+        full_input_ids = full_inputs["input_ids"].to("cuda:0")
+        full_attention_mask = full_inputs["attention_mask"].to("cuda:0")
+        
+        # Tokenize prompts to get their lengths
+        prompt_inputs = self.tokenizer(
+            prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True
+        )
+        prompt_lengths = prompt_inputs["attention_mask"].sum(dim=1).tolist()
+        
+        # Single forward pass for all sequences
+        logits, _ = self.model(full_input_ids, attention_mask=full_attention_mask)
+        logprobs = F.log_softmax(logits, dim=-1)
+        
+        # Extract logprobs for each sequence
         current_logprobs = []
-        
-        for prompt, completion in zip(prompts, completions):
-            # Tokenize full sequence
-            full_text = prompt + completion
-            inputs = self.tokenizer(full_text, return_tensors="pt", truncation=True)
-            input_ids = inputs["input_ids"].to("cuda:0")
-            
-            # Get prompt length
-            prompt_inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True)
-            prompt_len = prompt_inputs["input_ids"].shape[1]
-            
-            logits, _ = self.model(input_ids)
-            logprobs = F.log_softmax(logits, dim=-1)
-            
-            # Calculate number of completion tokens
-            num_completion_tokens = input_ids.shape[1] - prompt_len
+        for i, prompt_len in enumerate(prompt_lengths):
+            seq_len = full_attention_mask[i].sum().item()
+            num_completion_tokens = seq_len - prompt_len
             
             if num_completion_tokens > 0:
-                # Extract logprobs for positions that predict completion tokens
-                # logprobs[0, i] predicts token at position i+1
-                # To score tokens starting at prompt_len, we need logprobs from prompt_len-1
-                completion_logprobs = logprobs[0, prompt_len-1:prompt_len-1+num_completion_tokens, :]
+                # Extract logprobs for this sequence's completion
+                completion_logprobs = logprobs[i, prompt_len-1:prompt_len-1+num_completion_tokens, :]
+                completion_tokens = full_input_ids[i, prompt_len:prompt_len+num_completion_tokens]
                 
-                # Get the actual completion tokens
-                completion_tokens = input_ids[0, prompt_len:prompt_len+num_completion_tokens]
-                
-                # Gather logprobs for the actual tokens (dim=1 for vocabulary dimension)
+                # Gather logprobs for actual tokens
                 token_logprobs = torch.gather(completion_logprobs, 1, completion_tokens.unsqueeze(-1)).squeeze(-1)
                 mean_logprob = token_logprobs.mean()
             else:
@@ -339,6 +422,10 @@ class LeanGRPOTrainer:
                 fen = self._extract_fen_from_prompt(prompt)
                 validation_result = validator.validate_policy_completion(fen, completion)
                 
+                # Log detailed validation results for debugging
+                logger.debug(f"P: validation result: {validation_result}")
+                logger.debug(f"P: completion preview: {completion[:100]}...")
+                
                 # Weighted reward prioritizing best move accuracy (#1 key metric)
                 reward = (
                     validation_result.get("best_move", 0.0) * 4.0 +      # #1 priority
@@ -352,6 +439,10 @@ class LeanGRPOTrainer:
                 fen, move_uci, history = self._extract_fen_move_history_from_prompt(prompt)
                 validation_result = validator.validate_environment_completion(fen, move_uci, history, completion)
                 
+                # Log detailed validation results for debugging
+                logger.debug(f"A: validation result: {validation_result}")
+                logger.debug(f"A: completion preview: {completion[:100]}...")
+                
                 # Weighted reward prioritizing format and FEN match
                 reward = (
                     validation_result.get("format", 0.0) * 4.0 +      # #1 priority
@@ -362,10 +453,11 @@ class LeanGRPOTrainer:
                 
             else:
                 # Unknown task type
+                logger.warning(f"Unknown task type: {task_type}")
                 reward = 0.0
             
             rewards.append(reward)
-            logger.debug(f"Task {task_type} reward: {reward:.3f}")
+            logger.info(f"Task {task_type} reward: {reward:.3f}, components: {validation_result if task_type != 'unknown' else {}}")
         
         return torch.tensor(rewards, dtype=torch.float32)
     

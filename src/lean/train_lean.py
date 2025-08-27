@@ -192,15 +192,19 @@ def evaluate_on_test_set(model, dataset, validator, tokenizer, num_samples=100):
                 p_task_rewards.append(reward)
                 
             elif task_type == "A":
-                # Extract FEN and move
-                if "A:" in prompt and "+" in prompt:
-                    parts = prompt.split("A:")[1].split("+")
-                    fen = parts[0].strip() if parts else ""
+                # Extract FEN, move, and history from A: prompt
+                # Format: "A: [FEN]+[move]+[history]+"
+                if "+" in prompt:
+                    # Remove "A: " prefix if present
+                    clean_prompt = prompt[3:] if prompt.startswith("A: ") else prompt
+                    parts = clean_prompt.split("+")
+                    fen = parts[0].strip() if len(parts) > 0 else ""
                     move = parts[1].strip() if len(parts) > 1 else ""
+                    history = parts[2].strip() if len(parts) > 2 else ""
                 else:
-                    fen, move = "", ""
+                    fen, move, history = "", "", ""
                     
-                validation = validator.validate_environment_completion(fen, move, completion)
+                validation = validator.validate_environment_completion(fen, move, history, completion)
                 reward = sum(validation.values())
                 a_task_rewards.append(reward)
             else:

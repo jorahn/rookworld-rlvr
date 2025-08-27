@@ -92,9 +92,10 @@ def test_validator():
         
         # Test A: task validation  
         test_move = "e2e4"
-        test_env_completion = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        test_history = ""  # Empty history for initial moves
+        test_env_completion = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1+0.001+false+false"
         
-        env_rewards = validator.validate_environment_completion(test_fen, test_move, test_env_completion)
+        env_rewards = validator.validate_environment_completion(test_fen, test_move, test_history, test_env_completion)
         print(f"✓ A: task validation - rewards: {env_rewards}")
         
         return True

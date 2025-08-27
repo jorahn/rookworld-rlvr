@@ -82,11 +82,24 @@ class LeanRookWorldModel(nn.Module):
         input_ids: torch.Tensor, 
         max_new_tokens: int = 144,
         temperature: float = 1.0,
-        do_sample: bool = True
+        do_sample: bool = True,
+        attention_mask: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
         """Generate tokens for completions"""
         
         logger.debug(f"Generating {max_new_tokens} tokens with temp={temperature}")
+        
+        # Use provided attention mask or create ones
+        if attention_mask is None:
+            attention_mask = torch.ones_like(input_ids)
+            logger.warning("No attention mask provided, using all ones")
+        
+        # Log padding info
+        batch_size = input_ids.shape[0]
+        for i in range(min(2, batch_size)):  # Log first 2 sequences
+            pad_count = (input_ids[i] == self.config.eos_token_id).sum().item()
+            if pad_count > 0:
+                logger.debug(f"Seq {i}: {pad_count} padding tokens, attention sum: {attention_mask[i].sum().item()}")
         
         with torch.no_grad():
             outputs = self.model.generate(
@@ -95,7 +108,8 @@ class LeanRookWorldModel(nn.Module):
                 temperature=temperature,
                 do_sample=do_sample,
                 pad_token_id=self.config.eos_token_id,
-                attention_mask=torch.ones_like(input_ids)
+                attention_mask=attention_mask,
+                eos_token_id=self.config.eos_token_id  # Explicitly set EOS token
             )
         
         # Extract only the newly generated tokens

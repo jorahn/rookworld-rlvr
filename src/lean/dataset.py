@@ -54,9 +54,13 @@ class LeanRookWorldDataset:
         """
         Parse a sample into task type, prompt, and expected completion
         
+        New format requirements:
+        - P: tasks: prompt="P: [FEN]" → completion="M: [top-5-moves in UCI] E: [centipawn eval after top-5-moves] B: [best-move in UCI]"
+        - A: tasks: prompt="A: [FEN]+[move in UCI]+[comma separated move history]+" → completion="[new FEN]+[reward]+[terminated]+[truncated]"
+        
         Returns:
             task_type: "P" or "A" 
-            prompt: The input prompt up to the task prefix
+            prompt: The input prompt according to new spec
             completion: The expected completion (for validation)
         """
         
@@ -71,11 +75,11 @@ class LeanRookWorldDataset:
             if len(parts) == 2:
                 remainder = "P:" + parts[1].strip()
                 
-                # Find where the completion starts (after M:)
+                # Find where the completion starts (after FEN)
                 if "M:" in remainder:
-                    prompt_part = remainder.split("M:", 1)[0].strip()
-                    # Include "M:" in the prompt to make it complete
-                    prompt_part = prompt_part + " M:"
+                    # Extract FEN part only for the prompt
+                    fen_part = remainder.split("M:", 1)[0].strip()
+                    prompt_part = fen_part  # Just "P: [FEN]"
                     completion_part = "M:" + remainder.split("M:", 1)[1].strip()
                     
                     logger.debug(f"P: task - prompt: {prompt_part[:50]}..., "
@@ -83,7 +87,7 @@ class LeanRookWorldDataset:
                     
                     return task_type, prompt_part, completion_part
                 else:
-                    # No M: found, treat P: <FEN> as prompt, expect completion
+                    # No M: found, treat P: <FEN> as prompt, expect M: E: B: completion
                     prompt_part = remainder.strip()
                     return task_type, prompt_part, ""
         
@@ -95,24 +99,29 @@ class LeanRookWorldDataset:
                 remainder = "A:" + parts[1].strip()
                 
                 # For A: tasks, look for the + delimiter pattern
-                # Format: A: <FEN>+<UCI>+<result>
+                # NEW FORMAT: A: [FEN]+[move in UCI]+[comma separated move history]+
                 if "+" in remainder:
                     # Split by + to separate components
                     components = remainder.split("+")
-                    if len(components) >= 3:
-                        # A: FEN+UCI+ is the prompt, rest is completion
-                        prompt_part = components[0] + "+" + components[1] + "+"
-                        completion_part = "+".join(components[2:])
+                    if len(components) >= 4:
+                        # A: FEN+UCI+history+ is the prompt, rest is completion
+                        # Note: move history should be before the final result
+                        prompt_part = components[0] + "+" + components[1] + "+" + components[2] + "+"
+                        completion_part = "+".join(components[3:])
+                    elif len(components) == 3:
+                        # A: FEN+UCI+history format (no result yet)
+                        prompt_part = remainder + "+"  # Add final + for consistency
+                        completion_part = ""
                     elif len(components) == 2:
-                        # A: FEN+UCI format (no result yet)
-                        prompt_part = remainder
+                        # Old format: A: FEN+UCI (assume no history)
+                        prompt_part = remainder + "+,"  # Add empty history with comma
                         completion_part = ""
                     else:
                         # Malformed, but try to handle
                         prompt_part = remainder
                         completion_part = ""
                 else:
-                    # Space-separated format (older style)
+                    # Space-separated format (older style) - convert to new format
                     tokens = remainder.split()
                     if len(tokens) >= 2:
                         # Try to identify FEN (has / chars) and move
@@ -121,8 +130,16 @@ class LeanRookWorldDataset:
                             if "/" not in token and i > 6:  # FEN typically has 6+ parts
                                 break
                             fen_end = i + 1
-                        prompt_part = " ".join(tokens[:min(fen_end+1, len(tokens))])
-                        completion_part = " ".join(tokens[min(fen_end+1, len(tokens)):]) if fen_end+1 < len(tokens) else ""
+                        
+                        if fen_end + 1 < len(tokens):
+                            fen_part = " ".join(tokens[:fen_end])
+                            move_part = tokens[fen_end]
+                            # No history available in old format
+                            prompt_part = f"A: {fen_part}+{move_part}+,"  # Empty history
+                            completion_part = " ".join(tokens[fen_end+1:]) if fen_end+1 < len(tokens) else ""
+                        else:
+                            prompt_part = remainder
+                            completion_part = ""
                     else:
                         prompt_part = remainder
                         completion_part = ""
@@ -137,13 +154,17 @@ class LeanRookWorldDataset:
             # Likely an environment task without A: prefix
             components = text.split("+")
             if len(components) >= 2 and "/" in components[0]:
-                # Treat as A: task
+                # Treat as A: task and convert to new format
                 task_type = "A"
                 if len(components) >= 3:
-                    prompt_part = "A: " + components[0] + "+" + components[1] + "+"
+                    # Assume: FEN+move+result format, convert to FEN+move+history+result
+                    fen_part = components[0]
+                    move_part = components[1]
+                    # No history available, use empty
+                    prompt_part = f"A: {fen_part}+{move_part}+,"
                     completion_part = "+".join(components[2:])
                 else:
-                    prompt_part = "A: " + text
+                    prompt_part = f"A: {components[0]}+{components[1]}+,"
                     completion_part = ""
                 
                 logger.debug(f"Inferred A: task - prompt: {prompt_part[:50]}...")

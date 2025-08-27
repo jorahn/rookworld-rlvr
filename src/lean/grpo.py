@@ -324,7 +324,12 @@ class LeanGRPOTrainer:
         task_types: List[str],
         validator
     ) -> torch.Tensor:
-        """Compute rewards using the validator"""
+        """
+        Compute rewards using the validator with new priority weighting
+        
+        P: tasks priority: best_move (4.0) > format (2.0) > move_candidates (1.5) > evaluations (1.0)
+        A: tasks priority: format (4.0) > fen_match (3.0) > game_state (2.0) > reward_value (1.0)
+        """
         
         rewards = []
         
@@ -333,13 +338,27 @@ class LeanGRPOTrainer:
                 # Extract FEN from prompt
                 fen = self._extract_fen_from_prompt(prompt)
                 validation_result = validator.validate_policy_completion(fen, completion)
-                reward = sum(validation_result.values())
+                
+                # Weighted reward prioritizing best move accuracy (#1 key metric)
+                reward = (
+                    validation_result.get("best_move", 0.0) * 4.0 +      # #1 priority
+                    validation_result.get("format", 0.0) * 2.0 +         # #2 priority  
+                    validation_result.get("move_candidates", 0.0) * 1.5 + # #3 priority
+                    validation_result.get("evaluations", 0.0) * 1.0      # #4 priority
+                ) / 8.5  # Normalize to 0-1 range
                 
             elif task_type == "A": 
-                # Extract FEN and move from prompt
-                fen, move_uci = self._extract_fen_move_from_prompt(prompt)
-                validation_result = validator.validate_environment_completion(fen, move_uci, completion)
-                reward = sum(validation_result.values())
+                # Extract FEN, move, and history from prompt
+                fen, move_uci, history = self._extract_fen_move_history_from_prompt(prompt)
+                validation_result = validator.validate_environment_completion(fen, move_uci, history, completion)
+                
+                # Weighted reward prioritizing format and FEN match
+                reward = (
+                    validation_result.get("format", 0.0) * 4.0 +      # #1 priority
+                    validation_result.get("fen_match", 0.0) * 3.0 +   # #2 priority
+                    validation_result.get("game_state", 0.0) * 2.0 +  # #3 priority
+                    validation_result.get("reward_value", 0.0) * 1.0  # #4 priority
+                ) / 10.0  # Normalize to 0-1 range
                 
             else:
                 # Unknown task type
@@ -450,3 +469,54 @@ class LeanGRPOTrainer:
         
         # Fallback to starting position and common opening move
         return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e2e4"
+    
+    def _extract_fen_move_history_from_prompt(self, prompt: str) -> Tuple[str, str, str]:
+        """Extract FEN, move, and history from A: task prompt (new format)"""
+        if "A:" in prompt:
+            parts = prompt.split("A:", 1)
+            if len(parts) > 1:
+                remainder = parts[1].strip()
+                
+                # Handle new + delimited format: A: FEN+move+history+
+                if "+" in remainder:
+                    components = remainder.split("+")
+                    if len(components) >= 3:
+                        fen_str = components[0].strip()
+                        move_str = components[1].strip()
+                        history_str = components[2].strip()
+                        
+                        # Parse FEN (might be space-separated within the first component)
+                        fen_tokens = fen_str.split()
+                        if fen_tokens and "/" in fen_tokens[0]:
+                            # Build complete FEN
+                            fen_parts = []
+                            for token in fen_tokens[:6]:  # Max 6 parts for FEN
+                                fen_parts.append(token)
+                            
+                            # Pad with defaults if incomplete
+                            while len(fen_parts) < 6:
+                                if len(fen_parts) == 1:
+                                    fen_parts.append("w")
+                                elif len(fen_parts) == 2:
+                                    fen_parts.append("KQkq")
+                                elif len(fen_parts) == 3:
+                                    fen_parts.append("-")
+                                elif len(fen_parts) == 4:
+                                    fen_parts.append("0")
+                                elif len(fen_parts) == 5:
+                                    fen_parts.append("1")
+                            
+                            fen = " ".join(fen_parts)
+                            
+                            # Clean up move (remove any trailing +)
+                            move = move_str.rstrip("+").strip()
+                            
+                            # History is comma-separated moves (up to 10 previous moves)
+                            history = history_str
+                            
+                            # Validate move format (should be like e2e4 or e7e8q)
+                            if len(move) >= 4:
+                                return fen, move, history
+        
+        # Fallback to starting position, common opening move, and empty history
+        return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e2e4", ""

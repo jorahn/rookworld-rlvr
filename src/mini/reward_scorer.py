@@ -9,6 +9,7 @@ import logging
 from typing import Tuple, Dict, List, Optional
 import numpy as np
 from dataclasses import dataclass
+import math
 
 from dataset import parse_p_task, parse_a_task
 from validation import (
@@ -57,17 +58,20 @@ class RewardScorer:
         reward_shaping: str = "graduated",
         min_reward: float = -0.3,
         max_reward: float = 1.0,
-        format_bonus: float = 0.1
+        format_bonus: float = 0.1,
+        continuous_components: Optional[Dict[str, str]] = None
     ):
         """
         Initialize reward scorer.
         
         Args:
             stockfish_path: Path to Stockfish for P: task validation
-            reward_shaping: Type of shaping ("graduated", "linear", "binary")
+            reward_shaping: Type of shaping ("graduated", "linear", "binary", "continuous")
             min_reward: Minimum reward (for invalid completions)
             max_reward: Maximum reward (for perfect completions)
             format_bonus: Bonus for correct format even with wrong content
+            continuous_components: Dict of component names to scaling functions
+                                 e.g. {"fen_similarity": "exponential", "evaluations": "linear"}
         """
         self.stockfish_path = stockfish_path
         self.reward_shaping = reward_shaping
@@ -75,8 +79,15 @@ class RewardScorer:
         self.max_reward = max_reward
         self.format_bonus = format_bonus
         
+        # Default continuous components with scaling functions
+        self.continuous_components = continuous_components or {
+            "fen_similarity": "exponential",  # More reward for near-perfect matches
+            "evaluations": "linear",  # Direct proportional to accuracy
+        }
+        
         logger.info(f"RewardScorer initialized - shaping: {reward_shaping}, "
-                   f"range: [{min_reward}, {max_reward}]")
+                   f"range: [{min_reward}, {max_reward}], "
+                   f"continuous: {list(self.continuous_components.keys())}")
     
     def score_single(
         self,
@@ -215,11 +226,18 @@ class RewardScorer:
                 field_scores['candidates'] = candidates_score
                 weighted_scores['candidates'] = candidates_score * P_WEIGHTS['candidates']
             
-            # Evaluations
+            # Evaluations - uses continuous scoring
             if 'evals' in format_details:
                 evals_score = validate_p_evaluations(fen, format_details['evals'], self.stockfish_path)
                 field_scores['evaluations'] = evals_score
-                weighted_scores['evaluations'] = evals_score * P_WEIGHTS['evaluations']
+                
+                # Apply continuous scaling for evaluation accuracy
+                if "evaluations" in self.continuous_components:
+                    scaling = self.continuous_components["evaluations"]
+                    scaled_score = self._apply_scaling(evals_score, scaling)
+                    weighted_scores['evaluations'] = scaled_score * P_WEIGHTS['evaluations']
+                else:
+                    weighted_scores['evaluations'] = evals_score * P_WEIGHTS['evaluations']
         
         # Add format score
         field_scores['format'] = format_score
@@ -229,8 +247,12 @@ class RewardScorer:
         total_weight = sum(P_WEIGHTS.values())
         total_weighted = sum(weighted_scores.values()) / total_weight
         
-        # Apply reward shaping
-        shaped_reward = self._shape_reward(total_weighted, format_valid)
+        # Apply reward shaping - use continuous if evaluation accuracy is a major component
+        if "evaluations" in self.continuous_components and 'evaluations' in weighted_scores:
+            # For P: tasks with continuous evaluation scoring, use weighted score directly
+            shaped_reward = self._shape_reward(total_weighted, format_valid, component_name="mixed_continuous")
+        else:
+            shaped_reward = self._shape_reward(total_weighted, format_valid)
         
         details = RewardDetails(
             task_type="P",
@@ -274,7 +296,7 @@ class RewardScorer:
         if format_valid:
             # Content validation
             
-            # FEN match (edit distance)
+            # FEN match (edit distance) - uses continuous scoring
             if 'new_fen' in format_details:
                 # Calculate expected FEN
                 import chess
@@ -291,7 +313,14 @@ class RewardScorer:
                 
                 fen_score = validate_a_fen(expected_fen, format_details['new_fen'])
                 field_scores['fen_match'] = fen_score
-                weighted_scores['fen_match'] = fen_score * A_WEIGHTS['fen_match']
+                
+                # Apply continuous scaling for FEN similarity
+                if "fen_similarity" in self.continuous_components:
+                    scaling = self.continuous_components["fen_similarity"]
+                    scaled_score = self._apply_scaling(fen_score, scaling)
+                    weighted_scores['fen_match'] = scaled_score * A_WEIGHTS['fen_match']
+                else:
+                    weighted_scores['fen_match'] = fen_score * A_WEIGHTS['fen_match']
             
             # Game state flags
             if 'terminated' in format_details and 'truncated' in format_details:
@@ -315,8 +344,12 @@ class RewardScorer:
         total_weight = sum(A_WEIGHTS.values())
         total_weighted = sum(weighted_scores.values()) / total_weight
         
-        # Apply reward shaping
-        shaped_reward = self._shape_reward(total_weighted, format_valid)
+        # Apply reward shaping - use continuous if FEN similarity is a major component
+        if "fen_similarity" in self.continuous_components and 'fen_match' in weighted_scores:
+            # For A: tasks with continuous FEN scoring, use weighted score directly
+            shaped_reward = self._shape_reward(total_weighted, format_valid, component_name="mixed_continuous")
+        else:
+            shaped_reward = self._shape_reward(total_weighted, format_valid)
         
         details = RewardDetails(
             task_type="A",
@@ -331,18 +364,63 @@ class RewardScorer:
         
         return shaped_reward, details
     
-    def _shape_reward(self, raw_reward: float, format_valid: bool) -> float:
+    def _apply_scaling(self, value: float, scaling: str) -> float:
+        """
+        Apply a scaling function to a continuous value.
+        
+        Args:
+            value: Input value (0 to 1)
+            scaling: Type of scaling ("linear", "exponential", "sigmoid")
+            
+        Returns:
+            Scaled value (0 to 1)
+        """
+        if scaling == "exponential":
+            # Exponential scaling: rewards near-perfect matches more
+            # f(x) = (e^(k*x) - 1) / (e^k - 1) where k=3
+            k = 3.0
+            return (math.exp(k * value) - 1) / (math.exp(k) - 1)
+            
+        elif scaling == "sigmoid":
+            # Sigmoid scaling: S-curve with steeper middle
+            # f(x) = 1 / (1 + e^(-k*(x-0.5))) where k=10
+            k = 10.0
+            return 1.0 / (1.0 + math.exp(-k * (value - 0.5)))
+            
+        elif scaling == "quadratic":
+            # Quadratic scaling: x^2, rewards high values more
+            return value ** 2
+            
+        else:  # "linear" or default
+            return value
+    
+    def _shape_reward(self, raw_reward: float, format_valid: bool, component_name: Optional[str] = None) -> float:
         """
         Apply reward shaping to raw scores.
         
         Args:
             raw_reward: Raw weighted reward (0 to 1)
             format_valid: Whether format was valid
+            component_name: Optional component name for continuous scaling
             
         Returns:
             Shaped reward value
         """
-        if self.reward_shaping == "graduated":
+        # Check if this component should use continuous rewards
+        if component_name == "mixed_continuous":
+            # For mixed continuous, use linear scaling directly
+            shaped = self.min_reward + (self.max_reward - self.min_reward) * raw_reward
+        elif component_name and component_name in self.continuous_components:
+            scaling = self.continuous_components[component_name]
+            scaled = self._apply_scaling(raw_reward, scaling)
+            # Map to reward range
+            shaped = self.min_reward + (self.max_reward - self.min_reward) * scaled
+            
+        elif self.reward_shaping == "continuous":
+            # Global continuous mode - linear by default
+            shaped = self.min_reward + (self.max_reward - self.min_reward) * raw_reward
+            
+        elif self.reward_shaping == "graduated":
             # Graduated rewards: 0.2, 0.4, 0.6, 0.8, 1.0
             if raw_reward < 0.2:
                 shaped = self.min_reward if not format_valid else 0.2
@@ -435,6 +513,7 @@ def compute_grpo_rewards(
     stockfish_path: Optional[str] = None,
     group_size: int = 8,
     reward_shaping: str = "graduated",
+    continuous_components: Optional[Dict[str, str]] = None,
     verbose: bool = False
 ) -> Tuple[np.ndarray, List[RewardDetails]]:
     """
@@ -446,6 +525,7 @@ def compute_grpo_rewards(
         stockfish_path: Path to Stockfish for validation
         group_size: Group size for advantage calculation
         reward_shaping: Type of reward shaping
+        continuous_components: Components to use continuous rewards for
         verbose: Whether to log details for each sample
         
     Returns:
@@ -453,7 +533,8 @@ def compute_grpo_rewards(
     """
     scorer = RewardScorer(
         stockfish_path=stockfish_path,
-        reward_shaping=reward_shaping
+        reward_shaping=reward_shaping,
+        continuous_components=continuous_components
     )
     
     if verbose:

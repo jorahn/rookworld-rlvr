@@ -105,6 +105,7 @@ def collect_rollouts(
         all_completions,
         group_size=config.k_samples,
         reward_shaping=config.reward_shaping,
+        continuous_components=config.continuous_components,
         verbose=False
     )
     

@@ -5,7 +5,7 @@ Simple dataclass with essential hyperparameters only.
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict
 
 
 @dataclass
@@ -54,7 +54,8 @@ class GRPOConfig:
     n_train_samples: int = 100
     n_eval_samples: int = 20
     data_seed: int = 42
-    reward_shaping: str = "graduated"  # graduated, linear, or binary
+    reward_shaping: str = "graduated"  # graduated, linear, binary, or continuous
+    continuous_components: Optional[Dict[str, str]] = None  # Components to use continuous rewards
     
     # Logging
     log_freq: int = 1  # Log every N steps
@@ -70,8 +71,15 @@ class GRPOConfig:
         assert 0 < self.clip_range < 1, "clip_range must be in (0, 1)"
         assert self.kl_coef >= 0, "kl_coef must be non-negative"
         assert self.max_new_tokens >= 144, "Need at least 144 tokens for schemas"
-        assert self.reward_shaping in ["graduated", "linear", "binary"]
+        assert self.reward_shaping in ["graduated", "linear", "binary", "continuous"]
         assert self.baseline_type in ["group_mean", "ema", "learned", "adaptive"]
         assert self.kl_type in ["forward", "reverse", "symmetric"]
         assert 0 < self.ema_alpha < 1, "ema_alpha must be in (0, 1)"
         assert 0 <= self.gae_lambda <= 1, "gae_lambda must be in [0, 1]"
+        
+        # Set default continuous components if not specified
+        if self.continuous_components is None:
+            self.continuous_components = {
+                "fen_similarity": "exponential",  # Rewards near-perfect FEN matches
+                "evaluations": "linear",  # Direct proportional to accuracy
+            }

@@ -1,20 +1,20 @@
 #!/bin/bash
 
-# RookWorld GRPO Training Script with Optimized Parameters
+# Mini Implementation GRPO Training Script
 # 
-# This script contains the best hyperparameters discovered through comprehensive
-# training stability improvements and hyperparameter search.
+# This script runs the mini implementation (mainline) with optimized parameters
+# for stable GRPO training on the RookWorld dataset.
 #
-# Key improvements implemented:
-# - KL warmup to prevent early training divergence
-# - Graduated reward system with partial credit
-# - Device placement fixes for multi-GPU setup
-# - Reward normalization and smoothing
-# - Higher KL divergence thresholds for tolerance
+# Key features:
+# - Uses ground truth scoring for meaningful rewards
+# - Fixed memory leaks for stable VRAM usage (~4.8GB)
+# - Enhanced GRPO with adaptive KL control
+# - Detailed logging and periodic evaluation
+# - Trains on dataset samples (not synthetic generation)
 
 set -e  # Exit on any error
 
-echo "🚀 Starting RookWorld GRPO Training with Optimized Parameters"
+echo "🚀 Starting Mini Implementation GRPO Training"
 echo "============================================================"
 
 # Check if uv is available
@@ -24,88 +24,68 @@ if ! command -v uv &> /dev/null; then
     exit 1
 fi
 
-# Training configuration
-STEPS=${STEPS:-1000}
-LR=${LR:-5e-6}
-KL_COEF=${KL_COEF:-0.001}
-CLIP_RANGE=${CLIP_RANGE:-0.1}
-TEMPERATURE=${TEMPERATURE:-0.5}
-BATCH_POSITIONS=${BATCH_POSITIONS:-2}
-GROUP_SIZE=${GROUP_SIZE:-4}
-MIX_ENV_RATIO=${MIX_ENV_RATIO:-0.2}  # Enable environment tasks for testing
-MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-144}  # Required for complete policy analysis
-MAX_NEW_TOKENS_ENV=${MAX_NEW_TOKENS_ENV:-150}  # Required for complete environment response
-
-# Improved stability parameters
-KL_DIVERGENCE_THRESHOLD=${KL_DIVERGENCE_THRESHOLD:-50.0}
-KL_WARMUP_STEPS=${KL_WARMUP_STEPS:-500}
-KL_WARMUP_FACTOR=${KL_WARMUP_FACTOR:-0.0}
-REWARD_WARMUP_STEPS=${REWARD_WARMUP_STEPS:-100}
-
-# Additional options
-USE_DATASET=${USE_DATASET:-true}
-NEW_RUN=${NEW_RUN:-true}
-USE_TORCH_COMPILE=${USE_TORCH_COMPILE:-false}
+# Training configuration - parameters supported by mini implementation
+STEPS=${STEPS:-10000}
+BATCH_SIZE=${BATCH_SIZE:-8}
+K_SAMPLES=${K_SAMPLES:-8}  # Group size for GRPO
+LR=${LR:-1e-5}
+KL_COEF=${KL_COEF:-0.02}
+EVAL_FREQ=${EVAL_FREQ:-100}  # Evaluate every 100 steps
+SAVE_FREQ=${SAVE_FREQ:-1000}  # Save checkpoint every 1000 steps
+N_TRAIN_SAMPLES=${N_TRAIN_SAMPLES:-1000}  # Number of samples from dataset
+LOG_DIR=${LOG_DIR:-"logs"}
 
 echo "Configuration:"
 echo "  Steps: $STEPS"
-echo "  Learning Rate: $LR" 
+echo "  Batch Size: $BATCH_SIZE"
+echo "  K Samples (Group Size): $K_SAMPLES"
+echo "  Learning Rate: $LR"
 echo "  KL Coefficient: $KL_COEF"
-echo "  Clip Range: $CLIP_RANGE"
-echo "  Temperature: $TEMPERATURE"
-echo "  Batch Positions: $BATCH_POSITIONS"
-echo "  Group Size: $GROUP_SIZE"
-echo "  Mix Env Ratio: $MIX_ENV_RATIO"
-echo "  Max New Tokens: $MAX_NEW_TOKENS"
-echo "  Max New Tokens Env: $MAX_NEW_TOKENS_ENV"
-echo "  KL Divergence Threshold: $KL_DIVERGENCE_THRESHOLD"
-echo "  KL Warmup Steps: $KL_WARMUP_STEPS"
-echo "  KL Warmup Factor: $KL_WARMUP_FACTOR"
-echo "  Reward Warmup Steps: $REWARD_WARMUP_STEPS"
-echo "  Use Dataset: $USE_DATASET"
-echo "  New Run: $NEW_RUN"
-echo "  Use Torch Compile: $USE_TORCH_COMPILE"
+echo "  Evaluation Frequency: every $EVAL_FREQ steps"
+echo "  Checkpoint Frequency: every $SAVE_FREQ steps"
+echo "  Training Samples: $N_TRAIN_SAMPLES from dataset"
+echo "  Log Directory: $LOG_DIR"
+echo ""
+echo "Built-in features (src/mini/config.py):"
+echo "  - Temperature: 0.8"
+echo "  - Clip Range: 0.2"
+echo "  - Max New Tokens: 144"
+echo "  - KL Type: forward"
+echo "  - Adaptive KL: enabled (target=0.01)"
+echo "  - Baseline: group_mean"
+echo "  - GAE: enabled (lambda=0.95)"
+echo "  - Reward: graduated with ground truth scoring"
+echo "  - Continuous: FEN similarity (exponential), evaluations (linear)"
+echo "  - Memory: Fixed leaks, stable ~4.8GB VRAM"
 echo "============================================================"
 
-# Build command arguments
+# Navigate to mini implementation
+cd src/mini
+
+# Create log directory if it doesn't exist
+mkdir -p "$LOG_DIR"
+
+# Build command arguments - parameters supported by mini train_logged.py
 ARGS=(
     --steps "$STEPS"
+    --batch_size "$BATCH_SIZE"
+    --k_samples "$K_SAMPLES"
     --lr "$LR"
-    --kl-coef "$KL_COEF"
-    --clip-range "$CLIP_RANGE"
-    --temperature "$TEMPERATURE"
-    --batch-positions "$BATCH_POSITIONS"
-    --group-size "$GROUP_SIZE"
-    --mix-env-ratio "$MIX_ENV_RATIO"
-    --max-new-tokens "$MAX_NEW_TOKENS"
-    --max-new-tokens-env "$MAX_NEW_TOKENS_ENV"
-    
-    # Improved stability parameters
-    --kl-divergence-threshold "$KL_DIVERGENCE_THRESHOLD"
-    --kl-warmup-steps "$KL_WARMUP_STEPS"
-    --kl-warmup-factor "$KL_WARMUP_FACTOR"
-    --reward-warmup-steps "$REWARD_WARMUP_STEPS"
+    --kl_coef "$KL_COEF"
+    --eval_freq "$EVAL_FREQ"
+    --save_freq "$SAVE_FREQ"
+    --n_train_samples "$N_TRAIN_SAMPLES"
+    --log_dir "$LOG_DIR"
 )
 
-# Add conditional flags
-if [ "$USE_DATASET" = "true" ]; then
-    ARGS+=(--use-dataset)
-fi
-
-if [ "$NEW_RUN" = "true" ]; then
-    ARGS+=(--new-run)
-fi
-
-if [ "$USE_TORCH_COMPILE" = "false" ]; then
-    ARGS+=(--no-torch-compile)
-fi
-
 # Execute training with memory optimizations
-echo "🏃 Executing training command..."
-echo "uv run python train_rookworld_grpo.py ${ARGS[*]}"
+echo ""
+echo "🏃 Executing mini implementation training..."
+echo "Command: uv run python train_logged.py ${ARGS[*]}"
 echo "============================================================"
 
 # Set CUDA memory allocator for better memory management
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-exec uv run python train_rookworld_grpo.py "${ARGS[@]}"
+# Run the training script with detailed logging
+exec uv run python train_logged.py "${ARGS[@]}"

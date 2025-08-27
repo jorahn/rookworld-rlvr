@@ -245,6 +245,9 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--kl_coef", type=float, default=0.02)
     parser.add_argument("--log_dir", type=str, default="logs")
+    parser.add_argument("--eval_freq", type=int, default=100, help="Evaluate every N steps")
+    parser.add_argument("--save_freq", type=int, default=1000, help="Save checkpoint every N steps")
+    parser.add_argument("--n_train_samples", type=int, default=1000, help="Number of training samples to load")
     args = parser.parse_args()
     
     # Setup logging
@@ -258,10 +261,11 @@ def main():
         k_samples=args.k_samples,
         learning_rate=args.lr,
         kl_coef=args.kl_coef,
-        n_train_samples=200,  # Ensure enough samples
+        n_train_samples=args.n_train_samples,
         n_eval_samples=50,
-        log_freq=1,  # Log every step
-        eval_freq=20
+        log_freq=1,  # Log every step for detailed monitoring
+        eval_freq=args.eval_freq,
+        save_freq=args.save_freq
     )
     
     # Log configuration
@@ -441,7 +445,7 @@ def main():
         torch.cuda.empty_cache()
         
         # Save checkpoint periodically
-        if step % 50 == 0:
+        if step % config.save_freq == 0:
             checkpoint_path = f"{config.checkpoint_dir}/checkpoint_step{step}.pt"
             Path(config.checkpoint_dir).mkdir(parents=True, exist_ok=True)
             torch.save({

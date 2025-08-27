@@ -35,67 +35,52 @@ uv run python test_enhanced_grpo.py
 
 ## Executive Summary
 
-Production implementation of Group Relative Policy Optimization (GRPO) for fine-tuning RookWorld-LM (GPT-2 124M) on chess tasks. The system trains on dual tasks:
+Clean, self-contained implementation of Group Relative Policy Optimization (GRPO) for fine-tuning RookWorld-LM (GPT-2 124M) on chess tasks. The system trains on dual tasks:
 
 1. **Policy Task (P:)**: Generating structured chess analysis with moves, evaluations, and best lines
 2. **Environment Task (A:)**: Predicting board states and game outcomes after moves
 
-## Project Status ✅
+## Repository Structure
 
-### Completed Features
+This repository contains only the essential components for the mini GRPO implementation:
 
-#### **Mini Implementation (Mainline)**
-- ✅ Pure PyTorch GPT-2 (124M parameters)
-- ✅ GRPO algorithm with PPO-style clipping
-- ✅ Enhanced KL divergence (forward, reverse, symmetric)
-- ✅ Adaptive KL coefficient control
-- ✅ Advanced baseline methods (group mean, EMA, adaptive)
-- ✅ Value function and GAE support
-- ✅ Memory leak fixes (stable VRAM ~4.8GB)
-- ✅ Graduated reward system (0.2 → 1.0)
-- ✅ Mixed batch handling with position embeddings fix
-- ✅ Comprehensive testing suite
+```
+rookworld-rlvr/
+├── src/mini/              # Complete GRPO implementation (~1500 lines)
+│   ├── model.py           # Pure PyTorch GPT-2 implementation
+│   ├── loader.py          # HuggingFace weight loading
+│   ├── dataset.py         # Data loading and preprocessing
+│   ├── reward_scorer.py   # Reward computation with validation
+│   ├── validation.py      # Format and content validation
+│   ├── grpo.py           # Enhanced GRPO algorithm
+│   ├── train.py          # Training loop
+│   ├── config.py         # Configuration dataclass
+│   └── test_*.py         # Comprehensive test suite
+├── docs/
+│   ├── CRITICAL_INSIGHTS.md       # Important architectural lessons
+│   └── performance_optimizations.md # Future optimization plans
+├── README.md             # This file
+├── CLAUDE.md            # Development guidelines
+└── pyproject.toml       # Dependencies and project config
+```
 
-#### **Training Metrics (Verified with Ground Truth)**
+## Key Features ✅
+
+- **Pure PyTorch GPT-2** (124M parameters, no transformers dependency)
+- **Enhanced GRPO** with advanced KL divergence types and adaptive control
+- **Memory efficient** (stable VRAM ~4.8GB, fixed memory leaks)
+- **Graduated reward system** (0.2 → 1.0 based on quality)
+- **Mixed batch handling** with position embeddings fix
+- **Comprehensive testing** and validation suite
+- **Verified training stability** over 100+ steps
+
+## Verified Performance
+
 - **Ground truth scoring**: Uses dataset targets for meaningful rewards
-- **Reward distribution**: Proper variation (0.1-1.0) instead of constant 0.212
-- **KL divergence stable**: Adaptive control prevents explosion
-- **PPO clipping healthy**: 6-32% average across runs
-- **Memory stable**: Constant 4.8GB VRAM (fixed memory leaks)
+- **Reward distribution**: Proper variation (0.1-1.0)
+- **KL divergence**: Stable with adaptive control
+- **Memory usage**: Constant 4.8GB VRAM (fixed leaks)
 - **Format validity**: P: tasks 93%, A: tasks 100%
-
-## Technical Architecture
-
-### Mini Implementation Structure
-```
-src/mini/
-├── model.py           # Pure PyTorch GPT-2 implementation
-├── loader.py          # HuggingFace weight loading
-├── dataset.py         # Data loading and preprocessing
-├── reward_scorer.py   # Reward computation with validation
-├── validation.py      # Format and content validation
-├── grpo.py           # Enhanced GRPO algorithm
-├── train.py          # Training loop
-├── config.py         # Configuration dataclass
-└── test_*.py         # Comprehensive tests
-```
-
-### Key Innovations
-
-1. **Position Embedding Fix**: Handles left-padding correctly in mixed batches
-2. **Memory Management**: Detaches tensors, clears cache, explicit GPU cleanup
-3. **Enhanced GRPO**:
-   - Forward, reverse, and symmetric KL divergence
-   - Adaptive KL coefficient with target tracking
-   - Multiple baseline methods (group mean, EMA, adaptive)
-   - GAE and value function support
-
-4. **Graduated Rewards**:
-   - 0.2: Format valid only
-   - 0.4: Some correct fields
-   - 0.6: Most fields correct
-   - 0.8: Near perfect
-   - 1.0: Perfect execution
 
 ## Training Configuration
 

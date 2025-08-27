@@ -101,23 +101,40 @@ Extensive logging covers:
 - Training metrics (loss, KL divergence, rewards)
 - Timing information
 
-## Validation
+## Task Specifications & Validation
 
-### P: Task (Policy)
-Expected format: `M: move1 move2 ... E: eval1 eval2 ... B: best_move`
+### P: Task (Policy) - NEW SPECIFICATION
+**Purpose**: Strong policy to play the best move (measured by best move accuracy against Stockfish as #1 key metric)
 
-Validation rewards:
-- **Structure** (0.2): Correct parsing
-- **Moves** (0.3): Legal moves + Stockfish agreement bonus
-- **Best Move** (0.3): Legal + Stockfish agreement bonus
+**Format**: 
+- **Prompt**: `P: [FEN]` 
+- **Expected Completion**: `M: [top-5-moves in UCI] E: [centipawn eval after top-5-moves] B: [best-move in UCI]`
 
-### A: Task (Environment)  
-Expected format: Resulting board state after move application
+**Note**: M: and E: sections serve as Chain-of-Thought. Single-space padding is acceptable (post-training will teach proper spacing).
 
-Validation rewards:
-- **Structure** (0.2): Valid move applied
-- **Position** (0.5): Correct resulting FEN
-- **Game State** (0.3): Correct check/mate indicators
+**Validation Rewards** (decreasing priority):
+1. **Best Move Accuracy** (4.0x weight): Perfect Stockfish match (1.0), Top-3 (0.7), Top-5 (0.5), Legal (0.1)
+2. **Format Correctness** (2.0x weight): Proper M: E: B: structure parsing (ignores padding variations)
+3. **Move Candidates** (1.5x weight): Fraction of generated moves that match Stockfish top-5
+4. **Evaluation Accuracy** (1.0x weight): Regression scoring of centipawn evaluations vs Stockfish
+
+### A: Task (Environment) - NEW SPECIFICATION
+**Purpose**: Predict board states and game outcomes after moves
+
+**Format**:
+- **Prompt**: `A: [FEN]+[move in UCI]+[comma separated list of move history = up to 10 previous moves in UCI]+`
+- **Expected Completion**: `[new FEN]+[reward]+[terminated]+[truncated]`
+
+**Note**: History is comma-separated UCI moves. Split must occur AFTER history, not before.
+
+**Validation Rewards** (decreasing priority):
+1. **Format Correctness** (4.0x weight): Number of sections, + delimited structure  
+2. **FEN Match** (3.0x weight): Binary exact match (1.0) or Levenshtein distance for smoothness
+3. **Game State Flags** (2.0x weight): Binary terminated (game ended) & truncated (illegal move) accuracy
+4. **Reward Value** (1.0x weight): 1.0 for checkmate, 0.5 for draw/stalemate, 0.001 for legal continuation
+
+### Dynamic Verification
+Future implementation will add `python-chess` dynamic verification for A: tasks. Current implementation validates against dataset reference completions with chess rule verification.
 
 ## Memory Management
 

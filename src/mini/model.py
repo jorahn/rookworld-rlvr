@@ -198,16 +198,33 @@ class GPT2Model(nn.Module):
         # Token embeddings
         inputs_embeds = self.wte(input_ids)
         
-        # Position embeddings
+        # Position embeddings - FIXED for proper padding handling
         if past_key_values is None:
             past_length = 0
         else:
             past_length = past_key_values[0][0].size(2)
         
-        position_ids = torch.arange(
-            past_length, past_length + seq_len, 
-            dtype=torch.long, device=device
-        ).unsqueeze(0).expand(batch_size, -1)
+        # Critical fix: When using left-padding, positions should start from 0
+        # for the actual content, not from the padding position
+        if attention_mask is not None and past_length == 0:
+            # Create position IDs that start from 0 where real tokens begin
+            position_ids = torch.zeros((batch_size, seq_len), dtype=torch.long, device=device)
+            
+            for i in range(batch_size):
+                # Find where real tokens start (first 1 in attention mask)
+                valid_positions = (attention_mask[i] == 1).nonzero(as_tuple=True)[0]
+                if len(valid_positions) > 0:
+                    first_valid = valid_positions[0].item()
+                    num_valid = len(valid_positions)
+                    # Real tokens get positions 0, 1, 2, ...
+                    position_ids[i, first_valid:first_valid+num_valid] = torch.arange(num_valid, device=device)
+        else:
+            # Standard position IDs for generation or no padding
+            position_ids = torch.arange(
+                past_length, past_length + seq_len, 
+                dtype=torch.long, device=device
+            ).unsqueeze(0).expand(batch_size, -1)
+        
         position_embeds = self.wpe(position_ids)
         
         # Combine embeddings

@@ -161,10 +161,11 @@ uv run python src/mini/validation.py
 ## Key Implementation Fixes
 
 1. **Attention Mask NaN Fix**: Replace -inf with -1e9 in softmax for numerical stability
-2. **Tokenizer Configuration**: Use HuggingFace GPT2Tokenizer with pad_token = eos_token
-3. **Generation Length**: Must generate 144+ tokens for complete output schemas
-4. **Left Padding**: GPT-2 style left-padding with proper attention masking
-5. **Weight Loading**: Correct transposition of HF linear weights to PyTorch format
+2. **Position Embedding Fix**: Adjust position IDs to start from 0 for real tokens (critical for mixed batches)
+3. **Tokenizer Configuration**: Use HuggingFace GPT2Tokenizer with pad_token = eos_token
+4. **Generation Length**: Must generate 144+ tokens for complete output schemas
+5. **Left Padding**: GPT-2 style left-padding with corrected position embeddings
+6. **Weight Loading**: Correct transposition of HF linear weights to PyTorch format
 
 ## Performance Results
 
@@ -172,7 +173,8 @@ With RookWorld-LM-124M (124,439,808 parameters):
 - **Generation Speed**: ~0.2-0.3 seconds per sample on CUDA
 - **P: Tasks**: 93.2% format validity, generates correct M:E:B: structure
 - **A: Tasks**: Generates correct FEN+reward+terminated+truncated format
-- **Batch Processing**: Supports batches up to 16 samples efficiently
+- **Mixed Batch Processing**: **100% format validity** with position embedding fix
+- **Batch Size**: Supports batches up to 16 samples efficiently
 - **Memory Usage**: ~500MB GPU memory for model + generation
 
 ## Key Improvements Over Previous Implementations

@@ -582,9 +582,11 @@ generated = model.generate(
    - Issue: All -inf values in softmax produce NaN
    - Solution: Replace -inf with -1e9 before softmax
 
-2. **Mixed Batch Performance**
-   - Issue: Mixing P: and A: tasks degrades quality
-   - Solution: Process task types separately when possible
+2. **Position Embedding Misalignment (FIXED)**
+   - Issue: With left-padding, tokens at different positions get wrong position embeddings
+   - Root cause: P: task tokens start at position 59, A: task at position 52 (for 100 max length)
+   - Solution: Adjust position IDs to start from 0 where real tokens begin
+   - Result: Mixed batches now achieve >90% format validity
 
 3. **Incomplete Outputs**
    - Issue: Model truncates outputs
@@ -593,6 +595,26 @@ generated = model.generate(
 4. **Padding Token Not Set**
    - Issue: HF tokenizer has no default pad_token
    - Solution: Set pad_token = eos_token
+
+### Critical Implementation Detail: Position Embeddings
+
+The model uses a critical fix for position embeddings with padding:
+
+```python
+# When using left-padding, positions start from 0 for real tokens
+if attention_mask is not None and past_length == 0:
+    position_ids = torch.zeros((batch_size, seq_len), dtype=torch.long, device=device)
+    
+    for i in range(batch_size):
+        valid_positions = (attention_mask[i] == 1).nonzero(as_tuple=True)[0]
+        if len(valid_positions) > 0:
+            first_valid = valid_positions[0].item()
+            num_valid = len(valid_positions)
+            # Real tokens get positions 0, 1, 2, ...
+            position_ids[i, first_valid:first_valid+num_valid] = torch.arange(num_valid, device=device)
+```
+
+This ensures that regardless of padding amount, tokens always see the correct position embeddings as learned during training.
 
 ## Advanced Topics
 

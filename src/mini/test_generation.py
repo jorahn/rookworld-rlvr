@@ -318,7 +318,7 @@ def main():
     a_count = sum(1 for s in samples if s[0] == "A")
     print(f"   Task distribution: {p_count} P: tasks, {a_count} A: tasks")
     
-    # Process in batches for memory efficiency
+    # Process in batches - can now handle mixed batches with position fix!
     batch_size = 16
     all_prompts = []
     all_generated = []
@@ -326,13 +326,17 @@ def main():
     all_task_types = []
     
     print(f"\n4. Generating completions (batch size: {batch_size})...")
+    print("   Note: Using fixed position embeddings for proper mixed batch handling")
     start_time = time.time()
     
     for batch_start in range(0, len(samples), batch_size):
         batch_end = min(batch_start + batch_size, len(samples))
         batch_samples = samples[batch_start:batch_end]
         
-        print(f"   Processing batch {batch_start//batch_size + 1}/{(len(samples)-1)//batch_size + 1}...")
+        # Count task types in batch
+        p_count = sum(1 for s in batch_samples if s[0] == 'P')
+        a_count = sum(1 for s in batch_samples if s[0] == 'A')
+        print(f"   Processing batch {batch_start//batch_size + 1}/{(len(samples)-1)//batch_size + 1}... (P:{p_count}, A:{a_count})")
         
         # Prepare batch
         input_ids, attention_mask, prompts, ground_truths, task_types = prepare_batch_for_generation(

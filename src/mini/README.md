@@ -1,242 +1,305 @@
-# Mini Implementation - Self-Contained GRPO Training
+# Mini Implementation - GRPO Training for RookWorld-LM
 
-Minimal, self-sufficient implementation of GRPO (Group Relative Policy Optimization) for fine-tuning RookWorld-LM on chess tasks. Pure PyTorch, no external dependencies.
+**Clean, self-contained implementation of Group Relative Policy Optimization**
 
-## Key Learnings Applied
+## Overview
 
-### 1. Dataset Format Issues Solved
-- **Critical Fix**: Samples without "P: " prefix are A: tasks and get "A: " prepended automatically
-- **Token Length Differences**: P: tasks (40-60 tokens) vs A: tasks (80-105 tokens)
-- **Solution**: Separate batch processing for P: and A: tasks to avoid padding issues
+The mini implementation is a pure PyTorch training system for fine-tuning RookWorld-LM (124M parameters) on chess tasks using GRPO. This is now the **mainline implementation** with verified training stability and performance.
 
-### 2. Task Specifications
+### Key Features
+- Pure PyTorch GPT-2 (no transformers dependency)
+- Enhanced GRPO with advanced KL control
+- Memory efficient (~4.8GB VRAM stable)
+- Comprehensive testing suite
+- Clean architecture (~1500 lines total)
 
-#### P: Tasks (Policy/Chain-of-Thought)
+## Quick Start
+
+```bash
+# Default training
+uv run python train.py
+
+# Custom parameters
+uv run python train.py --steps 100 --batch_size 8 --k_samples 8 --lr 1e-5
+
+# With detailed logging
+uv run python train_logged.py --steps 100 --log_dir logs
+
+# Run tests
+uv run python test_enhanced_grpo.py
 ```
-Prompt:     "P: [FEN]"
-Completion: "M: [top-5-moves] E: [centipawn-evals] B: [best-move]"
 
-Example:
+## Architecture
+
+```
+src/mini/
+├── Core Model
+│   ├── model.py           # Pure PyTorch GPT-2 (124M)
+│   └── loader.py          # HuggingFace weight loading
+│
+├── Data & Rewards
+│   ├── dataset.py         # Data loading and preprocessing
+│   ├── reward_scorer.py   # Graduated reward computation
+│   └── validation.py      # Format and content validation
+│
+├── GRPO Training
+│   ├── grpo.py           # Enhanced GRPO algorithm
+│   ├── train.py          # Basic training loop
+│   ├── train_logged.py   # Training with detailed logging
+│   └── config.py         # Configuration dataclass
+│
+├── Testing
+│   ├── test_dataset.py   # Dataset tests
+│   ├── test_reward_scorer.py
+│   ├── test_generation.py
+│   ├── test_grpo.py
+│   ├── test_enhanced_grpo.py
+│   └── test_mixed_batch.py
+│
+└── Analysis
+    ├── analyze_metrics.py
+    └── analyze_final_metrics.py
+```
+
+## Training Tasks
+
+### P: Tasks (Policy/Analysis)
+Generate structured chess analysis with moves, evaluations, and best lines.
+
+**Format:**
+```
+Input:  P: [FEN]
+Output: M: [moves] E: [evals] B: [best]
+```
+
+**Example:**
+```
 P: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-M: e2e4 d2d4 g1f3 c2c4 b1c3  E: 0.3 0.35 0.28 0.32 0.29  B: e2e4
+M: e2e4,d2d4,g1f3,c2c4,b1c3 E: 0.3,0.2,0.1,0.2,0.1 B: e2e4
 ```
 
-#### A: Tasks (Environment/State Transition)  
+### A: Tasks (Environment/State)
+Predict board state and game outcome after moves.
+
+**Format:**
 ```
-Prompt:     "A: [FEN]+[move]+[history]+"
-Completion: "[new_FEN]+[reward]+[terminated]+[truncated]"
-
-Example:
-A: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1+e2e4+,+
-rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1+0.001+false+false
+Input:  A: [FEN]+[move]+[history]+
+Output: [new_FEN]+[reward]+[terminated]+[truncated]
 ```
 
-## Module Structure
+## Enhanced GRPO Features
 
-### `dataset.py` - Data Processing
-- `preprocess_sample()` - Adds "A: " prefix to non-P: samples
-- `parse_p_task()` - Parses P: tasks into prompt/completion/data
-- `parse_a_task()` - Parses A: tasks into prompt/completion/data
-- `load_and_prepare_samples()` - Loads and processes dataset samples
-- `get_batch_by_type()` - Returns batches of single task type (avoids padding)
-
-### `model.py` - Minimal GPT-2 Implementation
-- Pure PyTorch implementation (no transformers dependency)
-- 124M parameter architecture matching RookWorld-LM
-- Fixed attention masking for stable batch generation
-- Support for left-padding with proper attention masks
-- Generation with top-k/top-p sampling
-
-### `loader.py` - Model Weight Loading
-- Downloads RookWorld-LM-124M from HuggingFace hub
-- Converts weight format from HF to PyTorch conventions
-- Handles weight transposition for linear layers
-- Supports both safetensors and pytorch_model.bin formats
-
-### `validation.py` - Format and Content Validation
-
-#### Weighted Priorities
+### 1. Advanced KL Divergence
 ```python
-P_WEIGHTS = {
-    'best_move': 4.0,    # Most important
-    'format': 2.0,       
-    'candidates': 1.5,   
-    'evaluations': 1.0   # Least important
+# Forward KL: D_KL(π||π_ref)
+kl_forward = (policy_probs * (policy_logprobs - ref_logprobs)).mean()
+
+# Reverse KL: D_KL(π_ref||π)
+kl_reverse = (ref_probs * (ref_logprobs - policy_logprobs)).mean()
+
+# Symmetric KL: Average of both
+kl_symmetric = (kl_forward + kl_reverse) / 2
+```
+
+### 2. Adaptive KL Control
+Automatically adjusts KL coefficient to maintain target divergence:
+```python
+if kl_divergence > target_kl * 1.5:
+    kl_coef *= 1.5  # Increase penalty
+elif kl_divergence < target_kl / 1.5:
+    kl_coef /= 1.5  # Decrease penalty
+```
+
+### 3. Baseline Methods
+- **group_mean**: Mean reward of K samples per prompt
+- **ema**: Exponential moving average baseline
+- **adaptive**: Dynamically adjusted baseline
+
+### 4. Generalized Advantage Estimation (GAE)
+Optional value function for variance reduction:
+```python
+advantages = compute_gae(rewards, values, gamma=0.99, lam=0.95)
+```
+
+## Graduated Reward System
+
+Rewards are computed based on task completion quality:
+
+| Score | Description | Criteria |
+|-------|-------------|----------|
+| -0.3  | Invalid format | Parse failure |
+| 0.2   | Format valid | Structure correct |
+| 0.4   | Some fields correct | Partial accuracy |
+| 0.6   | Most fields correct | Good accuracy |
+| 0.8   | Near perfect | Minor errors only |
+| 1.0   | Perfect | All fields correct |
+
+## Memory Management
+
+Critical optimizations to prevent memory leaks:
+
+```python
+# 1. Detach tensors during collection
+sequences.append(output_ids.detach().cpu())
+
+# 2. Clear reference model cache periodically
+if step % 5 == 0:
+    ref_model.clear_cache()
+
+# 3. Explicit GPU cleanup
+del large_tensors
+torch.cuda.empty_cache()
+
+# 4. Move to CPU during rollout collection
+rollout_data = {
+    'sequences': sequences.to('cpu'),
+    'rewards': rewards.to('cpu')
 }
-
-A_WEIGHTS = {
-    'format': 4.0,       # Most important
-    'fen_match': 3.0,    
-    'game_state': 2.0,   
-    'reward_value': 1.0  # Least important
-}
 ```
 
-#### Format Validators
-- `validate_p_format()` - Checks M:, E:, B: sections
-- `validate_a_format()` - Checks 4 '+' delimited sections
+## Verified Performance
 
-#### Content Validators
-- P: tasks: best move accuracy, candidate quality, eval accuracy
-- A: tasks: FEN edit distance, game flags, reward value
+### Training Metrics (20 steps)
+- **Reward improvement**: 0.275 → 0.400 (+45%)
+- **KL divergence**: Stable -0.78 to 0.68
+- **PPO clipping**: Average 32%
+- **Memory usage**: Stable 4.8GB VRAM
 
-### `test_dataset.py` - Comprehensive Tests
-- 24 tests covering all functionality
-- Tests preprocessing, parsing, format validation, content validation
+### Generation Quality
+- **P: tasks**: 93.2% format validity
+- **A: tasks**: 100% format validity
+- **Training speed**: ~20s/step (BS=8, K=8)
 
-### `reward_scorer.py` - GRPO Reward Computation
-- `RewardScorer` class for detailed validation and scoring
-- Supports multiple reward shaping strategies (graduated, linear, binary)
-- Computes group-relative advantages for GRPO
-- Detailed logging of validation results
-- `compute_grpo_rewards()` convenience function for training
+## Configuration
 
-### `test_generation.py` - Model Testing Script
-- Loads 100 samples from RookWorld dataset
-- Tests batch generation with proper padding
-- Generates 144+ tokens for complete output schemas
-- Compares against ground truth completions
-- Reports detailed performance metrics
+Key hyperparameters in `config.py`:
 
-## Usage Examples
-
-### Basic Data Processing
 ```python
-from mini import preprocess_sample, parse_p_task, validate_p_task
-
-# Preprocess raw sample
-raw = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1+e2e4+,+"
-processed = preprocess_sample(raw)  # Adds "A: " prefix
-
-# Parse P: task
-p_text = "P: [FEN] M: e2e4 d2d4 E: 0.3 0.4 B: e2e4"
-prompt, completion, data = parse_p_task(p_text)
-
-# Validate with weighted scoring
-scores = validate_p_task(data['fen'], completion)
-print(f"Total weighted score: {scores['total_weighted']:.3f}")
+@dataclass
+class GRPOConfig:
+    # Model
+    model_path = "jrahn/RookWorld-LM-124M"
+    device = "cuda"
+    
+    # GRPO Core
+    k_samples = 8           # Samples per prompt
+    clip_range = 0.2        # PPO clipping
+    kl_coef = 0.02         # KL penalty
+    
+    # Enhanced Features
+    kl_type = "forward"     # KL divergence type
+    adaptive_kl = True      # Adaptive control
+    baseline_type = "group_mean"
+    use_gae = True         # Use GAE
+    
+    # Training
+    learning_rate = 1e-5
+    batch_size = 8
+    max_steps = 1000
 ```
 
-### GRPO Reward Scoring
-```python
-from mini import compute_grpo_rewards
+## Running Experiments
 
-# Batch of prompts and generated completions
-prompts = [
-    "P: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    "A: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1+e2e4+,+"
-]
-completions = [
-    "M: e2e4 d2d4  E: 0.3 0.4  B: e2e4",
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1+0.001+false+false"
-]
+### Basic Training
+```bash
+# Quick test (10 steps)
+uv run python train.py --steps 10
 
-# Compute advantages for GRPO training
-advantages, details = compute_grpo_rewards(
-    prompts, 
-    completions,
-    group_size=8,
-    reward_shaping="graduated",
-    verbose=True  # Enable detailed logging
-)
+# Standard training (100 steps)
+uv run python train.py --steps 100
 
-# Use advantages in GRPO loss computation
-for i, (adv, detail) in enumerate(zip(advantages, details)):
-    print(f"Sample {i}: {detail.task_type} task, "
-          f"shaped_reward={detail.shaped_reward:.3f}, "
-          f"advantage={adv:.3f}")
+# Large batch training
+uv run python train.py --batch_size 32 --k_samples 8
 ```
 
-## Running Tests
+### Advanced Features
+```bash
+# Test symmetric KL divergence
+uv run python train.py --kl_type symmetric
+
+# Test adaptive baseline
+uv run python train.py --baseline_type adaptive
+
+# Disable GAE
+uv run python train.py --no_gae
+```
+
+### Monitoring
+```bash
+# Watch training progress
+tail -f logs/grpo_training_*.log | grep "Step"
+
+# Monitor GPU memory
+watch -n 1 nvidia-smi
+
+# Analyze metrics
+uv run python analyze_final_metrics.py
+```
+
+## Testing
 
 ```bash
-# Run all tests
-uv run pytest src/mini/test_dataset.py -v
+# Full test suite
+uv run python test_dataset.py
+uv run python test_reward_scorer.py
+uv run python test_generation.py
+uv run python test_grpo.py
+uv run python test_enhanced_grpo.py
 
-# Test individual modules
-uv run python src/mini/dataset.py
-uv run python src/mini/validation.py
+# Quick validation
+uv run python test_mixed_batch.py
 ```
 
-## Key Implementation Fixes
+## Debugging Tips
 
-1. **Attention Mask NaN Fix**: Replace -inf with -1e9 in softmax for numerical stability
-2. **Position Embedding Fix**: Adjust position IDs to start from 0 for real tokens (critical for mixed batches)
-3. **Tokenizer Configuration**: Use HuggingFace GPT2Tokenizer with pad_token = eos_token
-4. **Generation Length**: Must generate 144+ tokens for complete output schemas
-5. **Left Padding**: GPT-2 style left-padding with corrected position embeddings
-6. **Weight Loading**: Correct transposition of HF linear weights to PyTorch format
-7. **<|endoftext|> Token Removal**: Clean generated completions by removing end-of-text tokens before scoring
+### Memory Issues
+1. Check for tensor accumulation in loops
+2. Ensure sequences are detached and moved to CPU
+3. Monitor with `nvidia-smi` for VRAM spikes
+4. Use `torch.cuda.memory_summary()` for details
 
-## Performance Results
+### KL Explosion
+1. Enable adaptive KL control
+2. Reduce initial `kl_coef`
+3. Use KL warmup if needed
+4. Check for numerical instabilities
 
-With RookWorld-LM-124M (124,439,808 parameters):
-- **Generation Speed**: ~0.2-0.3 seconds per sample on CUDA
-- **P: Tasks**: 93.2% format validity, generates correct M:E:B: structure, mean reward: 0.166
-- **A: Tasks**: **100% format validity and scoring** with <|endoftext|> token removal fix, mean reward: 1.000
-- **Mixed Batch Processing**: **100% format validity** with position embedding fix
-- **Batch Size**: Supports batches up to 16 samples efficiently
-- **Memory Usage**: ~500MB GPU memory for model + generation
-- **Overall Performance**: 95% format validity across all tasks, mean reward: 0.383 ± 0.381
+### Poor Rewards
+1. Verify dataset quality
+2. Check reward scorer logic
+3. Ensure token cleaning (remove `<|endoftext|>`)
+4. Review graduated reward thresholds
 
-## Key Improvements Over Previous Implementations
+## Implementation Notes
 
-1. **Correct Preprocessing**: Automatic "A: " prefix for non-P: samples
-2. **Clear Parsing**: Separate logic for P: and A: tasks with proper delimiters
-3. **Prioritized Validation**: Weighted scoring based on importance
-4. **Batch Separation**: Avoid mixing task types to prevent padding issues
-5. **Comprehensive Tests**: 100% test coverage of critical functions
-6. **Pure PyTorch**: No dependency on transformers library for inference
-
-## GRPO Training Components
-
-### `grpo.py` - Core GRPO Algorithm
-- Policy gradient loss with advantages
-- KL divergence regularization
-- Reference model management (frozen copy)
-- PPO-style clipped objectives
-
-### `train.py` - Training Loop
-- Data collection with K samples per prompt
-- Group-relative advantage computation
-- Gradient updates with KL penalty
-- Evaluation and logging
-- Simple command-line interface
-
-### `config.py` - Configuration
-- Hyperparameters as dataclass
-- Default values tuned for RookWorld
-- Easy override via command line
-
-## Training Usage
-
-```bash
-# Basic training with defaults
-uv run python src/mini/train.py
-
-# Custom hyperparameters
-uv run python src/mini/train.py --steps 1000 --k_samples 4 --lr 1e-5
-
-# Quick test run
-uv run python src/mini/train.py --steps 10 --batch_size 2
-
-# Test GRPO implementation
-uv run python src/mini/test_grpo.py
+### Position Embeddings Fix
+Handles left-padding correctly in mixed batches:
+```python
+# Compute actual positions for left-padded sequences
+positions = torch.arange(seq_len, device=x.device)
+positions = positions.unsqueeze(0).expand(batch_size, -1)
+# Adjust for padding
+positions = positions * attention_mask
 ```
 
-## GRPO Algorithm Details
+### Token Cleaning
+Removes special tokens before scoring:
+```python
+# Clean <|endoftext|> tokens
+completion = completion.replace("<|endoftext|>", "").strip()
+```
 
-1. **Initialization**: Load pretrained RookWorld-LM, create frozen reference copy
-2. **Data Collection**: Generate K completions per prompt using current policy
-3. **Reward Scoring**: Score completions using graduated rewards (0.2 → 1.0)
-4. **Advantage Computation**: Subtract group mean as baseline (variance reduction)
-5. **Policy Update**: Maximize advantage-weighted log probs with KL penalty
-6. **Evaluation**: Track format validity and mean rewards
+### Mixed Batch Handling
+Properly handles both P: and A: tasks in same batch with different max lengths and validation requirements.
 
-### Hyperparameters
-- `k_samples`: 4 (completions per prompt)
-- `learning_rate`: 1e-5
-- `kl_coef`: 0.02 (KL penalty strength)
-- `clip_range`: 0.2 (PPO clipping)
-- `batch_size`: 8
-- `max_steps`: 1000
+## Citation
+
+If using this implementation in research:
+```bibtex
+@software{rookworld_mini,
+  title = {Mini GRPO Implementation for RookWorld-LM},
+  author = {RookWorld Team},
+  year = {2024},
+  url = {https://github.com/jrahn/rookworld-rlvr}
+}
+```

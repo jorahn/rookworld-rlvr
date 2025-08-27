@@ -191,7 +191,7 @@ class RewardScorer:
             _, _, prompt_data = parse_p_task(prompt)
             fen = prompt_data.get('fen', '')
         except:
-            fen = prompt[3:].strip() if prompt.startswith("P:") else ""
+            fen = prompt[3:].strip() if prompt.startswith("P: ") else ""
         
         # Validate format
         format_score, format_details = validate_p_format(completion)
@@ -257,7 +257,7 @@ class RewardScorer:
         except:
             # Fallback parsing
             if "+" in prompt:
-                parts = prompt[3:].split("+") if prompt.startswith("A:") else prompt.split("+")
+                parts = prompt[3:].split("+") if prompt.startswith("A: ") else prompt.split("+")
                 fen = parts[0].strip() if len(parts) > 0 else ""
                 move = parts[1].strip() if len(parts) > 1 else ""
                 history = parts[2].strip() if len(parts) > 2 else ""

@@ -22,7 +22,9 @@ from grpo import (
     compute_advantages,
     grpo_loss,
     create_prompt_mask,
-    ReferenceModel
+    ReferenceModel,
+    AdaptiveKLController,
+    ValueFunction
 )
 from loader import load_rookworld_model
 from dataset import load_and_prepare_samples
@@ -33,7 +35,8 @@ def collect_rollouts(
     model,
     samples: List[Tuple],
     tokenizer,
-    config: GRPOConfig
+    config: GRPOConfig,
+    baseline_tracker: Optional[Dict] = None
 ) -> Dict:
     """
     Generate K completions per prompt and compute rewards.
@@ -107,6 +110,16 @@ def collect_rollouts(
         device=config.device,
         dtype=torch.float32
     )
+    
+    # Recompute advantages with enhanced method
+    advantages = compute_advantages(
+        rewards,
+        group_size=config.k_samples,
+        baseline_type=config.baseline_type,
+        baseline_tracker=baseline_tracker,
+        use_gae=config.use_gae,
+        gae_lambda=config.gae_lambda
+    ).cpu().numpy()  # Convert back to numpy for compatibility
     
     # Prepare tensors for training
     max_len = max(len(seq) for seq in all_sequences)
@@ -237,6 +250,30 @@ def train(config: GRPOConfig):
     print("Creating reference model...")
     ref_model = ReferenceModel(model)
     
+    # Initialize adaptive KL controller if enabled
+    kl_controller = None
+    if config.adaptive_kl:
+        print("Initializing adaptive KL controller...")
+        kl_controller = AdaptiveKLController(
+            init_kl_coef=config.kl_coef,
+            target_kl=config.kl_target,
+            horizon=config.kl_horizon
+        )
+    
+    # Initialize value function if using GAE
+    value_function = None
+    value_optimizer = None
+    if config.use_gae:
+        print("Initializing value function...")
+        value_function = ValueFunction(hidden_size=768).to(config.device)
+        value_optimizer = optim.AdamW(
+            value_function.parameters(),
+            lr=config.learning_rate * 0.1  # Smaller LR for value function
+        )
+    
+    # Initialize baseline tracker for advanced methods
+    baseline_tracker = {} if config.baseline_type in ["ema", "adaptive"] else None
+    
     # Load data
     print(f"\nLoading {config.n_train_samples} training samples...")
     train_samples = load_and_prepare_samples(
@@ -286,7 +323,7 @@ def train(config: GRPOConfig):
         
         # Collect rollouts
         rollout_data = collect_rollouts(
-            model, batch_samples, tokenizer, config
+            model, batch_samples, tokenizer, config, baseline_tracker
         )
         
         # Training step
@@ -310,36 +347,86 @@ def train(config: GRPOConfig):
             rollout_data["prompt_lengths"]
         )
         
-        # Compute loss
+        # Compute value estimates if using value function
+        values = None
+        value_targets = None
+        if value_function is not None:
+            # Get hidden states from model (need to modify this based on actual model structure)
+            with torch.no_grad():
+                model_outputs = model(rollout_data["sequences"], rollout_data["attention_masks"])
+                hidden_states = model_outputs.get("hidden_states", model_outputs["logits"])  # Fallback
+                if len(hidden_states.shape) == 3:  # [batch, seq, hidden]
+                    # Average over completion tokens for value estimation
+                    completion_mask_expanded = (1 - prompt_mask).unsqueeze(-1)
+                    values = value_function(hidden_states)
+                    values = (values * (1 - prompt_mask)).sum(dim=1) / ((1 - prompt_mask).sum(dim=1) + 1e-8)
+                    value_targets = rollout_data["rewards"]  # Use actual rewards as targets
+        
+        # Update KL coefficient if using adaptive control
+        current_kl_coef = config.kl_coef
+        if kl_controller is not None:
+            # First compute current KL to update controller
+            with torch.no_grad():
+                completion_mask = (1 - prompt_mask)
+                temp_kl = ((policy_log_probs - ref_log_probs) * completion_mask).sum(dim=1).mean().item()
+            current_kl_coef = kl_controller.update(temp_kl)
+        
+        # Compute enhanced loss
         loss, metrics = grpo_loss(
             policy_log_probs,
             ref_log_probs,
             rollout_data["advantages"],
             prompt_mask,
-            kl_coef=config.kl_coef,
-            clip_range=config.clip_range
+            kl_coef=current_kl_coef,
+            clip_range=config.clip_range,
+            kl_type=config.kl_type,
+            values=values,
+            value_targets=value_targets,
+            value_loss_coef=config.value_loss_coef,
+            entropy_coef=config.entropy_coef
         )
         
         # Backward pass
         optimizer.zero_grad()
+        if value_optimizer is not None:
+            value_optimizer.zero_grad()
+            
         loss.backward()
         
         # Gradient clipping
         torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+        if value_function is not None:
+            torch.nn.utils.clip_grad_norm_(value_function.parameters(), config.grad_clip)
         
         # Update
         optimizer.step()
+        if value_optimizer is not None:
+            value_optimizer.step()
         
         # Logging
         if step % config.log_freq == 0:
             elapsed = time.time() - start_time
             print(f"\n[Step {step}/{config.max_steps}] Time: {elapsed:.2f}s")
-            print(f"  Loss: {loss.item():.4f}")
+            print(f"  Total Loss: {metrics['total_loss']:.4f}")
             print(f"  PG Loss: {metrics['pg_loss']:.4f}")
-            print(f"  KL Div: {metrics['kl_div']:.4f}")
+            print(f"  KL Div ({config.kl_type}): {metrics['kl_div']:.4f}")
+            print(f"  KL Coef: {metrics['kl_coef']:.4f}")
+            if 'value_loss' in metrics and metrics['value_loss'] > 0:
+                print(f"  Value Loss: {metrics['value_loss']:.4f}")
+            if 'entropy_loss' in metrics and metrics['entropy_loss'] != 0:
+                print(f"  Entropy Loss: {metrics['entropy_loss']:.4f}")
             print(f"  Mean Reward: {rollout_data['rewards'].mean().item():.3f}")
             print(f"  Advantage: {metrics['advantage_mean']:.3f} ± {metrics['advantage_std']:.3f}")
-            print(f"  Clipped: {metrics['clipped_frac']*100:.1f}%")
+            print(f"  Ratio: {metrics['ratio_mean']:.3f} ± {metrics['ratio_std']:.3f}")
+            print(f"  Clipped: {metrics['clipped_frac']*100:.1f}% | Outliers: {metrics['ratio_outliers']*100:.1f}%")
+            
+            # Show all KL types for monitoring
+            if config.kl_type != "forward":
+                print(f"  KL Forward: {metrics['kl_forward']:.4f}")
+            if config.kl_type != "reverse":
+                print(f"  KL Reverse: {metrics['kl_reverse']:.4f}")
+            if config.kl_type != "symmetric":
+                print(f"  KL Symmetric: {metrics['kl_symmetric']:.4f}")
         
         # Evaluation
         if step % config.eval_freq == 0:

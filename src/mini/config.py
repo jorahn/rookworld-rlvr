@@ -21,6 +21,23 @@ class GRPOConfig:
     clip_range: float = 0.2  # PPO-style clipping
     kl_coef: float = 0.02  # KL penalty coefficient
     
+    # Advanced baseline computation
+    baseline_type: str = "group_mean"  # group_mean, ema, learned, adaptive
+    ema_alpha: float = 0.1  # EMA smoothing factor
+    baseline_update_freq: int = 10  # Update learned baseline every N steps
+    
+    # KL divergence variants
+    kl_type: str = "forward"  # forward (KL1), reverse (KL2), symmetric (KL3)
+    adaptive_kl: bool = True  # Enable adaptive KL control
+    kl_target: float = 0.01  # Target KL for adaptive control
+    kl_horizon: int = 10000  # Horizon for KL adaptation
+    
+    # Enhanced PPO features
+    use_gae: bool = True  # Use Generalized Advantage Estimation
+    gae_lambda: float = 0.95  # GAE lambda parameter
+    value_loss_coef: float = 0.1  # Value function loss coefficient
+    entropy_coef: float = 0.01  # Entropy regularization coefficient
+    
     # Training
     learning_rate: float = 1e-5
     batch_size: int = 8  # Number of prompts per batch
@@ -54,3 +71,7 @@ class GRPOConfig:
         assert self.kl_coef >= 0, "kl_coef must be non-negative"
         assert self.max_new_tokens >= 144, "Need at least 144 tokens for schemas"
         assert self.reward_shaping in ["graduated", "linear", "binary"]
+        assert self.baseline_type in ["group_mean", "ema", "learned", "adaptive"]
+        assert self.kl_type in ["forward", "reverse", "symmetric"]
+        assert 0 < self.ema_alpha < 1, "ema_alpha must be in (0, 1)"
+        assert 0 <= self.gae_lambda <= 1, "gae_lambda must be in [0, 1]"

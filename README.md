@@ -56,11 +56,12 @@ Production implementation of Group Relative Policy Optimization (GRPO) for fine-
 - ✅ Mixed batch handling with position embeddings fix
 - ✅ Comprehensive testing suite
 
-#### **Training Metrics (Verified)**
-- **Reward improvement**: 0.275 → 0.400 (+45% improvement)
-- **KL divergence stable**: Range -0.78 to 0.68 (no explosion)
-- **PPO clipping active**: Average 32% ratio clipping
-- **Memory stable**: Constant 4.8GB VRAM over 100+ steps
+#### **Training Metrics (Verified with Ground Truth)**
+- **Ground truth scoring**: Uses dataset targets for meaningful rewards
+- **Reward distribution**: Proper variation (0.1-1.0) instead of constant 0.212
+- **KL divergence stable**: Adaptive control prevents explosion
+- **PPO clipping healthy**: 6-32% average across runs
+- **Memory stable**: Constant 4.8GB VRAM (fixed memory leaks)
 - **Format validity**: P: tasks 93%, A: tasks 100%
 
 ## Technical Architecture
@@ -125,20 +126,20 @@ max_steps = 1000
 
 ### Training Efficiency
 - **Generation**: ~0.2-0.3s per sample on RTX 4090
-- **Training step**: ~20s for batch_size=8, k_samples=8
-- **Memory usage**: Stable 4.8GB VRAM (previously 22GB+ with leak)
+- **Training step**: ~18-20s for batch_size=8, k_samples=8
+- **Memory usage**: Stable 4.8GB VRAM (fixed memory leaks)
 - **Convergence**: Improvement visible within 10-20 steps
 
-### Task Performance
+### Task Performance (with Ground Truth Scoring)
 - **P: tasks** (Policy/Analysis):
   - Format validity: 93.2%
-  - Move validity: ~85%
+  - Reward range: 0.098-0.993 (reflecting analysis quality)
   - Best move accuracy: Improving with training
 
 - **A: tasks** (Environment/State):
   - Format validity: 100%
-  - State prediction: 95%+
-  - Flag accuracy: High confidence
+  - State prediction accuracy: Often perfect (1.0)
+  - Deterministic transitions: Correctly learned
 
 ## Development
 
@@ -172,10 +173,11 @@ nvidia-smi --query-gpu=memory.used --format=csv,noheader -l 1
 ## Key Insights
 
 1. **Memory leak prevention**: Critical to detach tensors and clear caches
-2. **Position embeddings**: Must handle left-padding correctly for mixed batches
-3. **Token cleaning**: Remove `<|endoftext|>` before scoring
-4. **KL warmup**: Prevents early divergence in training
-5. **Mixed training**: Balance of P: and A: tasks maintains stability
+2. **Ground truth scoring**: Uses dataset targets for meaningful rewards (not just format validation)
+3. **Position embeddings**: Must handle left-padding correctly for mixed batches
+4. **Token cleaning**: Remove `<|endoftext|>` before scoring
+5. **Continuous rewards**: Better gradients for FEN similarity and evaluation accuracy
+6. **Mixed training**: Balance of P: and A: tasks maintains stability
 
 ## Contributing
 

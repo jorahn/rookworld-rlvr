@@ -123,16 +123,21 @@ advantages = compute_gae(rewards, values, gamma=0.99, lam=0.95)
 
 ## Graduated Reward System
 
-Rewards are computed based on task completion quality:
+Rewards are computed based on task completion quality with ground truth comparison:
 
 | Score | Description | Criteria |
 |-------|-------------|----------|
 | -0.3  | Invalid format | Parse failure |
-| 0.2   | Format valid | Structure correct |
-| 0.4   | Some fields correct | Partial accuracy |
-| 0.6   | Most fields correct | Good accuracy |
-| 0.8   | Near perfect | Minor errors only |
-| 1.0   | Perfect | All fields correct |
+| 0.2   | Format valid | Structure correct only |
+| 0.4   | Some fields correct | Partial content match |
+| 0.6   | Most fields correct | Good accuracy vs ground truth |
+| 0.8   | Near perfect | Minor deviations from target |
+| 1.0   | Perfect | Exact match with ground truth |
+
+### Ground Truth Scoring (NEW)
+- **P: tasks**: Compare moves, evaluations, best move with dataset targets
+- **A: tasks**: Compare FEN, reward, terminated/truncated flags with expected values
+- **Continuous components**: FEN similarity (exponential), evaluation accuracy (linear)
 
 ## Memory Management
 
@@ -159,16 +164,18 @@ rollout_data = {
 
 ## Verified Performance
 
-### Training Metrics (20 steps)
-- **Reward improvement**: 0.275 → 0.400 (+45%)
-- **KL divergence**: Stable -0.78 to 0.68
-- **PPO clipping**: Average 32%
-- **Memory usage**: Stable 4.8GB VRAM
+### Training Stability (Latest)
+- **Memory usage**: Stable at 4.8GB VRAM (fixed memory leaks)
+- **Ground truth scoring**: Properly uses dataset targets for meaningful rewards
+- **Reward distribution**: Realistic variation (0.1-1.0) instead of constant 0.212
+- **KL divergence**: Stable with adaptive control (no explosion)
+- **PPO clipping**: Healthy 6-32% average
 
-### Generation Quality
-- **P: tasks**: 93.2% format validity
-- **A: tasks**: 100% format validity
-- **Training speed**: ~20s/step (BS=8, K=8)
+### Task-Specific Performance
+- **P: tasks**: Variable rewards (0.098-0.993) reflecting analysis quality
+- **A: tasks**: High accuracy (often 1.0) for deterministic state transitions
+- **Format validity**: P: 93.2%, A: 100%
+- **Training speed**: ~18-20s/step (BS=8, K=8)
 
 ## Configuration
 

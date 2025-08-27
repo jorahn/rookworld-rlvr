@@ -10,6 +10,7 @@ from typing import Tuple, Dict, List, Optional
 import numpy as np
 from dataclasses import dataclass
 import math
+import re
 
 from dataset import parse_p_task, parse_a_task
 from validation import (
@@ -93,6 +94,7 @@ class RewardScorer:
         self,
         prompt: str,
         completion: str,
+        ground_truth: Optional[str] = None,
         log_details: bool = True
     ) -> Tuple[float, RewardDetails]:
         """
@@ -101,6 +103,7 @@ class RewardScorer:
         Args:
             prompt: The input prompt (P: or A: task)
             completion: The generated completion
+            ground_truth: Optional ground truth target for comparison
             log_details: Whether to log detailed validation info
             
         Returns:
@@ -110,9 +113,9 @@ class RewardScorer:
         task_type = self._identify_task_type(prompt)
         
         if task_type == "P":
-            reward, details = self._score_p_task(prompt, completion)
+            reward, details = self._score_p_task(prompt, completion, ground_truth)
         elif task_type == "A":
-            reward, details = self._score_a_task(prompt, completion)
+            reward, details = self._score_a_task(prompt, completion, ground_truth)
         else:
             # Unknown task type
             logger.warning(f"Unknown task type for prompt: {prompt[:50]}...")
@@ -194,8 +197,8 @@ class RewardScorer:
         else:
             return "unknown"
     
-    def _score_p_task(self, prompt: str, completion: str) -> Tuple[float, RewardDetails]:
-        """Score a P: (Policy) task"""
+    def _score_p_task(self, prompt: str, completion: str, ground_truth: Optional[str] = None) -> Tuple[float, RewardDetails]:
+        """Score a P: (Policy) task with optional ground truth comparison"""
         
         # Parse prompt to get FEN
         try:
@@ -203,6 +206,30 @@ class RewardScorer:
             fen = prompt_data.get('fen', '')
         except:
             fen = prompt[3:].strip() if prompt.startswith("P: ") else ""
+        
+        # Parse ground truth if available
+        target_moves = None
+        target_evals = None
+        target_best = None
+        if ground_truth:
+            try:
+                # Parse target completion
+                moves_match = re.search(r'M:\s*([a-h][1-8][a-h][1-8]\w*(?:\s+[a-h][1-8][a-h][1-8]\w*)*)', ground_truth)
+                if moves_match:
+                    target_moves = moves_match.group(1).split()
+                
+                evals_match = re.search(r'E:\s*([-\d\.]+(?:\s+[-\d\.]+)*)', ground_truth)
+                if evals_match:
+                    try:
+                        target_evals = [float(x) for x in evals_match.group(1).split()]
+                    except:
+                        pass
+                
+                best_match = re.search(r'B:\s*([a-h][1-8][a-h][1-8]\w*)', ground_truth)
+                if best_match:
+                    target_best = best_match.group(1)
+            except:
+                pass
         
         # Validate format
         format_score, format_details = validate_p_format(completion)
@@ -212,26 +239,59 @@ class RewardScorer:
         weighted_scores = {}
         
         if format_valid:
-            # Content validation
+            # Content validation - use ground truth if available
             
-            # Best move (highest priority)
-            if 'best_move' in format_details:
+            # Best move (highest priority) - compare to ground truth
+            if 'best_move' in format_details and target_best:
+                # Direct comparison with ground truth
+                best_score = 1.0 if format_details['best_move'] == target_best else 0.0
+                field_scores['best_move'] = best_score
+                weighted_scores['best_move'] = best_score * P_WEIGHTS['best_move']
+            elif 'best_move' in format_details and not target_best:
+                # Fall back to Stockfish if no ground truth
                 best_score = validate_p_best_move(fen, format_details['best_move'], self.stockfish_path)
                 field_scores['best_move'] = best_score
                 weighted_scores['best_move'] = best_score * P_WEIGHTS['best_move']
             
-            # Candidate moves
-            if 'moves' in format_details:
+            # Candidate moves - compare to ground truth
+            if 'moves' in format_details and target_moves:
+                # Compare moves list with ground truth
+                matches = sum(1 for m in format_details['moves'] if m in target_moves)
+                candidates_score = matches / len(format_details['moves']) if format_details['moves'] else 0.0
+                field_scores['candidates'] = candidates_score
+                weighted_scores['candidates'] = candidates_score * P_WEIGHTS['candidates']
+            elif 'moves' in format_details:
+                # Fall back to Stockfish
                 candidates_score = validate_p_candidates(fen, format_details['moves'], self.stockfish_path)
                 field_scores['candidates'] = candidates_score
                 weighted_scores['candidates'] = candidates_score * P_WEIGHTS['candidates']
             
-            # Evaluations - uses continuous scoring
-            if 'evals' in format_details:
-                evals_score = validate_p_evaluations(fen, format_details['evals'], self.stockfish_path)
+            # Evaluations - uses continuous scoring with ground truth
+            if 'evals' in format_details and target_evals:
+                # Compare evaluations with ground truth using MSE
+                gen_evals = format_details['evals']
+                if len(gen_evals) == len(target_evals):
+                    errors = [(g - t)**2 for g, t in zip(gen_evals, target_evals)]
+                    mse = sum(errors) / len(errors) if errors else 0.0
+                    # Convert MSE to score (lower is better, max MSE ~100 for very bad evals)
+                    evals_score = max(0.0, 1.0 - mse / 100.0)
+                else:
+                    # Length mismatch penalty
+                    evals_score = 0.0
                 field_scores['evaluations'] = evals_score
                 
                 # Apply continuous scaling for evaluation accuracy
+                if "evaluations" in self.continuous_components:
+                    scaling = self.continuous_components["evaluations"]
+                    scaled_score = self._apply_scaling(evals_score, scaling)
+                    weighted_scores['evaluations'] = scaled_score * P_WEIGHTS['evaluations']
+                else:
+                    weighted_scores['evaluations'] = evals_score * P_WEIGHTS['evaluations']
+            elif 'evals' in format_details:
+                # Fall back to Stockfish
+                evals_score = validate_p_evaluations(fen, format_details['evals'], self.stockfish_path)
+                field_scores['evaluations'] = evals_score
+                
                 if "evaluations" in self.continuous_components:
                     scaling = self.continuous_components["evaluations"]
                     scaled_score = self._apply_scaling(evals_score, scaling)
@@ -267,8 +327,8 @@ class RewardScorer:
         
         return shaped_reward, details
     
-    def _score_a_task(self, prompt: str, completion: str) -> Tuple[float, RewardDetails]:
-        """Score an A: (Environment) task"""
+    def _score_a_task(self, prompt: str, completion: str, ground_truth: Optional[str] = None) -> Tuple[float, RewardDetails]:
+        """Score an A: (Environment) task with optional ground truth comparison"""
         
         # Parse prompt to get FEN, move, history
         try:
@@ -286,6 +346,23 @@ class RewardScorer:
             else:
                 fen, move, history = "", "", ""
         
+        # Parse ground truth if available
+        target_fen = None
+        target_reward = None
+        target_terminated = None
+        target_truncated = None
+        if ground_truth:
+            try:
+                # Ground truth format: [new_FEN]+[reward]+[terminated]+[truncated]
+                parts = ground_truth.split("+")
+                if len(parts) >= 4:
+                    target_fen = parts[0].strip()
+                    target_reward = float(parts[1].strip())
+                    target_terminated = parts[2].strip().lower() in ['true', '1']
+                    target_truncated = parts[3].strip().lower() in ['true', '1']
+            except:
+                pass
+        
         # Validate format
         format_score, format_details = validate_a_format(completion)
         format_valid = format_score > 0.5
@@ -296,9 +373,21 @@ class RewardScorer:
         if format_valid:
             # Content validation
             
-            # FEN match (edit distance) - uses continuous scoring
-            if 'new_fen' in format_details:
-                # Calculate expected FEN
+            # FEN match - use ground truth if available
+            if 'new_fen' in format_details and target_fen:
+                # Direct comparison with ground truth using edit distance
+                fen_score = validate_a_fen(target_fen, format_details['new_fen'])
+                field_scores['fen_match'] = fen_score
+                
+                # Apply continuous scaling for FEN similarity
+                if "fen_similarity" in self.continuous_components:
+                    scaling = self.continuous_components["fen_similarity"]
+                    scaled_score = self._apply_scaling(fen_score, scaling)
+                    weighted_scores['fen_match'] = scaled_score * A_WEIGHTS['fen_match']
+                else:
+                    weighted_scores['fen_match'] = fen_score * A_WEIGHTS['fen_match']
+            elif 'new_fen' in format_details:
+                # Fall back to calculating expected FEN
                 import chess
                 try:
                     board = chess.Board(fen)
@@ -314,7 +403,6 @@ class RewardScorer:
                 fen_score = validate_a_fen(expected_fen, format_details['new_fen'])
                 field_scores['fen_match'] = fen_score
                 
-                # Apply continuous scaling for FEN similarity
                 if "fen_similarity" in self.continuous_components:
                     scaling = self.continuous_components["fen_similarity"]
                     scaled_score = self._apply_scaling(fen_score, scaling)
@@ -322,17 +410,31 @@ class RewardScorer:
                 else:
                     weighted_scores['fen_match'] = fen_score * A_WEIGHTS['fen_match']
             
-            # Game state flags
+            # Game state flags - use ground truth if available
             if 'terminated' in format_details and 'truncated' in format_details:
-                terminated = 'true' if format_details['terminated'] else 'false'
-                truncated = 'true' if format_details['truncated'] else 'false'
-                flags_score = validate_a_flags(fen, move, terminated, truncated)
+                if target_terminated is not None and target_truncated is not None:
+                    # Direct comparison with ground truth
+                    gen_terminated = format_details['terminated']
+                    gen_truncated = format_details['truncated']
+                    flags_score = 1.0 if (gen_terminated == target_terminated and gen_truncated == target_truncated) else 0.0
+                else:
+                    # Fall back to validation
+                    terminated = 'true' if format_details['terminated'] else 'false'
+                    truncated = 'true' if format_details['truncated'] else 'false'
+                    flags_score = validate_a_flags(fen, move, terminated, truncated)
                 field_scores['game_state'] = flags_score
                 weighted_scores['game_state'] = flags_score * A_WEIGHTS['game_state']
             
-            # Reward value
+            # Reward value - use ground truth if available
             if 'reward' in format_details:
-                reward_score = validate_a_reward(fen, move, format_details['reward'])
+                if target_reward is not None:
+                    # Direct comparison with ground truth
+                    gen_reward = format_details['reward']
+                    # Allow small tolerance for floating point comparison
+                    reward_score = 1.0 if abs(gen_reward - target_reward) < 0.01 else 0.0
+                else:
+                    # Fall back to validation
+                    reward_score = validate_a_reward(fen, move, format_details['reward'])
                 field_scores['reward_value'] = reward_score
                 weighted_scores['reward_value'] = reward_score * A_WEIGHTS['reward_value']
         

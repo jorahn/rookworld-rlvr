@@ -136,8 +136,11 @@ def collect_rollouts(
     
     pad_id = 50256  # GPT-2 EOS token ID
     
-    # Create reward scorer
-    scorer = RewardScorer(reward_shaping=config.reward_shaping)
+    # Create reward scorer with continuous components
+    scorer = RewardScorer(
+        reward_shaping=config.reward_shaping,
+        continuous_components=config.continuous_components
+    )
     
     for sample_idx, (task_type, prompt, ground_truth, data) in enumerate(samples):
         logger.debug(f"Processing sample {sample_idx+1}/{len(samples)}: {task_type} task")
@@ -174,8 +177,8 @@ def collect_rollouts(
             if '<|endoftext|>' in completion:
                 completion = completion.replace('<|endoftext|>', '').strip()
             
-            # Score completion - prompt already has correct format
-            reward, _ = scorer.score_single(prompt, completion, log_details=False)
+            # Score completion with ground truth comparison
+            reward, _ = scorer.score_single(prompt, completion, ground_truth=ground_truth, log_details=False)
             
             sample_rewards.append(reward)
             # Detach and move to CPU to avoid memory accumulation
@@ -410,14 +413,24 @@ def main():
         # Log training metrics
         log_training_metrics(logger, metrics, step, elapsed_time)
         
-        # Store history before deleting variables
+        # Store history and eval data before deleting variables
+        mean_reward = np.mean(rollout_data['rewards'])
+        reward_sample = [f'{r:.1f}' for r in rollout_data['rewards'][:10]]
+        
         training_history.append({
             'step': step,
             'loss': metrics['total_loss'],
-            'mean_reward': np.mean(rollout_data['rewards']),
+            'mean_reward': mean_reward,
             'kl_div': metrics.get('kl_div', 0),
             'elapsed_time': elapsed_time
         })
+        
+        # Periodic evaluation (before cleanup)
+        if step % config.eval_freq == 0:
+            logger.info(f"\n=== EVALUATION (Step {step}) ===")
+            # Simple eval: report training metrics
+            logger.info(f"Mean reward (last batch): {mean_reward:.3f}")
+            logger.info(f"Reward distribution: {reward_sample}")
         
         # Clear reference model cache periodically to prevent memory buildup
         if step % 5 == 0:
@@ -426,13 +439,6 @@ def main():
         # Explicitly free GPU memory after logging
         del loss, policy_log_probs, ref_log_probs, rollout_data
         torch.cuda.empty_cache()
-        
-        # Periodic evaluation
-        if step % config.eval_freq == 0:
-            logger.info(f"\n=== EVALUATION (Step {step}) ===")
-            # Simple eval: report training metrics
-            logger.info(f"Mean reward (last batch): {np.mean(rollout_data['rewards']):.3f}")
-            logger.info(f"Reward distribution: {[f'{r:.1f}' for r in rollout_data['rewards'][:10]]}")
         
         # Save checkpoint periodically
         if step % 50 == 0:

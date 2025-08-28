@@ -68,6 +68,7 @@ class GRPOConfig:
     memory_warning_gb: float = 18.0  # Warning threshold for GPU memory
     history_buffer_size: int = 10  # Keep only last N entries in RAM
     emergency_cleanup_interval: int = 50  # Force GPU cache clear every N steps
+    log_prob_chunk_size: int = 16  # Process log_probs in chunks of this size to save memory
     
     # Paths
     checkpoint_dir: str = "checkpoints/mini_grpo"

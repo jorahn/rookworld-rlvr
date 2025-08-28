@@ -16,47 +16,98 @@ def compute_log_probs(
     model,
     input_ids: torch.Tensor,
     attention_mask: Optional[torch.Tensor] = None,
-    detach: bool = False
+    detach: bool = False,
+    chunk_size: int = 16
 ) -> torch.Tensor:
     """
-    Compute log probabilities for a sequence.
+    Compute log probabilities for a sequence with chunked processing to save memory.
     
     Args:
         model: GPT2Model instance
         input_ids: Token IDs [batch_size, seq_len]
         attention_mask: Attention mask [batch_size, seq_len]
         detach: Whether to detach from computation graph (for reference model)
+        chunk_size: Process batch in chunks of this size to save memory
         
     Returns:
         Log probabilities [batch_size, seq_len-1]
     """
-    # Get model outputs
-    outputs = model(input_ids, attention_mask)
-    logits = outputs["logits"]
+    batch_size = input_ids.shape[0]
     
-    if detach:
-        logits = logits.detach()
+    # If batch is small enough, process normally
+    if batch_size <= chunk_size:
+        # Get model outputs
+        outputs = model(input_ids, attention_mask)
+        logits = outputs["logits"]
+        
+        if detach:
+            logits = logits.detach()
+        
+        # Shift for autoregressive: predict next token
+        logits = logits[:, :-1, :]  # [batch, seq-1, vocab]
+        labels = input_ids[:, 1:]  # [batch, seq-1]
+        
+        # Compute log probs
+        log_probs = F.log_softmax(logits, dim=-1)
+        
+        # Gather log probs for actual tokens
+        token_log_probs = torch.gather(
+            log_probs,
+            dim=-1,
+            index=labels.unsqueeze(-1)
+        ).squeeze(-1)
+        
+        # Delete intermediate tensors immediately
+        del log_probs, logits
+        
+        # Mask padding if attention mask provided
+        if attention_mask is not None:
+            mask = attention_mask[:, 1:]  # Shift mask too
+            token_log_probs = token_log_probs * mask
+        
+        return token_log_probs
     
-    # Shift for autoregressive: predict next token
-    logits = logits[:, :-1, :]  # [batch, seq-1, vocab]
-    labels = input_ids[:, 1:]  # [batch, seq-1]
+    # Process in chunks for large batches
+    all_log_probs = []
+    for i in range(0, batch_size, chunk_size):
+        end_idx = min(i + chunk_size, batch_size)
+        chunk_input_ids = input_ids[i:end_idx]
+        chunk_attention_mask = attention_mask[i:end_idx] if attention_mask is not None else None
+        
+        # Process chunk
+        with torch.no_grad() if detach else torch.enable_grad():
+            outputs = model(chunk_input_ids, chunk_attention_mask)
+            chunk_logits = outputs["logits"]
+            
+            if detach:
+                chunk_logits = chunk_logits.detach()
+            
+            # Shift for autoregressive
+            chunk_logits = chunk_logits[:, :-1, :]
+            chunk_labels = chunk_input_ids[:, 1:]
+            
+            # Compute log probs for chunk
+            chunk_log_probs = F.log_softmax(chunk_logits, dim=-1)
+            
+            # Gather log probs for actual tokens
+            chunk_token_log_probs = torch.gather(
+                chunk_log_probs,
+                dim=-1,
+                index=chunk_labels.unsqueeze(-1)
+            ).squeeze(-1)
+            
+            # Clean up intermediate tensors immediately
+            del chunk_log_probs, chunk_logits
+            
+            # Mask padding if needed
+            if chunk_attention_mask is not None:
+                chunk_mask = chunk_attention_mask[:, 1:]
+                chunk_token_log_probs = chunk_token_log_probs * chunk_mask
+            
+            all_log_probs.append(chunk_token_log_probs)
     
-    # Compute log probs
-    log_probs = F.log_softmax(logits, dim=-1)
-    
-    # Gather log probs for actual tokens
-    token_log_probs = torch.gather(
-        log_probs,
-        dim=-1,
-        index=labels.unsqueeze(-1)
-    ).squeeze(-1)
-    
-    # Mask padding if attention mask provided
-    if attention_mask is not None:
-        mask = attention_mask[:, 1:]  # Shift mask too
-        token_log_probs = token_log_probs * mask
-    
-    return token_log_probs
+    # Concatenate all chunks
+    return torch.cat(all_log_probs, dim=0)
 
 
 def compute_kl_divergence(
@@ -424,25 +475,38 @@ class ReferenceModel:
         self,
         input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-        return_on_cpu: bool = True
+        return_on_cpu: bool = True,
+        chunk_size: int = 16
     ) -> torch.Tensor:
         """
-        Compute log probabilities with frozen model.
+        Compute log probabilities with frozen model using chunked processing.
         
         Args:
             input_ids: Token IDs [batch_size, seq_len]
             attention_mask: Attention mask [batch_size, seq_len]
             return_on_cpu: Whether to return result on CPU (default True for memory)
+            chunk_size: Process batch in chunks of this size to save memory
             
         Returns:
             Log probabilities [batch_size, seq_len-1] (detached, optionally on CPU)
         """
         with torch.no_grad():
-            result = compute_log_probs(self.model, input_ids, attention_mask, detach=True)
+            # Use chunked processing to save memory
+            result = compute_log_probs(
+                self.model, 
+                input_ids, 
+                attention_mask, 
+                detach=True,
+                chunk_size=chunk_size
+            )
             result = result.detach()  # Ensure fully detached
+            
+            # Force GPU memory cleanup before moving to CPU
+            torch.cuda.synchronize()
             
             if return_on_cpu:
                 result = result.cpu()  # Move to CPU to free GPU memory
+                torch.cuda.empty_cache()  # Clear GPU memory immediately
             
             return result
     

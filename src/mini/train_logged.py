@@ -12,6 +12,7 @@ from typing import Dict, List, Tuple, Optional
 import logging
 import json
 from datetime import datetime
+import subprocess
 
 import torch
 import torch.optim as optim
@@ -76,6 +77,43 @@ class TrainingHistoryWriter:
         return entries
 
 
+def get_nvidia_smi_memory():
+    """
+    Get actual GPU memory usage using nvidia-smi for current process.
+    Returns memory in GB.
+    """
+    try:
+        pid = os.getpid()
+        # Query memory for specific process
+        result = subprocess.run(
+            ['nvidia-smi', '--query-compute-apps=pid,used_memory', '--format=csv,nounits,noheader'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        # Parse output to find our process
+        for line in result.stdout.strip().split('\n'):
+            if line:
+                parts = line.split(',')
+                if len(parts) == 2:
+                    proc_pid, mem_mb = parts
+                    if int(proc_pid.strip()) == pid:
+                        return float(mem_mb.strip()) / 1024  # Convert to GB
+        
+        # If process not found, try global GPU memory
+        result = subprocess.run(
+            ['nvidia-smi', '--query-gpu=memory.used', '--format=csv,nounits,noheader'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        memory_mb = float(result.stdout.strip())
+        return memory_mb / 1024  # Convert to GB
+    except:
+        # Fallback to torch if nvidia-smi fails
+        return torch.cuda.memory_allocated() / 1024**3
+
 def log_gpu_memory(logger, step: int, force: bool = False, interval: int = 10) -> bool:
     """
     Log GPU memory usage and detect potential leaks.
@@ -90,16 +128,27 @@ def log_gpu_memory(logger, step: int, force: bool = False, interval: int = 10) -
         True if emergency cleanup needed
     """
     if step % interval == 0 or force:
+        # Get PyTorch tracked memory
         allocated = torch.cuda.memory_allocated() / 1024**3
         reserved = torch.cuda.memory_reserved() / 1024**3
         max_allocated = torch.cuda.max_memory_allocated() / 1024**3
         
-        logger.info(f"[Memory] Step {step}: Allocated={allocated:.2f}GB, "
-                   f"Reserved={reserved:.2f}GB, MaxAlloc={max_allocated:.2f}GB")
+        # Get actual memory from nvidia-smi
+        actual = get_nvidia_smi_memory()
         
-        # Warning thresholds
-        if allocated > 18.0:  # 18GB warning (have 24GB)
-            logger.warning(f"⚠️ High memory usage: {allocated:.2f}GB")
+        # Calculate untracked memory
+        untracked = actual - allocated
+        
+        logger.info(f"[Memory] Step {step}: Actual={actual:.2f}GB (PyTorch={allocated:.2f}GB, "
+                   f"Untracked={untracked:.2f}GB)")
+        
+        # Check for memory leak - if untracked memory is growing
+        if untracked > 5.0:  # More than 5GB untracked is suspicious
+            logger.warning(f"⚠️ MEMORY LEAK: {untracked:.2f}GB untracked memory!")
+        
+        # Warning thresholds (using actual memory now)
+        if actual > 18.0:  # 18GB warning (have 24GB)
+            logger.warning(f"⚠️ High memory usage: {actual:.2f}GB actual")
             return True  # Signal for emergency cleanup
         
         # Check for memory leak (growing usage)
@@ -406,8 +455,9 @@ def main():
     history_writer = TrainingHistoryWriter(args.log_dir, max_memory_entries=10)
     
     # Log initial memory
-    initial_memory = torch.cuda.memory_allocated() / 1024**3
-    logger.info(f"Initial GPU memory: {initial_memory:.2f}GB")
+    initial_pytorch_memory = torch.cuda.memory_allocated() / 1024**3
+    initial_actual_memory = get_nvidia_smi_memory()
+    logger.info(f"Initial GPU memory: PyTorch={initial_pytorch_memory:.2f}GB, Actual={initial_actual_memory:.2f}GB")
     
     # Training loop
     logger.info("\n" + "=" * 60)
@@ -447,14 +497,15 @@ def main():
         advantages = rollout_data["advantages"]
         prompt_lengths = rollout_data["prompt_lengths"]
         
-        # Compute log probs
+        # Compute log probs with chunked processing
         policy_log_probs = compute_log_probs(
             model,
             sequences,
-            attention_masks
+            attention_masks,
+            chunk_size=config.log_prob_chunk_size  # Process in chunks to save memory
         )
         
-        # Get ref_log_probs on CPU first, then move to GPU if needed
+        # Get ref_log_probs with chunked processing
         with torch.no_grad():
             ref_log_probs_cpu = ref_model.compute_log_probs(
                 sequences,
@@ -462,6 +513,10 @@ def main():
                 return_on_cpu=True  # Returns CPU tensor
             )
             ref_log_probs = ref_log_probs_cpu.to(config.device)  # Move to GPU for loss computation
+            
+        # Force cleanup of intermediate tensors
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
         
         # Create prompt mask
         prompt_mask = create_prompt_mask(
@@ -504,7 +559,7 @@ def main():
         )
         
         # Backward pass
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)  # More aggressive gradient clearing
         loss.backward()
         
         # Compute gradient norm
@@ -515,6 +570,11 @@ def main():
         
         # Detach loss to prevent gradient accumulation
         loss = loss.detach()
+        
+        # Clear any remaining gradients
+        for param in model.parameters():
+            if param.grad is not None:
+                param.grad = None
         
         elapsed_time = time.time() - start_time
         metrics['total_loss'] = loss.item()
@@ -533,6 +593,7 @@ def main():
             'mean_reward': mean_reward,
             'kl_div': metrics.get('kl_div', 0),
             'memory_gb': torch.cuda.memory_allocated() / 1024**3,
+            'actual_memory_gb': get_nvidia_smi_memory(),  # Track actual memory too
             'elapsed_time': elapsed_time
         }
         history_writer.add_entry(history_entry)
@@ -561,16 +622,23 @@ def main():
         # Force synchronization to ensure operations complete
         torch.cuda.synchronize()
         
-        # Clear GPU cache every step to prevent accumulation
+        # Aggressive garbage collection every step
+        import gc
+        gc.collect()
+        
+        # Clear GPU cache every step to prevent accumulation  
         torch.cuda.empty_cache()
+        
+        # Clear Python's cyclic garbage collector
+        gc.collect()
         
         # Emergency cleanup if high memory
         if needs_cleanup:
             # Extra aggressive cleanup
-            import gc
-            gc.collect()
-            torch.cuda.synchronize()
-            torch.cuda.empty_cache()
+            for _ in range(3):  # Multiple passes to ensure cleanup
+                gc.collect()
+                torch.cuda.synchronize()
+                torch.cuda.empty_cache()
             logger.info("Performed emergency memory cleanup")
         
         # Save checkpoint periodically

@@ -15,7 +15,8 @@ import numpy as np
 def compute_log_probs(
     model,
     input_ids: torch.Tensor,
-    attention_mask: Optional[torch.Tensor] = None
+    attention_mask: Optional[torch.Tensor] = None,
+    detach: bool = False
 ) -> torch.Tensor:
     """
     Compute log probabilities for a sequence.
@@ -24,6 +25,7 @@ def compute_log_probs(
         model: GPT2Model instance
         input_ids: Token IDs [batch_size, seq_len]
         attention_mask: Attention mask [batch_size, seq_len]
+        detach: Whether to detach from computation graph (for reference model)
         
     Returns:
         Log probabilities [batch_size, seq_len-1]
@@ -31,6 +33,9 @@ def compute_log_probs(
     # Get model outputs
     outputs = model(input_ids, attention_mask)
     logits = outputs["logits"]
+    
+    if detach:
+        logits = logits.detach()
     
     # Shift for autoregressive: predict next token
     logits = logits[:, :-1, :]  # [batch, seq-1, vocab]
@@ -396,13 +401,13 @@ class ReferenceModel:
     Maintains a frozen copy of the initial policy with caching for efficiency.
     """
     
-    def __init__(self, model, cache_size: int = 1000):
+    def __init__(self, model, cache_size: int = 0):
         """
         Create frozen copy of model with optional caching.
         
         Args:
             model: GPT2Model to copy
-            cache_size: Maximum number of cached computations
+            cache_size: Maximum number of cached computations (0 to disable)
         """
         # Deep copy and freeze
         self.model = copy.deepcopy(model)
@@ -410,15 +415,16 @@ class ReferenceModel:
         for param in self.model.parameters():
             param.requires_grad = False
         
-        # Cache for efficiency (optional)
+        # Disable caching by default to prevent memory leaks
+        self.use_cache = cache_size > 0
         self.cache_size = cache_size
-        self.cache = {}
+        self.cache = {} if self.use_cache else None
         
     def compute_log_probs(
         self,
         input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-        use_cache: bool = False
+        return_on_cpu: bool = True
     ) -> torch.Tensor:
         """
         Compute log probabilities with frozen model.
@@ -426,37 +432,25 @@ class ReferenceModel:
         Args:
             input_ids: Token IDs [batch_size, seq_len]
             attention_mask: Attention mask [batch_size, seq_len]
-            use_cache: Whether to use caching (for repeated computations)
+            return_on_cpu: Whether to return result on CPU (default True for memory)
             
         Returns:
-            Log probabilities [batch_size, seq_len-1]
+            Log probabilities [batch_size, seq_len-1] (detached, optionally on CPU)
         """
-        if use_cache:
-            # Create cache key (simplified - in practice you'd use a proper hash)
-            cache_key = tuple(input_ids.view(-1).tolist())
+        with torch.no_grad():
+            result = compute_log_probs(self.model, input_ids, attention_mask, detach=True)
+            result = result.detach()  # Ensure fully detached
             
-            if cache_key in self.cache:
-                return self.cache[cache_key]
+            if return_on_cpu:
+                result = result.cpu()  # Move to CPU to free GPU memory
             
-            # Compute and cache
-            with torch.no_grad():
-                result = compute_log_probs(self.model, input_ids, attention_mask)
-            
-            # Manage cache size
-            if len(self.cache) >= self.cache_size:
-                # Remove oldest entry (FIFO)
-                oldest_key = next(iter(self.cache))
-                del self.cache[oldest_key]
-            
-            self.cache[cache_key] = result
             return result
-        else:
-            with torch.no_grad():
-                return compute_log_probs(self.model, input_ids, attention_mask)
     
     def clear_cache(self):
-        """Clear the computation cache."""
-        self.cache.clear()
+        """Clear the computation cache and GPU memory."""
+        if self.cache:
+            self.cache.clear()
+        torch.cuda.empty_cache()  # Clear GPU cache
 
 
 def create_prompt_mask(

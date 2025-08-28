@@ -34,6 +34,84 @@ from dataset import load_and_prepare_samples
 from reward_scorer import RewardScorer
 
 
+class TrainingHistoryWriter:
+    """Writes training history to disk to avoid memory accumulation."""
+    
+    def __init__(self, log_dir: str, max_memory_entries: int = 10):
+        """
+        Initialize history writer.
+        
+        Args:
+            log_dir: Directory for logs
+            max_memory_entries: Maximum entries to keep in memory
+        """
+        self.log_dir = log_dir
+        self.history_file = f"{log_dir}/training_history.jsonl"
+        self.max_memory_entries = max_memory_entries
+        self.memory_buffer = []
+    
+    def add_entry(self, entry: dict):
+        """Add entry to disk immediately, keep minimal buffer in memory."""
+        # Write to disk (append mode)
+        with open(self.history_file, 'a') as f:
+            f.write(json.dumps(entry) + '\n')
+        
+        # Keep only last N entries in memory for quick access
+        self.memory_buffer.append(entry)
+        if len(self.memory_buffer) > self.max_memory_entries:
+            self.memory_buffer.pop(0)
+    
+    def get_recent(self, n: int = 10) -> list:
+        """Get last n entries from memory buffer."""
+        return self.memory_buffer[-n:]
+    
+    def get_all(self) -> list:
+        """Read all history from disk if needed."""
+        entries = []
+        if Path(self.history_file).exists():
+            with open(self.history_file, 'r') as f:
+                for line in f:
+                    if line.strip():
+                        entries.append(json.loads(line))
+        return entries
+
+
+def log_gpu_memory(logger, step: int, force: bool = False, interval: int = 10) -> bool:
+    """
+    Log GPU memory usage and detect potential leaks.
+    
+    Args:
+        logger: Logger instance
+        step: Current training step
+        force: Force logging regardless of interval
+        interval: Log every N steps
+        
+    Returns:
+        True if emergency cleanup needed
+    """
+    if step % interval == 0 or force:
+        allocated = torch.cuda.memory_allocated() / 1024**3
+        reserved = torch.cuda.memory_reserved() / 1024**3
+        max_allocated = torch.cuda.max_memory_allocated() / 1024**3
+        
+        logger.info(f"[Memory] Step {step}: Allocated={allocated:.2f}GB, "
+                   f"Reserved={reserved:.2f}GB, MaxAlloc={max_allocated:.2f}GB")
+        
+        # Warning thresholds
+        if allocated > 18.0:  # 18GB warning (have 24GB)
+            logger.warning(f"⚠️ High memory usage: {allocated:.2f}GB")
+            return True  # Signal for emergency cleanup
+        
+        # Check for memory leak (growing usage)
+        if step > 100 and allocated > 10.0:
+            growth_rate = (allocated - 5.0) / (step / 100)  # GB per 100 steps above baseline
+            if growth_rate > 1.0:
+                logger.warning(f"⚠️ Possible memory leak: {growth_rate:.2f}GB/100steps growth")
+                return True
+    
+    return False
+
+
 def setup_logging(log_dir: str = "logs"):
     """Setup detailed logging to file and console."""
     Path(log_dir).mkdir(parents=True, exist_ok=True)
@@ -279,9 +357,9 @@ def main():
     logger.info(f"Loaded model from {config.model_path}")
     logger.info(f"Model parameters: {sum(p.numel() for p in model.parameters()) / 1e6:.1f}M")
     
-    # Create reference model
-    ref_model = ReferenceModel(model)
-    logger.info("Created reference model for KL regularization")
+    # Create reference model with caching disabled
+    ref_model = ReferenceModel(model, cache_size=0)  # No caching to prevent memory leak
+    logger.info("Created reference model for KL regularization (caching disabled)")
     
     # Setup enhanced features
     kl_controller = None
@@ -319,15 +397,23 @@ def main():
         betas=(0.9, 0.95)
     )
     
+    # Initialize history writer
+    history_writer = TrainingHistoryWriter(args.log_dir, max_memory_entries=10)
+    
+    # Log initial memory
+    initial_memory = torch.cuda.memory_allocated() / 1024**3
+    logger.info(f"Initial GPU memory: {initial_memory:.2f}GB")
+    
     # Training loop
     logger.info("\n" + "=" * 60)
     logger.info("STARTING TRAINING")
     logger.info("=" * 60)
     
-    training_history = []
-    
     for step in range(1, config.max_steps + 1):
         start_time = time.time()
+        
+        # Monitor memory at start of step
+        needs_cleanup = log_gpu_memory(logger, step, interval=10)
         
         # Sample batch
         batch_indices = np.random.choice(
@@ -357,10 +443,13 @@ def main():
             rollout_data["attention_masks"]
         )
         
-        ref_log_probs = ref_model.compute_log_probs(
+        # Get ref_log_probs on CPU first, then move to GPU if needed
+        ref_log_probs_cpu = ref_model.compute_log_probs(
             rollout_data["sequences"],
-            rollout_data["attention_masks"]
+            rollout_data["attention_masks"],
+            return_on_cpu=True  # Returns CPU tensor
         )
+        ref_log_probs = ref_log_probs_cpu.to(config.device)  # Move to GPU for loss computation
         
         # Create prompt mask
         prompt_mask = create_prompt_mask(
@@ -421,13 +510,16 @@ def main():
         mean_reward = np.mean(rollout_data['rewards'])
         reward_sample = [f'{r:.1f}' for r in rollout_data['rewards'][:10]]
         
-        training_history.append({
+        # Write history to disk instead of accumulating in RAM
+        history_entry = {
             'step': step,
             'loss': metrics['total_loss'],
             'mean_reward': mean_reward,
             'kl_div': metrics.get('kl_div', 0),
+            'memory_gb': torch.cuda.memory_allocated() / 1024**3,
             'elapsed_time': elapsed_time
-        })
+        }
+        history_writer.add_entry(history_entry)
         
         # Periodic evaluation (before cleanup)
         if step % config.eval_freq == 0:
@@ -436,13 +528,18 @@ def main():
             logger.info(f"Mean reward (last batch): {mean_reward:.3f}")
             logger.info(f"Reward distribution: {reward_sample}")
         
-        # Clear reference model cache periodically to prevent memory buildup
-        if step % 5 == 0:
-            ref_model.clear_cache()
+        # Aggressive cleanup - clear cache every step
+        ref_model.clear_cache()
         
         # Explicitly free GPU memory after logging
-        del loss, policy_log_probs, ref_log_probs, rollout_data
-        torch.cuda.empty_cache()
+        del loss, policy_log_probs, ref_log_probs, ref_log_probs_cpu, rollout_data
+        
+        # Emergency cleanup if high memory or periodic cleanup
+        if needs_cleanup or step % 50 == 0:
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()  # Ensure all operations complete
+            if needs_cleanup:
+                logger.info("Performed emergency memory cleanup")
         
         # Save checkpoint periodically
         if step % config.save_freq == 0:
@@ -453,23 +550,29 @@ def main():
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'config': config,
-                'history': training_history
+                'recent_history': history_writer.get_recent(10)  # Only save recent history
             }, checkpoint_path)
             logger.info(f"Saved checkpoint: {checkpoint_path}")
     
-    # Save final results
+    # Save final results from disk
     results_file = log_file.replace('.log', '_results.json')
+    all_history = history_writer.get_all()  # Read from disk
     with open(results_file, 'w') as f:
-        json.dump(training_history, f, indent=2)
+        json.dump(all_history, f, indent=2)
+    
     logger.info(f"\n=== TRAINING COMPLETE ===")
     logger.info(f"Results saved to: {results_file}")
     logger.info(f"Log file: {log_file}")
+    logger.info(f"History file: {history_writer.history_file}")
     
-    # Final statistics
-    final_rewards = [h['mean_reward'] for h in training_history[-10:]]
-    logger.info(f"\nFinal 10-step statistics:")
-    logger.info(f"  Mean reward: {np.mean(final_rewards):.3f} ± {np.std(final_rewards):.3f}")
-    logger.info(f"  Final loss: {training_history[-1]['loss']:.4f}")
+    # Final statistics from recent buffer
+    final_history = history_writer.get_recent(10)
+    if final_history:
+        final_rewards = [h['mean_reward'] for h in final_history]
+        logger.info(f"\nFinal 10-step statistics:")
+        logger.info(f"  Mean reward: {np.mean(final_rewards):.3f} ± {np.std(final_rewards):.3f}")
+        logger.info(f"  Final loss: {final_history[-1]['loss']:.4f}")
+        logger.info(f"  Final memory: {final_history[-1].get('memory_gb', 0):.2f}GB")
 
 
 if __name__ == "__main__":

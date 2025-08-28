@@ -62,6 +62,13 @@ class GRPOConfig:
     eval_freq: int = 10  # Evaluate every N steps
     save_freq: int = 100  # Save checkpoint every N steps
     
+    # Memory management
+    ref_model_cache_size: int = 0  # Disable caching by default to prevent leaks
+    log_memory_every: int = 10  # Log memory every N steps
+    memory_warning_gb: float = 18.0  # Warning threshold for GPU memory
+    history_buffer_size: int = 10  # Keep only last N entries in RAM
+    emergency_cleanup_interval: int = 50  # Force GPU cache clear every N steps
+    
     # Paths
     checkpoint_dir: str = "checkpoints/mini_grpo"
     

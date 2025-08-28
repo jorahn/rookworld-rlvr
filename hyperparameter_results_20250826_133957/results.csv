@@ -1,2 +1,0 @@
-run_id,kl_warmup_steps,kl_warmup_factor,learning_rate,kl_coefficient,status,steps_completed,final_kl_mean,final_kl_95pct,final_reward,training_time,diverged_at_step
-sweep_20250826_133957_1,50,0.0,1e-6,0.0005,OOM,10,14.5000,N/A,N/A,59,

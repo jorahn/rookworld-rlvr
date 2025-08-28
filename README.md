@@ -2,35 +2,32 @@
 
 **Fine-tune RookWorld-LM with Group Relative Policy Optimization on chess tasks**
 
-## 🎯 Mini Implementation (Mainline)
+## 🎯 Mini Implementation (Clean & Complete)
 
-The **mini implementation** in `src/mini/` is now the mainline code. This clean, self-contained implementation provides:
+This repository contains a **streamlined, production-ready** implementation of GRPO training for RookWorld-LM:
 
-- **Pure PyTorch**: No transformers library dependency
-- **Memory efficient**: Fixed memory leaks, stable VRAM usage (~4.8GB)
-- **Enhanced GRPO**: Advanced KL divergence types, adaptive control, GAE
-- **Stable training**: Verified over 100+ steps with consistent performance
-- **Complete system**: Model, training, evaluation, and testing in ~1500 lines
+- **Self-contained**: Complete system in `src/mini/` (~1500 lines)
+- **Pure PyTorch**: No transformers library dependency  
+- **Memory optimized**: Stable VRAM usage (~4.8GB)
+- **Enhanced GRPO**: Advanced KL control, GAE, value functions
+- **Comprehensive**: Model, training, testing, and analysis
 
 See [`src/mini/README.md`](src/mini/README.md) for detailed documentation.
 
 ## Quick Start
 
 ```bash
-# Navigate to mini implementation
-cd src/mini
-
 # Install dependencies
 uv sync
 
-# Run training with default settings
-uv run python train.py
+# Run training with optimized settings
+./train.sh
 
-# Run with custom parameters
-uv run python train.py --steps 100 --batch_size 8 --k_samples 8 --lr 1e-5
+# Or run mini implementation directly
+cd src/mini && uv run python train.py
 
-# Test enhanced features
-uv run python test_enhanced_grpo.py
+# Test enhanced GRPO features
+cd src/mini && uv run python test_enhanced_grpo.py
 ```
 
 ## Executive Summary
@@ -40,21 +37,30 @@ Production implementation of Group Relative Policy Optimization (GRPO) for fine-
 1. **Policy Task (P:)**: Generating structured chess analysis with moves, evaluations, and best lines
 2. **Environment Task (A:)**: Predicting board states and game outcomes after moves
 
-## Project Status ✅
+## 🏗️ Repository Structure
 
-### Completed Features
+```
+rookworld-rlvr/
+├── src/mini/           # Complete GRPO implementation
+│   ├── model.py        # Pure PyTorch GPT-2 (124M)
+│   ├── grpo.py         # Enhanced GRPO algorithm  
+│   ├── train.py        # Training loop
+│   ├── dataset.py      # Data loading
+│   ├── reward_scorer.py # Graduated rewards
+│   └── test_*.py       # Comprehensive tests
+├── train.sh            # Main training script
+├── docs/               # Critical insights and optimizations  
+└── README.md           # This file
+```
 
-#### **Mini Implementation (Mainline)**
-- ✅ Pure PyTorch GPT-2 (124M parameters)
-- ✅ GRPO algorithm with PPO-style clipping
-- ✅ Enhanced KL divergence (forward, reverse, symmetric)
-- ✅ Adaptive KL coefficient control
-- ✅ Advanced baseline methods (group mean, EMA, adaptive)
-- ✅ Value function and GAE support
-- ✅ Memory leak fixes (stable VRAM ~4.8GB)
-- ✅ Graduated reward system (0.2 → 1.0)
-- ✅ Mixed batch handling with position embeddings fix
-- ✅ Comprehensive testing suite
+## ✅ Complete Features
+
+- **Enhanced GRPO**: Forward/reverse/symmetric KL, adaptive control, GAE
+- **Memory optimized**: Fixed leaks, stable 4.8GB VRAM usage
+- **Graduated rewards**: 5-level system (0.2 → 0.4 → 0.6 → 0.8 → 1.0)
+- **Mixed batch handling**: Proper position embeddings for P:/A: tasks
+- **Ground truth scoring**: Uses dataset targets for meaningful rewards
+- **Comprehensive testing**: Full test coverage of all components
 
 #### **Training Metrics (Verified with Ground Truth)**
 - **Ground truth scoring**: Uses dataset targets for meaningful rewards

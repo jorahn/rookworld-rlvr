@@ -289,9 +289,14 @@ def collect_rollouts(
         padded_sequences.append(seq)
         padded_masks.append(mask)
     
-    # Stack on CPU first, then move to GPU
-    sequences = torch.stack(padded_sequences).to(config.device)
-    attention_masks = torch.stack(padded_masks).to(config.device)
+    # Stack on CPU first, then move to GPU only when needed
+    # Keep sequences on CPU initially to save memory
+    sequences = torch.stack(padded_sequences)
+    attention_masks = torch.stack(padded_masks)
+    
+    # Move to GPU just before use
+    sequences = sequences.to(config.device)
+    attention_masks = attention_masks.to(config.device)
     rewards = torch.tensor(all_rewards, device=config.device)
     
     # Compute advantages with enhanced baseline
@@ -436,25 +441,32 @@ def main():
         # Training step
         model.train()
         
+        # Extract tensors and ensure proper cleanup
+        sequences = rollout_data["sequences"]
+        attention_masks = rollout_data["attention_masks"]
+        advantages = rollout_data["advantages"]
+        prompt_lengths = rollout_data["prompt_lengths"]
+        
         # Compute log probs
         policy_log_probs = compute_log_probs(
             model,
-            rollout_data["sequences"],
-            rollout_data["attention_masks"]
+            sequences,
+            attention_masks
         )
         
         # Get ref_log_probs on CPU first, then move to GPU if needed
-        ref_log_probs_cpu = ref_model.compute_log_probs(
-            rollout_data["sequences"],
-            rollout_data["attention_masks"],
-            return_on_cpu=True  # Returns CPU tensor
-        )
-        ref_log_probs = ref_log_probs_cpu.to(config.device)  # Move to GPU for loss computation
+        with torch.no_grad():
+            ref_log_probs_cpu = ref_model.compute_log_probs(
+                sequences,
+                attention_masks,
+                return_on_cpu=True  # Returns CPU tensor
+            )
+            ref_log_probs = ref_log_probs_cpu.to(config.device)  # Move to GPU for loss computation
         
         # Create prompt mask
         prompt_mask = create_prompt_mask(
-            rollout_data["sequences"],
-            rollout_data["prompt_lengths"]
+            sequences,
+            prompt_lengths
         )
         
         # Compute value estimates if using value function
@@ -472,6 +484,7 @@ def main():
             with torch.no_grad():
                 completion_mask = (1 - prompt_mask)
                 temp_kl = ((policy_log_probs - ref_log_probs) * completion_mask).sum(dim=1).mean().item()
+                del completion_mask  # Free immediately
             current_kl_coef = kl_controller.update(temp_kl)
             logger.debug(f"Adaptive KL coefficient: {current_kl_coef:.6f}")
         
@@ -479,7 +492,7 @@ def main():
         loss, metrics = grpo_loss(
             policy_log_probs,
             ref_log_probs,
-            rollout_data["advantages"],
+            advantages,
             prompt_mask,
             kl_coef=current_kl_coef,
             clip_range=config.clip_range,
@@ -499,6 +512,9 @@ def main():
         metrics['grad_norm'] = grad_norm.item()
         
         optimizer.step()
+        
+        # Detach loss to prevent gradient accumulation
+        loss = loss.detach()
         
         elapsed_time = time.time() - start_time
         metrics['total_loss'] = loss.item()
@@ -532,14 +548,30 @@ def main():
         ref_model.clear_cache()
         
         # Explicitly free GPU memory after logging
-        del loss, policy_log_probs, ref_log_probs, ref_log_probs_cpu, rollout_data
+        # Delete all large tensors explicitly
+        del loss, policy_log_probs, ref_log_probs, ref_log_probs_cpu
+        del sequences, attention_masks, advantages, prompt_mask
+        if values is not None:
+            del values, value_targets
         
-        # Emergency cleanup if high memory or periodic cleanup
-        if needs_cleanup or step % 50 == 0:
+        # Clear the entire rollout_data dictionary
+        rollout_data.clear()
+        del rollout_data
+        
+        # Force synchronization to ensure operations complete
+        torch.cuda.synchronize()
+        
+        # Clear GPU cache every step to prevent accumulation
+        torch.cuda.empty_cache()
+        
+        # Emergency cleanup if high memory
+        if needs_cleanup:
+            # Extra aggressive cleanup
+            import gc
+            gc.collect()
+            torch.cuda.synchronize()
             torch.cuda.empty_cache()
-            torch.cuda.synchronize()  # Ensure all operations complete
-            if needs_cleanup:
-                logger.info("Performed emergency memory cleanup")
+            logger.info("Performed emergency memory cleanup")
         
         # Save checkpoint periodically
         if step % config.save_freq == 0:

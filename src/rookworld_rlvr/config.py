@@ -48,6 +48,8 @@ class GRPOConfig:
     use_bf16: bool = False  # BFloat16 mixed precision training
     use_torch_compile: bool = False  # PyTorch 2.x compilation
     compile_mode: str = "reduce-overhead"  # Compilation mode
+    enable_tf32: bool = True  # TF32 acceleration for Ampere+ GPUs
+    tensor_core_precision: str = "high"  # "highest", "high", or "medium" for matmul precision
     
     # Generation
     max_new_tokens: int = 144  # Must be >=144 for complete schemas

@@ -460,6 +460,18 @@ def main():
         betas=(0.9, 0.95)
     )
     
+    # Setup performance optimizations
+    if config.enable_tf32:
+        # Enable TF32 for faster training on Ampere+ GPUs (RTX 30/40 series, A100)
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        logger.info("Enabled TF32 acceleration for Ampere+ GPUs")
+    
+    if config.tensor_core_precision:
+        # Optimize for Tensor Core utilization
+        torch.set_float32_matmul_precision(config.tensor_core_precision)
+        logger.info(f"Set Tensor Core precision to '{config.tensor_core_precision}' for maximum utilization")
+    
     # Setup gradient scaler for mixed precision training
     scaler = None
     if config.use_bf16:

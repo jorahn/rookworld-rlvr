@@ -66,18 +66,29 @@ Production implementation of Group Relative Policy Optimization (GRPO) for fine-
 
 ## Technical Architecture
 
-### Mini Implementation Structure
+### Repository Structure
 ```
-src/rookworld_rlvr/
-├── model.py           # Pure PyTorch GPT-2 implementation
-├── loader.py          # HuggingFace weight loading
-├── dataset.py         # Data loading and preprocessing
-├── reward_scorer.py   # Reward computation with validation
-├── validation.py      # Format and content validation
-├── grpo.py           # Enhanced GRPO algorithm
-├── train.py          # Training loop
-├── config.py         # Configuration dataclass
-└── test_*.py         # Comprehensive tests
+rookworld-rlvr/
+├── src/rookworld_rlvr/           # Main package
+│   ├── model.py                  # Pure PyTorch GPT-2 implementation
+│   ├── loader.py                 # HuggingFace weight loading
+│   ├── dataset.py                # Data loading and preprocessing
+│   ├── reward_scorer.py          # Reward computation with validation
+│   ├── validation.py             # Format and content validation
+│   ├── grpo.py                   # Enhanced GRPO algorithm
+│   ├── train.py                  # Training loop
+│   └── config.py                 # Configuration dataclass
+├── tests/                        # Test suite
+│   ├── test_grpo.py             # GRPO algorithm tests
+│   ├── test_reward_scorer.py    # Reward computation tests
+│   ├── test_dataset.py          # Data loading tests
+│   └── test_*.py                # Additional tests
+├── scripts/                      # Analysis and utility scripts
+│   ├── train_logged.py          # Main training script
+│   ├── analyze_metrics.py       # Training analysis
+│   └── *.py                     # Other analysis scripts
+└── docs/                        # Documentation
+    └── ARCHITECTURE.md          # Detailed architecture docs
 ```
 
 ### Key Innovations

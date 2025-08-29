@@ -81,11 +81,11 @@ ARGS=(
 # Execute training with memory optimizations
 echo ""
 echo "🏃 Executing GRPO training..."
-echo "Command: uv run python -m rookworld_rlvr.train_logged ${ARGS[*]}"
+echo "Command: uv run python scripts/train_logged.py ${ARGS[*]}"
 echo "============================================================"
 
 # Set CUDA memory allocator for better memory management
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # Run the training script with detailed logging
-exec uv run python -m rookworld_rlvr.train_logged "${ARGS[@]}"
+exec uv run python scripts/train_logged.py "${ARGS[@]}"

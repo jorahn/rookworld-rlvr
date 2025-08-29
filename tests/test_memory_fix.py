@@ -6,9 +6,9 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from config import GRPOConfig
-from model import GPT2Model
-from grpo import compute_log_probs, ReferenceModel
+from rookworld_rlvr.config import GRPOConfig
+from rookworld_rlvr.model import GPT2Model
+from rookworld_rlvr.grpo import compute_log_probs, ReferenceModel
 import time
 
 def test_memory_usage():
@@ -25,7 +25,7 @@ def test_memory_usage():
     )
     
     # Create model with GPT-2 config
-    from model import GPT2Config as ModelConfig
+    from rookworld_rlvr.model import GPT2Config as ModelConfig
     model_config = ModelConfig()
     model = GPT2Model(model_config)
     model.to(config.device)

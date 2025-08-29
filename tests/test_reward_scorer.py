@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 
-from reward_scorer import RewardScorer, RewardDetails, compute_grpo_rewards
+from rookworld_rlvr.reward_scorer import RewardScorer, RewardDetails, compute_grpo_rewards
 
 
 class TestRewardScorer:

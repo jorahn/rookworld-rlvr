@@ -23,7 +23,7 @@ except ImportError:
     HAS_HF_HUB = False
     print("Warning: huggingface_hub not installed. Install with: pip install huggingface-hub")
 
-from model import GPT2Model, GPT2Config
+from .model import GPT2Model, GPT2Config
 
 
 def create_weight_mapping() -> Dict[str, str]:

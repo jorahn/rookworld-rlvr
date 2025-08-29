@@ -2,17 +2,17 @@
 
 **Fine-tune RookWorld-LM with Group Relative Policy Optimization on chess tasks**
 
-## 🎯 Mini Implementation (Clean & Complete)
+## 🎯 Main Implementation (Clean & Complete)
 
-This repository contains a **streamlined, production-ready** implementation of GRPO training for RookWorld-LM:
+The **main implementation** in `src/rookworld_rlvr/` is the streamlined, production-ready code. This clean, self-contained implementation provides:
 
-- **Self-contained**: Complete system in `src/mini/` (~1500 lines)
+- **Self-contained**: Complete system in `src/rookworld_rlvr/` (~1500 lines)
 - **Pure PyTorch**: No transformers library dependency  
 - **Memory optimized**: Stable VRAM usage (~4.8GB)
 - **Enhanced GRPO**: Advanced KL control, GAE, value functions
 - **Comprehensive**: Model, training, testing, and analysis
 
-See [`src/mini/README.md`](src/mini/README.md) for detailed documentation.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for detailed documentation.
 
 ## Quick Start
 
@@ -23,11 +23,11 @@ uv sync
 # Run training with optimized settings
 ./train.sh
 
-# Or run mini implementation directly
-cd src/mini && uv run python train.py
+# Or run main implementation directly  
+cd src/rookworld_rlvr && uv run python train.py
 
 # Test enhanced GRPO features
-cd src/mini && uv run python test_enhanced_grpo.py
+uv run pytest tests/test_enhanced_grpo.py
 ```
 
 ## Executive Summary
@@ -41,13 +41,15 @@ Production implementation of Group Relative Policy Optimization (GRPO) for fine-
 
 ```
 rookworld-rlvr/
-├── src/mini/           # Complete GRPO implementation
+├── src/rookworld_rlvr/ # Complete GRPO implementation
 │   ├── model.py        # Pure PyTorch GPT-2 (124M)
 │   ├── grpo.py         # Enhanced GRPO algorithm  
 │   ├── train.py        # Training loop
 │   ├── dataset.py      # Data loading
 │   ├── reward_scorer.py # Graduated rewards
-│   └── test_*.py       # Comprehensive tests
+│   └── config.py       # Configuration
+├── tests/              # Comprehensive test suite
+├── scripts/            # Analysis and training scripts
 ├── train.sh            # Main training script
 ├── docs/               # Critical insights and optimizations  
 └── README.md           # This file
@@ -72,18 +74,29 @@ rookworld-rlvr/
 
 ## Technical Architecture
 
-### Mini Implementation Structure
+### Repository Structure
 ```
-src/mini/
-├── model.py           # Pure PyTorch GPT-2 implementation
-├── loader.py          # HuggingFace weight loading
-├── dataset.py         # Data loading and preprocessing
-├── reward_scorer.py   # Reward computation with validation
-├── validation.py      # Format and content validation
-├── grpo.py           # Enhanced GRPO algorithm
-├── train.py          # Training loop
-├── config.py         # Configuration dataclass
-└── test_*.py         # Comprehensive tests
+rookworld-rlvr/
+├── src/rookworld_rlvr/           # Main package
+│   ├── model.py                  # Pure PyTorch GPT-2 implementation
+│   ├── loader.py                 # HuggingFace weight loading
+│   ├── dataset.py                # Data loading and preprocessing
+│   ├── reward_scorer.py          # Reward computation with validation
+│   ├── validation.py             # Format and content validation
+│   ├── grpo.py                   # Enhanced GRPO algorithm
+│   ├── train.py                  # Training loop
+│   └── config.py                 # Configuration dataclass
+├── tests/                        # Test suite
+│   ├── test_grpo.py             # GRPO algorithm tests
+│   ├── test_reward_scorer.py    # Reward computation tests
+│   ├── test_dataset.py          # Data loading tests
+│   └── test_*.py                # Additional tests
+├── scripts/                      # Analysis and utility scripts
+│   ├── train_logged.py          # Main training script
+│   ├── analyze_metrics.py       # Training analysis
+│   └── *.py                     # Other analysis scripts
+└── docs/                        # Documentation
+    └── ARCHITECTURE.md          # Detailed architecture docs
 ```
 
 ### Key Innovations
@@ -105,7 +118,7 @@ src/mini/
 
 ## Training Configuration
 
-Default configuration in `src/mini/config.py`:
+Default configuration in `src/rookworld_rlvr/config.py`:
 ```python
 # Model
 model_path = "jrahn/RookWorld-LM-124M"
@@ -151,7 +164,7 @@ max_steps = 1000
 
 ### Testing
 ```bash
-cd src/mini
+cd src/rookworld_rlvr
 
 # Run all tests
 uv run python test_dataset.py

@@ -9,16 +9,16 @@ import tiktoken
 import numpy as np
 
 # Mini modules
-from config import GRPOConfig
-from grpo import (
+from rookworld_rlvr.config import GRPOConfig
+from rookworld_rlvr.grpo import (
     compute_log_probs,
     compute_advantages,
     grpo_loss,
     create_prompt_mask,
     ReferenceModel
 )
-from loader import load_rookworld_model
-from dataset import load_and_prepare_samples
+from rookworld_rlvr.loader import load_rookworld_model
+from rookworld_rlvr.dataset import load_and_prepare_samples
 
 
 def test_log_probs():
@@ -137,7 +137,7 @@ def test_data_integration():
     assert len(a_tasks) > 0, "No A: tasks found"
     
     # Test reward computation
-    from reward_scorer import compute_grpo_rewards
+    from rookworld_rlvr.reward_scorer import compute_grpo_rewards
     
     prompts = [s[1] for s in samples[:2]]
     completions = [s[2] for s in samples[:2]]  # Use ground truth

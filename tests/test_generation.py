@@ -20,10 +20,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 
-from dataset import load_and_prepare_samples, preprocess_sample
-from reward_scorer import compute_grpo_rewards
-from loader import load_rookworld_model
-from model import GPT2Model
+from rookworld_rlvr.dataset import load_and_prepare_samples, preprocess_sample
+from rookworld_rlvr.reward_scorer import compute_grpo_rewards
+from rookworld_rlvr.loader import load_rookworld_model
+from rookworld_rlvr.model import GPT2Model
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

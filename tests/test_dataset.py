@@ -14,8 +14,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 
-from dataset import preprocess_sample, parse_p_task, parse_a_task
-from validation import (
+from rookworld_rlvr.dataset import preprocess_sample, parse_p_task, parse_a_task
+from rookworld_rlvr.validation import (
     validate_p_format, validate_a_format,
     validate_a_fen, validate_a_flags, validate_a_reward,
     levenshtein_distance, P_WEIGHTS, A_WEIGHTS

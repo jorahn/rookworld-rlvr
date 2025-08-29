@@ -19,8 +19,8 @@ import tiktoken
 import numpy as np
 
 # Mini modules
-from config import GRPOConfig
-from grpo import (
+from .config import GRPOConfig
+from .grpo import (
     compute_log_probs,
     compute_advantages,
     grpo_loss,
@@ -29,9 +29,9 @@ from grpo import (
     AdaptiveKLController,
     ValueFunction
 )
-from loader import load_rookworld_model
-from dataset import load_and_prepare_samples
-from reward_scorer import compute_grpo_rewards
+from .loader import load_rookworld_model
+from .dataset import load_and_prepare_samples
+from .reward_scorer import compute_grpo_rewards
 
 
 def collect_rollouts(

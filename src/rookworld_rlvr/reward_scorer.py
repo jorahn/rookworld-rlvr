@@ -12,8 +12,8 @@ from dataclasses import dataclass
 import math
 import re
 
-from dataset import parse_p_task, parse_a_task
-from validation import (
+from .dataset import parse_p_task, parse_a_task
+from .validation import (
     validate_p_format, validate_a_format,
     validate_p_best_move, validate_p_candidates, validate_p_evaluations,
     validate_a_fen, validate_a_flags, validate_a_reward,

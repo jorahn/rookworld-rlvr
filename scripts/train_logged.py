@@ -19,9 +19,14 @@ import torch.optim as optim
 import tiktoken
 import numpy as np
 
-# Mini modules
-from config import GRPOConfig
-from grpo import (
+# Add src to path for imports
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+
+# Import from rookworld_rlvr package
+from rookworld_rlvr.config import GRPOConfig
+from rookworld_rlvr.grpo import (
     compute_log_probs,
     compute_advantages,
     grpo_loss,
@@ -30,9 +35,9 @@ from grpo import (
     AdaptiveKLController,
     ValueFunction
 )
-from loader import load_rookworld_model
-from dataset import load_and_prepare_samples
-from reward_scorer import RewardScorer
+from rookworld_rlvr.loader import load_rookworld_model
+from rookworld_rlvr.dataset import load_and_prepare_samples
+from rookworld_rlvr.reward_scorer import RewardScorer
 
 
 class TrainingHistoryWriter:

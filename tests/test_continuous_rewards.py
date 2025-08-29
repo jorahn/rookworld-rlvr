@@ -3,8 +3,8 @@ Test continuous rewards implementation for FEN similarity and evaluation accurac
 """
 
 import numpy as np
-from reward_scorer import RewardScorer
-from validation import levenshtein_distance
+from rookworld_rlvr.reward_scorer import RewardScorer
+from rookworld_rlvr.validation import levenshtein_distance
 
 def test_fen_similarity_continuous():
     """Test that FEN similarity uses continuous exponential scaling."""

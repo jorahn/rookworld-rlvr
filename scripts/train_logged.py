@@ -220,9 +220,23 @@ def log_rollout_details(logger, rollout_data, step):
             logger.debug(f"Completion: {completion[:200]}...")  # First 200 chars
 
 
-def log_training_metrics(logger, metrics, step, elapsed_time):
-    """Log detailed training metrics."""
+def log_training_metrics(logger, metrics, step, elapsed_time, timing_breakdown=None):
+    """Log detailed training metrics with timing breakdown."""
     logger.info(f"\nStep {step} | Time: {elapsed_time:.2f}s")
+    
+    # Log timing breakdown if available
+    if timing_breakdown:
+        logger.info(f"=== STEP TIMING BREAKDOWN ===")
+        total_time = elapsed_time
+        logger.info(f"  Rollout: {timing_breakdown.get('rollout', 0):.2f}s ({timing_breakdown.get('rollout', 0)/total_time*100:.1f}%)")
+        logger.info(f"    Generation: {timing_breakdown.get('generation', 0):.2f}s ({timing_breakdown.get('generation', 0)/total_time*100:.1f}%)")
+        logger.info(f"    Reward scoring: {timing_breakdown.get('reward_scoring', 0):.2f}s ({timing_breakdown.get('reward_scoring', 0)/total_time*100:.1f}%)")
+        logger.info(f"  Training computation: {timing_breakdown.get('training', 0):.2f}s ({timing_breakdown.get('training', 0)/total_time*100:.1f}%)")
+        logger.info(f"    Log probs: {timing_breakdown.get('logprobs', 0):.2f}s")
+        logger.info(f"    Loss computation: {timing_breakdown.get('loss_computation', 0):.2f}s")
+        logger.info(f"    Backward pass: {timing_breakdown.get('backward', 0):.2f}s")
+        logger.info(f"  Memory cleanup: {timing_breakdown.get('cleanup', 0):.2f}s")
+    
     logger.info(f"  Loss: {metrics.get('total_loss', 0):.4f}")
     logger.info(f"  PG Loss: {metrics.get('pg_loss', 0):.4f}")
     logger.info(f"  KL Divergence: {metrics.get('kl_div', 0):.4f}")
@@ -256,9 +270,19 @@ def collect_rollouts(
     baseline_tracker: Optional[Dict] = None
 ) -> Dict:
     """
-    Generate K completions per prompt and compute rewards.
+    Generate K completions per prompt and compute rewards with timing profiling.
     """
     model.eval()
+    
+    # Initialize timing profiler
+    timing_profile = {
+        'data_prep': 0.0,
+        'generation': 0.0,
+        'reward_scoring': 0.0,
+        'batch_preparation': 0.0,
+        'total_rollout': 0.0
+    }
+    rollout_start_time = time.time()
     
     all_sequences = []
     all_attention_masks = []
@@ -277,9 +301,11 @@ def collect_rollouts(
     for sample_idx, (task_type, prompt, ground_truth, data) in enumerate(samples):
         logger.debug(f"Processing sample {sample_idx+1}/{len(samples)}: {task_type} task")
         
-        # Tokenize prompt
+        # Data preparation timing
+        data_prep_start = time.time()
         prompt_ids = tokenizer.encode(prompt, disallowed_special=())
         prompt_length = len(prompt_ids)
+        timing_profile['data_prep'] += time.time() - data_prep_start
         
         # Generate K completions
         sample_rewards = []
@@ -288,6 +314,9 @@ def collect_rollouts(
         sample_completions = []
         
         for k in range(config.k_samples):
+            # Generation timing
+            generation_start = time.time()
+            
             # Generate completion
             prompt_tensor = torch.tensor(prompt_ids, device=config.device).unsqueeze(0)
             
@@ -309,17 +338,25 @@ def collect_rollouts(
             if '<|endoftext|>' in completion:
                 completion = completion.replace('<|endoftext|>', '').strip()
             
-            # Score completion with ground truth comparison
-            reward, _ = scorer.score_single(prompt, completion, ground_truth=ground_truth, log_details=False)
+            timing_profile['generation'] += time.time() - generation_start
             
-            sample_rewards.append(reward)
-            # Detach and move to CPU to avoid memory accumulation
+            # Store completion (scoring will be done in batch)
             sample_sequences.append(output_ids[0].detach().cpu())
             sample_masks.append(torch.ones_like(output_ids[0]).detach().cpu())
             sample_completions.append(completion)
-            
-            if k == 0:  # Log first completion per sample
-                logger.debug(f"  K={k+1}, Reward={reward:.3f}, Completion: {completion[:100]}...")
+        
+        # Vectorized reward scoring (batch score all k_samples for this prompt)
+        reward_start = time.time()
+        prompt_list = [prompt] * config.k_samples
+        batch_rewards, _ = scorer.score_batch(prompt_list, sample_completions, compute_advantages=False)
+        timing_profile['reward_scoring'] += time.time() - reward_start
+        
+        # Log first completion with its reward
+        if len(sample_completions) > 0:
+            logger.debug(f"  K=1, Reward={batch_rewards[0]:.3f}, Completion: {sample_completions[0][:100]}...")
+        
+        # Store results
+        sample_rewards = batch_rewards.tolist()
         
         # Store group data
         all_rewards.extend(sample_rewards)
@@ -327,6 +364,9 @@ def collect_rollouts(
         all_attention_masks.extend(sample_masks)
         all_prompt_lengths.extend([prompt_length] * config.k_samples)
         all_completions.extend(sample_completions)
+    
+    # Batch preparation timing
+    batch_prep_start = time.time()
     
     # Pad sequences for batch processing
     max_len = max(seq.shape[0] for seq in all_sequences)
@@ -348,6 +388,8 @@ def collect_rollouts(
     sequences = torch.stack(padded_sequences)
     attention_masks = torch.stack(padded_masks)
     
+    timing_profile['batch_preparation'] += time.time() - batch_prep_start
+    
     # Move to GPU just before use
     sequences = sequences.to(config.device)
     attention_masks = attention_masks.to(config.device)
@@ -361,7 +403,19 @@ def collect_rollouts(
         baseline_tracker=baseline_tracker
     )
     
+    # Finalize timing profile
+    timing_profile['total_rollout'] = time.time() - rollout_start_time
+    
     logger.debug(f"\nAdvantages: mean={advantages.mean().item():.3f}, std={advantages.std().item():.3f}")
+    
+    # Log detailed timing breakdown
+    total_time = timing_profile['total_rollout']
+    logger.info(f"\n=== ROLLOUT TIMING BREAKDOWN (Step {step}) ===")
+    logger.info(f"Total rollout time: {total_time:.3f}s")
+    logger.info(f"  Data preparation: {timing_profile['data_prep']:.3f}s ({timing_profile['data_prep']/total_time*100:.1f}%)")
+    logger.info(f"  Generation: {timing_profile['generation']:.3f}s ({timing_profile['generation']/total_time*100:.1f}%)")
+    logger.info(f"  Reward scoring: {timing_profile['reward_scoring']:.3f}s ({timing_profile['reward_scoring']/total_time*100:.1f}%)")
+    logger.info(f"  Batch preparation: {timing_profile['batch_preparation']:.3f}s ({timing_profile['batch_preparation']/total_time*100:.1f}%)")
     
     return {
         "sequences": sequences,
@@ -369,7 +423,8 @@ def collect_rollouts(
         "rewards": all_rewards,
         "advantages": advantages,
         "prompt_lengths": all_prompt_lengths,
-        "completions": all_completions
+        "completions": all_completions,
+        "timing_profile": timing_profile
     }
 
 
@@ -515,14 +570,21 @@ def main():
         # Log rollout details
         log_rollout_details(logger, rollout_data, step)
         
-        # Training step
+        # Training step timing
+        training_start_time = time.time()
         model.train()
+        
+        # Extract rollout timing profile
+        rollout_timing = rollout_data.get("timing_profile", {})
         
         # Extract tensors and ensure proper cleanup
         sequences = rollout_data["sequences"]
         attention_masks = rollout_data["attention_masks"]
         advantages = rollout_data["advantages"]
         prompt_lengths = rollout_data["prompt_lengths"]
+        
+        # Log probability computation timing
+        logprobs_start = time.time()
         
         # Compute log probs with chunked processing and optional BF16
         policy_log_probs = compute_log_probs(
@@ -542,6 +604,8 @@ def main():
                 use_bf16=False  # Keep reference model in FP32 for numerical stability
             )
             ref_log_probs = ref_log_probs_cpu.to(config.device)  # Move to GPU for loss computation
+        
+        logprobs_time = time.time() - logprobs_start
             
         # Force cleanup of intermediate tensors
         torch.cuda.synchronize()
@@ -572,6 +636,9 @@ def main():
             current_kl_coef = kl_controller.update(temp_kl)
             logger.debug(f"Adaptive KL coefficient: {current_kl_coef:.6f}")
         
+        # Loss computation timing
+        loss_start = time.time()
+        
         # Compute enhanced loss
         loss, metrics = grpo_loss(
             policy_log_probs,
@@ -586,6 +653,11 @@ def main():
             value_loss_coef=config.value_loss_coef,
             entropy_coef=config.entropy_coef
         )
+        
+        loss_computation_time = time.time() - loss_start
+        
+        # Backward pass timing
+        backward_start = time.time()
         
         # Backward pass with optional mixed precision
         optimizer.zero_grad(set_to_none=True)
@@ -604,6 +676,7 @@ def main():
             optimizer.step()
         
         metrics['grad_norm'] = grad_norm.item()
+        backward_time = time.time() - backward_start
         
         # Detach loss to prevent gradient accumulation
         loss = loss.detach()
@@ -613,11 +686,25 @@ def main():
             if param.grad is not None:
                 param.grad = None
         
+        # Calculate total training time
+        training_computation_time = time.time() - training_start_time
         elapsed_time = time.time() - start_time
         metrics['total_loss'] = loss.item()
         
-        # Log training metrics
-        log_training_metrics(logger, metrics, step, elapsed_time)
+        # Compile comprehensive timing breakdown
+        step_timing_breakdown = {
+            'rollout': rollout_timing.get('total_rollout', 0),
+            'generation': rollout_timing.get('generation', 0),
+            'reward_scoring': rollout_timing.get('reward_scoring', 0),
+            'training': training_computation_time,
+            'logprobs': logprobs_time,
+            'loss_computation': loss_computation_time,
+            'backward': backward_time,
+            'cleanup': elapsed_time - rollout_timing.get('total_rollout', 0) - training_computation_time
+        }
+        
+        # Log training metrics with timing breakdown
+        log_training_metrics(logger, metrics, step, elapsed_time, step_timing_breakdown)
         
         # Store history and eval data before deleting variables
         mean_reward = np.mean(rollout_data['rewards'])

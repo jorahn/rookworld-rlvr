@@ -25,7 +25,7 @@ def test_memory_usage():
     )
     
     # Create model with GPT-2 config
-    from model import GPT2Config as ModelConfig
+    from rookworld_rlvr.model import GPT2Config as ModelConfig
     model_config = ModelConfig()
     model = GPT2Model(model_config)
     model.to(config.device)

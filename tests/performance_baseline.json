@@ -1,0 +1,62 @@
+{
+  "timestamp": 1756453140.891601,
+  "torch_version": "2.8.0+cu128",
+  "cuda_available": true,
+  "device": "cuda",
+  "cuda_version": "12.8",
+  "gpu_name": "NVIDIA GeForce RTX 4090",
+  "model_loading": {
+    "load_time_seconds": 1.114983320236206,
+    "inference_time_ms": 106.94575309753418,
+    "model_parameters": 124439808,
+    "memory_after_load": {
+      "allocated_gb": 1.0287361145019531,
+      "reserved_gb": 1.072265625,
+      "max_allocated_gb": 1.0287361145019531
+    }
+  },
+  "data_loading": {
+    "load_time_seconds": 2.474245309829712,
+    "samples_loaded": 100,
+    "p_task_count": 74,
+    "a_task_count": 26,
+    "p_task_ratio": 0.74,
+    "avg_prompt_length": 73.88,
+    "avg_completion_length": 77.88
+  },
+  "generation": {
+    "total_generation_time_seconds": 2.591510534286499,
+    "generations_per_second": 3.0870026936635933,
+    "memory_increase_gb": 1.1444091796875e-05,
+    "samples_tested": 2,
+    "k_samples": 4,
+    "total_generations": 8,
+    "average_sequence_length": 144.125,
+    "model_flops_per_forward": 107515994112,
+    "mfu_percent": 0.20115282632464426,
+    "gpu_peak_tflops": 165.0,
+    "actual_tflops": 0.33190216343566303
+  },
+  "grpo_computation": {
+    "grpo_computation_time_seconds": 0.04128670692443848,
+    "loss_value": -3.248288339818828e-05,
+    "memory_increase_gb": 0.5659098625183105,
+    "kl_divergence": 0.0,
+    "policy_loss": -1.4901161193847656e-08,
+    "sequences_processed": 4,
+    "model_flops_per_sequence": 111995827200,
+    "total_flops": 1343949926400,
+    "mfu_percent": 19.728265284024438,
+    "actual_tflops": 32.55163771864032
+  },
+  "reward_scoring": {
+    "scoring_time_seconds": 0.002484560012817383,
+    "samples_per_second": 8049.714998560598,
+    "samples_scored": 20,
+    "mean_reward": 0.409264705882353,
+    "reward_std": 0.3410611810786363,
+    "min_reward": 0.21235294117647058,
+    "max_reward": 1.0,
+    "format_valid_ratio": 1.0
+  }
+}

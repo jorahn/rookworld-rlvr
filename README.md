@@ -4,7 +4,7 @@
 
 ## 🎯 Mini Implementation (Mainline)
 
-The **mini implementation** in `src/mini/` is now the mainline code. This clean, self-contained implementation provides:
+The **main implementation** in `src/rookworld_rlvr/` is the mainline code. This clean, self-contained implementation provides:
 
 - **Pure PyTorch**: No transformers library dependency
 - **Memory efficient**: Fixed memory leaks, stable VRAM usage (~4.8GB)
@@ -12,13 +12,13 @@ The **mini implementation** in `src/mini/` is now the mainline code. This clean,
 - **Stable training**: Verified over 100+ steps with consistent performance
 - **Complete system**: Model, training, evaluation, and testing in ~1500 lines
 
-See [`src/mini/README.md`](src/mini/README.md) for detailed documentation.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for detailed documentation.
 
 ## Quick Start
 
 ```bash
 # Navigate to mini implementation
-cd src/mini
+cd src/rookworld_rlvr
 
 # Install dependencies
 uv sync
@@ -68,7 +68,7 @@ Production implementation of Group Relative Policy Optimization (GRPO) for fine-
 
 ### Mini Implementation Structure
 ```
-src/mini/
+src/rookworld_rlvr/
 ├── model.py           # Pure PyTorch GPT-2 implementation
 ├── loader.py          # HuggingFace weight loading
 ├── dataset.py         # Data loading and preprocessing
@@ -99,7 +99,7 @@ src/mini/
 
 ## Training Configuration
 
-Default configuration in `src/mini/config.py`:
+Default configuration in `src/rookworld_rlvr/config.py`:
 ```python
 # Model
 model_path = "jrahn/RookWorld-LM-124M"
@@ -145,7 +145,7 @@ max_steps = 1000
 
 ### Testing
 ```bash
-cd src/mini
+cd src/rookworld_rlvr
 
 # Run all tests
 uv run python test_dataset.py

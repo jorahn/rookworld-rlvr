@@ -15,10 +15,10 @@ import subprocess
 import re
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from config import GRPOConfig
-from model import GPT2Model, GPT2Config as ModelConfig
-from grpo import compute_log_probs, ReferenceModel, grpo_loss, compute_advantages, create_prompt_mask
-from loader import load_rookworld_model
+from rookworld_rlvr.config import GRPOConfig
+from rookworld_rlvr.model import GPT2Model, GPT2Config as ModelConfig
+from rookworld_rlvr.grpo import compute_log_probs, ReferenceModel, grpo_loss, compute_advantages, create_prompt_mask
+from rookworld_rlvr.loader import load_rookworld_model
 
 def get_gpu_memory_nvidia_smi():
     """

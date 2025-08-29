@@ -6,7 +6,7 @@ Tests the new KL divergence measures, advanced baselines, and value function.
 
 import torch
 import numpy as np
-from grpo import (
+from rookworld_rlvr.grpo import (
     compute_kl_divergence, 
     compute_advantages,
     AdaptiveKLController,

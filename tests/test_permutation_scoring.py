@@ -18,8 +18,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 
-from reward_scorer import RewardScorer, compute_grpo_rewards
-from dataset import load_and_prepare_samples
+from rookworld_rlvr.reward_scorer import RewardScorer, compute_grpo_rewards
+from rookworld_rlvr.dataset import load_and_prepare_samples
 
 # Configure logging
 logging.basicConfig(level=logging.WARNING)  # Reduce noise during testing

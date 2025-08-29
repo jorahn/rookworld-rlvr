@@ -8,9 +8,9 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 from transformers import GPT2Tokenizer
-from dataset import load_and_prepare_samples
-from loader import load_rookworld_model
-from reward_scorer import compute_grpo_rewards
+from rookworld_rlvr.dataset import load_and_prepare_samples
+from rookworld_rlvr.loader import load_rookworld_model
+from rookworld_rlvr.reward_scorer import compute_grpo_rewards
 import numpy as np
 
 def test_mixed_batch():

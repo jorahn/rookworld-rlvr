@@ -10,9 +10,9 @@ This is a Python project for **post-training (fine-tuning) RookWorld-LM** using 
 
 **Key Point**: This is **fine-tuning/post-training** of the existing pre-trained `jrahn/RookWorld-LM-124M` model from HuggingFace, not training from scratch.
 
-## Mini Implementation
+## Main Implementation
 
-The `src/mini/` directory contains a **self-contained, minimalist GRPO implementation** with pure PyTorch (no transformers dependency). This is ideal for understanding GRPO and running experiments. See `src/mini/CLAUDE.md` for details.
+The `src/rookworld_rlvr/` directory contains a **self-contained, minimalist GRPO implementation** with pure PyTorch (no transformers dependency). This is ideal for understanding GRPO and running experiments. See `docs/ARCHITECTURE.md` for details.
 
 ## Common Development Commands
 

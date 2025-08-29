@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Mini Implementation GRPO Training Script
+# RookWorld RLVR GRPO Training Script
 # 
-# This script runs the mini implementation (mainline) with optimized parameters
+# This script runs the main implementation with optimized parameters
 # for stable GRPO training on the RookWorld dataset.
 #
 # Key features:
@@ -14,7 +14,7 @@
 
 set -e  # Exit on any error
 
-echo "🚀 Starting Mini Implementation GRPO Training"
+echo "🚀 Starting RookWorld RLVR GRPO Training"
 echo "============================================================"
 
 # Check if uv is available
@@ -46,7 +46,7 @@ echo "  Checkpoint Frequency: every $SAVE_FREQ steps"
 echo "  Training Samples: $N_TRAIN_SAMPLES from dataset"
 echo "  Log Directory: $LOG_DIR"
 echo ""
-echo "Built-in features (src/mini/config.py):"
+echo "Built-in features (src/rookworld_rlvr/config.py):"
 echo "  - Temperature: 0.8"
 echo "  - Clip Range: 0.2"
 echo "  - Max New Tokens: 144"
@@ -59,13 +59,13 @@ echo "  - Continuous: FEN similarity (exponential), evaluations (linear)"
 echo "  - Memory: Fixed leaks, stable ~4.8GB VRAM"
 echo "============================================================"
 
-# Navigate to mini implementation
-cd src/mini
+# Stay in root directory for module imports
+# cd src/rookworld_rlvr
 
 # Create log directory if it doesn't exist
 mkdir -p "$LOG_DIR"
 
-# Build command arguments - parameters supported by mini train_logged.py
+# Build command arguments - parameters supported by train_logged.py
 ARGS=(
     --steps "$STEPS"
     --batch_size "$BATCH_SIZE"
@@ -80,12 +80,12 @@ ARGS=(
 
 # Execute training with memory optimizations
 echo ""
-echo "🏃 Executing mini implementation training..."
-echo "Command: uv run python train_logged.py ${ARGS[*]}"
+echo "🏃 Executing GRPO training..."
+echo "Command: uv run python -m rookworld_rlvr.train_logged ${ARGS[*]}"
 echo "============================================================"
 
 # Set CUDA memory allocator for better memory management
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # Run the training script with detailed logging
-exec uv run python train_logged.py "${ARGS[@]}"
+exec uv run python -m rookworld_rlvr.train_logged "${ARGS[@]}"

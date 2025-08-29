@@ -17,7 +17,8 @@ def compute_log_probs(
     input_ids: torch.Tensor,
     attention_mask: Optional[torch.Tensor] = None,
     detach: bool = False,
-    chunk_size: int = 16
+    chunk_size: int = 16,
+    use_bf16: bool = False
 ) -> torch.Tensor:
     """
     Compute log probabilities for a sequence with chunked processing to save memory.
@@ -36,8 +37,12 @@ def compute_log_probs(
     
     # If batch is small enough, process normally
     if batch_size <= chunk_size:
-        # Get model outputs
-        outputs = model(input_ids, attention_mask)
+        # Get model outputs with optional BF16 autocast
+        if use_bf16:
+            with torch.amp.autocast('cuda', dtype=torch.bfloat16):
+                outputs = model(input_ids, attention_mask)
+        else:
+            outputs = model(input_ids, attention_mask)
         logits = outputs["logits"]
         
         if detach:
@@ -74,9 +79,13 @@ def compute_log_probs(
         chunk_input_ids = input_ids[i:end_idx]
         chunk_attention_mask = attention_mask[i:end_idx] if attention_mask is not None else None
         
-        # Process chunk
+        # Process chunk with optional BF16 autocast
         with torch.no_grad() if detach else torch.enable_grad():
-            outputs = model(chunk_input_ids, chunk_attention_mask)
+            if use_bf16:
+                with torch.amp.autocast('cuda', dtype=torch.bfloat16):
+                    outputs = model(chunk_input_ids, chunk_attention_mask)
+            else:
+                outputs = model(chunk_input_ids, chunk_attention_mask)
             chunk_logits = outputs["logits"]
             
             if detach:
@@ -476,7 +485,8 @@ class ReferenceModel:
         input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         return_on_cpu: bool = True,
-        chunk_size: int = 16
+        chunk_size: int = 16,
+        use_bf16: bool = False
     ) -> torch.Tensor:
         """
         Compute log probabilities with frozen model using chunked processing.
@@ -497,7 +507,8 @@ class ReferenceModel:
                 input_ids, 
                 attention_mask, 
                 detach=True,
-                chunk_size=chunk_size
+                chunk_size=chunk_size,
+                use_bf16=use_bf16
             )
             result = result.detach()  # Ensure fully detached
             

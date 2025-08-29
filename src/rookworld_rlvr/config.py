@@ -44,6 +44,11 @@ class GRPOConfig:
     max_steps: int = 1000
     grad_clip: float = 1.0
     
+    # Performance optimizations
+    use_bf16: bool = False  # BFloat16 mixed precision training
+    use_torch_compile: bool = False  # PyTorch 2.x compilation
+    compile_mode: str = "reduce-overhead"  # Compilation mode
+    
     # Generation
     max_new_tokens: int = 144  # Must be >=144 for complete schemas
     temperature: float = 0.8

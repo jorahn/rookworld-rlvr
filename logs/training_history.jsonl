@@ -1,3 +1,5 @@
 {"step": 1, "loss": -0.03930006921291351, "mean_reward": 0.7059731539828431, "kl_div": 0.0, "memory_gb": 1.9652471542358398, "actual_memory_gb": 11.88671875, "elapsed_time": 17.824747800827026}
 {"step": 1, "loss": -0.03939562290906906, "mean_reward": 0.654906230257353, "kl_div": 0.0, "memory_gb": 1.9652423858642578, "actual_memory_gb": 11.65234375, "elapsed_time": 16.331613302230835}
 {"step": 1, "loss": -0.05221977457404137, "mean_reward": 0.5767068018933823, "kl_div": 0.0, "memory_gb": 1.9652643203735352, "actual_memory_gb": 12.84375, "elapsed_time": 18.234636306762695}
+{"step": 1, "loss": -0.041310761123895645, "mean_reward": 0.548305913382353, "kl_div": 0.0, "memory_gb": 1.9652729034423828, "actual_memory_gb": 13.33203125, "elapsed_time": 16.99497127532959}
+{"step": 1, "loss": -0.04385897517204285, "mean_reward": 0.7138356551470588, "kl_div": 0.0, "memory_gb": 1.9652509689331055, "actual_memory_gb": 12.12109375, "elapsed_time": 18.575111150741577}

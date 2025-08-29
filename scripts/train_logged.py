@@ -385,6 +385,8 @@ def main():
     parser.add_argument("--eval_freq", type=int, default=100, help="Evaluate every N steps")
     parser.add_argument("--save_freq", type=int, default=1000, help="Save checkpoint every N steps")
     parser.add_argument("--n_train_samples", type=int, default=1000, help="Number of training samples to load")
+    parser.add_argument("--use_bf16", action="store_true", help="Enable BF16 mixed precision training")
+    parser.add_argument("--use_torch_compile", action="store_true", help="Enable torch.compile() optimization")
     args = parser.parse_args()
     
     # Setup logging
@@ -402,7 +404,9 @@ def main():
         n_eval_samples=50,
         log_freq=1,  # Log every step for detailed monitoring
         eval_freq=args.eval_freq,
-        save_freq=args.save_freq
+        save_freq=args.save_freq,
+        use_bf16=args.use_bf16,  # Enable BF16 mixed precision
+        use_torch_compile=args.use_torch_compile  # Enable torch.compile()
     )
     
     # Log configuration
@@ -456,6 +460,12 @@ def main():
         betas=(0.9, 0.95)
     )
     
+    # Setup gradient scaler for mixed precision training
+    scaler = None
+    if config.use_bf16:
+        scaler = torch.amp.GradScaler('cuda')
+        logger.info("Enabled BF16 mixed precision training with gradient scaling")
+    
     # Initialize history writer
     history_writer = TrainingHistoryWriter(args.log_dir, max_memory_entries=10)
     
@@ -502,20 +512,22 @@ def main():
         advantages = rollout_data["advantages"]
         prompt_lengths = rollout_data["prompt_lengths"]
         
-        # Compute log probs with chunked processing
+        # Compute log probs with chunked processing and optional BF16
         policy_log_probs = compute_log_probs(
             model,
             sequences,
             attention_masks,
-            chunk_size=config.log_prob_chunk_size  # Process in chunks to save memory
+            chunk_size=config.log_prob_chunk_size,  # Process in chunks to save memory
+            use_bf16=config.use_bf16  # Enable BF16 mixed precision
         )
         
-        # Get ref_log_probs with chunked processing
+        # Get ref_log_probs with chunked processing (keep in FP32 for stability)
         with torch.no_grad():
             ref_log_probs_cpu = ref_model.compute_log_probs(
                 sequences,
                 attention_masks,
-                return_on_cpu=True  # Returns CPU tensor
+                return_on_cpu=True,  # Returns CPU tensor
+                use_bf16=False  # Keep reference model in FP32 for numerical stability
             )
             ref_log_probs = ref_log_probs_cpu.to(config.device)  # Move to GPU for loss computation
             
@@ -563,15 +575,23 @@ def main():
             entropy_coef=config.entropy_coef
         )
         
-        # Backward pass
-        optimizer.zero_grad(set_to_none=True)  # More aggressive gradient clearing
-        loss.backward()
+        # Backward pass with optional mixed precision
+        optimizer.zero_grad(set_to_none=True)
         
-        # Compute gradient norm
-        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+        if scaler is not None:
+            # BF16 mixed precision backward pass
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            # Standard backward pass
+            loss.backward()
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+            optimizer.step()
+        
         metrics['grad_norm'] = grad_norm.item()
-        
-        optimizer.step()
         
         # Detach loss to prevent gradient accumulation
         loss = loss.detach()

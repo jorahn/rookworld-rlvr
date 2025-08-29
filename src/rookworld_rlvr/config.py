@@ -44,12 +44,23 @@ class GRPOConfig:
     max_steps: int = 1000
     grad_clip: float = 1.0
     
+    # Learning rate schedule
+    lr_schedule_type: str = "cosine"  # "cosine", "linear", "constant"
+    warmup_steps: int = 50  # Number of warmup steps (10% of training)
+    min_lr_ratio: float = 0.1  # Minimum LR as fraction of initial LR (1e-6 final)
+    cosine_restart_steps: Optional[int] = None  # Optional cosine restart period
+    
     # Performance optimizations
     use_bf16: bool = False  # BFloat16 mixed precision training
     use_torch_compile: bool = False  # PyTorch 2.x compilation
     compile_mode: str = "reduce-overhead"  # Compilation mode
     enable_tf32: bool = True  # TF32 acceleration for Ampere+ GPUs
     tensor_core_precision: str = "high"  # "highest", "high", or "medium" for matmul precision
+    
+    # Batch generation optimizations
+    use_batch_generation: bool = False  # Enable batch generation for 4x speedup
+    batch_generation_mode: str = "mixed"  # "mixed", "task_specific" batch generation strategy
+    batch_generation_size: int = 8  # Batch size for generation
     
     # Generation
     max_new_tokens: int = 144  # Must be >=144 for complete schemas

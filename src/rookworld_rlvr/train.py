@@ -264,19 +264,33 @@ def train(config: GRPOConfig):
             horizon=config.kl_horizon
         )
     
-    # Initialize value function if using GAE
+    # Initialize value function if using GAE (but disable if using batch generation)
     value_function = None
     value_optimizer = None
-    if config.use_gae:
+    effective_use_gae = config.use_gae and not config.use_batch_generation
+    if effective_use_gae:
         print("Initializing value function...")
         value_function = ValueFunction(hidden_size=768).to(config.device)
         value_optimizer = optim.AdamW(
             value_function.parameters(),
             lr=config.learning_rate * 0.1  # Smaller LR for value function
         )
+    elif config.use_gae and config.use_batch_generation:
+        print("GAE disabled due to batch generation compatibility")
     
     # Initialize baseline tracker for advanced methods
     baseline_tracker = {} if config.baseline_type in ["ema", "adaptive"] else None
+    
+    # Print optimization settings
+    print(f"\nOptimization Settings:")
+    print(f"  Batch Generation: {'Enabled' if config.use_batch_generation else 'Disabled'}")
+    if config.use_batch_generation:
+        print(f"    Mode: {config.batch_generation_mode}")
+        print(f"    Batch Size: {config.batch_generation_size}")
+        print(f"    Expected Speedup: ~4x")
+    print(f"  Mixed Precision (BF16): {'Enabled' if config.use_bf16 else 'Disabled'}")
+    print(f"  Torch Compile: {'Enabled' if config.use_torch_compile else 'Disabled'}")
+    print(f"  GAE: {'Disabled (batch generation compatibility)' if config.use_batch_generation else ('Enabled' if config.use_gae else 'Disabled')}")
     
     # Load data
     print(f"\nLoading {config.n_train_samples} training samples...")
@@ -325,10 +339,25 @@ def train(config: GRPOConfig):
         )
         batch_samples = [train_samples[i] for i in batch_indices]
         
-        # Collect rollouts
-        rollout_data = collect_rollouts(
-            model, batch_samples, tokenizer, config, baseline_tracker
-        )
+        # Collect rollouts - use batch generation if enabled
+        if config.use_batch_generation:
+            from .batch_generation import collect_rollouts_batched, collect_rollouts_task_specific_batched
+            
+            if config.batch_generation_mode == "task_specific":
+                rollout_data = collect_rollouts_task_specific_batched(
+                    model, batch_samples, tokenizer, config, baseline_tracker,
+                    batch_size=config.batch_generation_size
+                )
+            else:  # "mixed" mode
+                rollout_data = collect_rollouts_batched(
+                    model, batch_samples, tokenizer, config, baseline_tracker,
+                    batch_size=config.batch_generation_size
+                )
+        else:
+            # Use traditional individual generation
+            rollout_data = collect_rollouts(
+                model, batch_samples, tokenizer, config, baseline_tracker
+            )
         
         # Training step
         model.train()
@@ -344,6 +373,10 @@ def train(config: GRPOConfig):
             rollout_data["sequences"],
             rollout_data["attention_masks"]
         )
+        
+        # Ensure ref_log_probs is on the same device as policy_log_probs
+        if isinstance(ref_log_probs, torch.Tensor) and ref_log_probs.device != config.device:
+            ref_log_probs = ref_log_probs.to(config.device)
         
         # Create prompt mask
         prompt_mask = create_prompt_mask(

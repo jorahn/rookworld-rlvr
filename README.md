@@ -2,9 +2,9 @@
 
 **Fine-tune RookWorld-LM with Group Relative Policy Optimization on chess tasks**
 
-## 🎯 Main Implementation (Clean & Complete)
+## 🎯 Main Implementation (WIP)
 
-The **main implementation** in `src/rookworld_rlvr/` is the streamlined, production-ready code. This clean, self-contained implementation provides:
+The **main implementation** in `src/rookworld_rlvr/` is the streamlined but work-in-progress code. This clean, self-contained implementation provides:
 
 - **Self-contained**: Complete system in `src/rookworld_rlvr/` (~1500 lines)
 - **Pure PyTorch**: No transformers library dependency  
